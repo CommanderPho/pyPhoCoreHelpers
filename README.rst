@@ -34,7 +34,7 @@ pyPhoCoreHelpers
 ================
 
 
-    Add a short description here!
+    A collection of generally useful python code by Pho Hale
 
 
 A longer description of your project goes here...

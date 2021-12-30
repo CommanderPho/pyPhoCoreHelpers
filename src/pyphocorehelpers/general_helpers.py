@@ -49,3 +49,17 @@ class OrderedMeta(type):
         c = type.__new__(cls, name, bases, clsdict)
         c._orderedKeys = clsdict.keys()
         return c
+
+
+
+
+def get_arguments_as_optional_dict(**kwargs):
+    """ Easily converts your existing argument-list style default values into a dict:
+            Defines a simple function that takes only **kwargs as its inputs and prints the values it recieves. Paste your values as arguments to the function call. The dictionary will be output to the console, so you can easily copy and paste. 
+        Usage:
+            >>> get_arguments_as_optional_dict(point_size=8, font_size=10, name='build_center_labels_test', shape_opacity=0.8, show_points=False)
+
+            Output: ", **({'point_size': 8, 'font_size': 10, 'name': 'build_center_labels_test', 'shape_opacity': 0.8, 'show_points': False} | kwargs)"
+    """
+    print(', **(' + f'{kwargs}' + ' | kwargs)')
+

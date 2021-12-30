@@ -2,7 +2,6 @@
 from typing import List, Optional, OrderedDict # for OrderedMeta
 
 
-
 class SimplePrintable:
     """ Adds the default print method for classes that displays the class name and its dictionary. """
     def __repr__(self) -> str:

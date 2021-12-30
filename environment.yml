@@ -1,7 +1,7 @@
 name: demo-pyPhoCoreHelpers
 channels:
-  - defaults
   - conda-forge
+  # - defaults
   # - pytorch
   # - fastai
 dependencies:
@@ -11,7 +11,7 @@ dependencies:
   - numpy
   - scipy
   - pandas
-  # - tqdm
+  - tqdm
   # - click
   - ipython
   # VISUALIZATION
@@ -39,6 +39,8 @@ dependencies:
   # - snakeviz
   - pip:
      - -e .  # install git checkout of pyPhoCoreHelpers in editable mode
+     - pyPhoCoreHelpers
+    #  - NeuroPy
      # add here only pip-packages that are not available in conda/conda-forge! E.g.:
      # - icecream
      # - jax

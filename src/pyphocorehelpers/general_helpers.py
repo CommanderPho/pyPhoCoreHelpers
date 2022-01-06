@@ -1,4 +1,5 @@
 from typing import List, Optional, OrderedDict  # for OrderedMeta
+from enum import Enum
 
 
 class SimplePrintable:
@@ -63,3 +64,44 @@ def get_arguments_as_optional_dict(**kwargs):
     """
     print(', **(' + f'{kwargs}' + ' | kwargs)')
 
+
+
+
+
+# Enum for size units
+class SIZE_UNIT(Enum):
+    BYTES = 1
+    KB = 2
+    MB = 3
+    GB = 4
+   
+def convert_unit(size_in_bytes, unit):
+    """ Convert the size from bytes to other units like KB, MB or GB"""
+    if unit == SIZE_UNIT.KB:
+        return size_in_bytes/1024
+    elif unit == SIZE_UNIT.MB:
+        return size_in_bytes/(1024*1024)
+    elif unit == SIZE_UNIT.GB:
+        return size_in_bytes/(1024*1024*1024)
+    else:
+        return size_in_bytes
+
+   
+
+def print_seconds_human_readable(seconds):
+    """ prints the seconds arguments as a human-redable HH::MM:SS.FRACTIONAL time. """
+    if isinstance(seconds, int):
+        whole_seconds = seconds
+        fractional_seconds = None
+    else:    
+        whole_seconds = int(seconds)
+        fractional_seconds = seconds - whole_seconds
+    
+    m, s = divmod(whole_seconds, 60)
+    h, m = divmod(m, 60)
+    timestamp = '{0:02}:{1:02}:{2:02}'.format(h, m, s)
+    if fractional_seconds is not None:
+        frac_seconds_string = ('%f' % fractional_seconds).rstrip('0').rstrip('.').lstrip('0').lstrip('.') # strips any insignficant zeros from the right, and then '0.' string from the left.        
+        timestamp = '{}:{}'.format(timestamp, frac_seconds_string) # append the fracitonal seconds string to the timestamp string
+    print(timestamp) # print the timestamp
+    return h, m, s, fractional_seconds

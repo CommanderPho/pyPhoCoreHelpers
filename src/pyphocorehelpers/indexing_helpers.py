@@ -14,7 +14,7 @@ class BinningInfo(object):
     
     
 def build_spanning_bins(variable_values, max_bin_size:float, debug_print=False):
-    """ out_digitized_variable_bins include both endpoints (bin edges)
+    """ DEPRICATED! out_digitized_variable_bins include both endpoints (bin edges)
 
     Args:
         variable_values ([type]): [description]
@@ -25,6 +25,7 @@ def build_spanning_bins(variable_values, max_bin_size:float, debug_print=False):
         out_digitized_variable_bins [type]: [description]
         out_binning_info [BinningInfo]: contains info about how the binning was conducted
     """
+    raise DeprecationWarning
     # compute extents:
     curr_variable_extents = (np.nanmin(variable_values), np.nanmax(variable_values))
     num_subdivisions = int(np.ceil((curr_variable_extents[1] - curr_variable_extents[0])/max_bin_size)) # get the next integer size above float_bin_size
@@ -90,8 +91,30 @@ def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=Non
         raise ValueError
     
     return xbin, BinningInfo(curr_variable_extents, xstep, xnum_bins, np.arange(xnum_bins))
-        
-    
+      
+      
+def compute_position_grid_size(*any_1d_series, num_bins:tuple):
+    """  Computes the required bin_sizes from the required num_bins (for each dimension independently)
+    Usage:
+    out_grid_bin_size, out_bins, out_bins_infos = compute_position_grid_size(curr_kdiba_pipeline.sess.position.x, curr_kdiba_pipeline.sess.position.y, num_bins=(64, 64))
+    active_grid_bin = tuple(out_grid_bin_size)
+    print(f'active_grid_bin: {active_grid_bin}') # (3.776841861770752, 1.043326930905373)
+    """
+    assert (len(any_1d_series)) == len(num_bins), f'(len(other_1d_series)) must be the same length as the num_bins tuple! But (len(other_1d_series)): {(len(any_1d_series))} and len(num_bins): {len(num_bins)}!'
+    num_series = len(num_bins)
+    out_bins = []
+    out_bins_info = []
+    out_bin_grid_step_size = np.zeros((num_series,))
+
+    for i in np.arange(num_series):
+        xbins, xbin_info = compute_spanning_bins(any_1d_series[i], num_bins=num_bins[i])
+        out_bins.append(xbins)
+        out_bins_info.append(xbin_info)
+        out_bin_grid_step_size[i] = xbin_info.step
+
+    return out_bin_grid_step_size, out_bins, out_bins_info
+
+
 
 
 def get_bin_centers(bin_edges):

@@ -113,6 +113,13 @@ def build_pairwise_indicies(target_indicies, debug_print=False):
 #     return array[sub_windows]
 
 
+def sorted_slice(a,l,r):
+    start = np.searchsorted(a, l, 'left')
+    end = np.searchsorted(a, r, 'right')
+    return np.arange(start, end)
+
+
+
 
 ## Pandas DataFrame helpers:
 def partition(df: pd.DataFrame, partitionColumn: str):

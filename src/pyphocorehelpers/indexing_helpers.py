@@ -40,9 +40,59 @@ def build_spanning_bins(variable_values, max_bin_size:float, debug_print=False):
     assert out_digitized_variable_bins[0] == out_binning_info.variable_extents[0], "out_digitized_variable_bins[0] should be the minimum variable extent!"
 
     # All above arge the bin_edges
-    
-
     return out_digitized_variable_bins, out_binning_info
+
+
+
+
+def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=None, debug_print=False):
+    """[summary]
+
+    Args:
+        variable_values ([type]): [description]
+        num_bins (int, optional): [description]. Defaults to None.
+        bin_size (float, optional): [description]. Defaults to None.
+        debug_print (bool, optional): [description]. Defaults to False.
+
+    Raises:
+        ValueError: [description]
+
+    Returns:
+        [type]: [description]
+        
+    Usage:
+        ## Binning with Fixed Number of Bins:    
+        xbin, ybin, bin_info = compute_spanning_bins(pos_df.x.to_numpy(), bin_size=active_config.computation_config.grid_bin[0]) # bin_size mode
+        print(bin_info)
+        ## Binning with Fixed Bin Sizes:
+        xbin, ybin, bin_info = compute_spanning_bins(pos_df.x.to_numpy(), num_bins=num_bins) # num_bins mode
+        print(bin_info)
+        
+    """
+    assert (num_bins is None) or (bin_size is None), 'You cannot constrain both num_bins AND bin_size. Specify only one or the other.'
+    assert (num_bins is not None) or (bin_size is not None), 'You must specify either the num_bins XOR the bin_size.'
+    curr_variable_extents = (np.nanmin(variable_values), np.nanmax(variable_values))
+    
+    if num_bins is not None:
+        ## Binning with Fixed Number of Bins:
+        mode = 'num_bins'
+        xnum_bins = num_bins
+        xbin, xstep = np.linspace(curr_variable_extents[0], curr_variable_extents[1], num=num_bins, retstep=True)  # binning of x position
+        
+    elif bin_size is not None:
+        ## Binning with Fixed Bin Sizes:
+        mode = 'bin_size'
+        xstep = bin_size
+        xbin = np.arange(curr_variable_extents[0], (curr_variable_extents[1] + xstep), xstep, )  # binning of x position
+        # the interval does not include this value, except in some cases where step is not an integer and floating point round-off affects the length of out.
+        xnum_bins = len(xbin)
+        
+    else:
+        raise ValueError
+    
+    return xbin, BinningInfo(curr_variable_extents, xstep, xnum_bins, np.arange(xnum_bins))
+        
+    
 
 
 def get_bin_centers(bin_edges):

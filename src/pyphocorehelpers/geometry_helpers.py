@@ -1,6 +1,6 @@
 import numpy as np
 
-from pyphocorehelpers.DataStructure.data_structure_builders import cartesian_product
+from pyphocorehelpers.DataStructure.data_structure_builders import Width_Height_Tuple, cartesian_product
 
 ## Centroid point for camera
 def centeroidnp(arr):

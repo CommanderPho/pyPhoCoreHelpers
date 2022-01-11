@@ -15,6 +15,17 @@ class BinningInfo(object):
     
     
 def build_spanning_bins(variable_values, max_bin_size:float, debug_print=False):
+    """ out_digitized_variable_bins include both endpoints (bin edges)
+
+    Args:
+        variable_values ([type]): [description]
+        max_bin_size (float): [description]
+        debug_print (bool, optional): [description]. Defaults to False.
+
+    Returns:
+        out_digitized_variable_bins [type]: [description]
+        out_binning_info [BinningInfo]: contains info about how the binning was conducted
+    """
     # compute extents:
     curr_variable_extents = (np.nanmin(variable_values), np.nanmax(variable_values))
     num_subdivisions = int(np.ceil((curr_variable_extents[1] - curr_variable_extents[0])/max_bin_size))
@@ -24,8 +35,20 @@ def build_spanning_bins(variable_values, max_bin_size:float, debug_print=False):
     # out_bin_indicies = np.arange(num_subdivisions)
     out_binning_info = BinningInfo(curr_variable_extents, actual_subdivision_step_size, num_subdivisions, np.arange(num_subdivisions))
     out_digitized_variable_bins = np.linspace(curr_variable_extents[0], curr_variable_extents[1], num_subdivisions, dtype=float)#.astype(float)
+    
+    assert out_digitized_variable_bins[-1] == out_binning_info.variable_extents[1], "out_digitized_variable_bins[-1] should be the maximum variable extent!"
+    assert out_digitized_variable_bins[0] == out_binning_info.variable_extents[0], "out_digitized_variable_bins[0] should be the minimum variable extent!"
+
+    # All above arge the bin_edges
+    
+
     return out_digitized_variable_bins, out_binning_info
 
+
+def get_bin_centers(bin_edges):
+    """ For a series of 1D bin edges given by bin_edges, returns the center of the bins. Output will have one less element than bin_edges. """
+    return (bin_edges[:-1] + np.diff(bin_edges) / 2.0)
+    
 
 
 def build_pairwise_indicies(target_indicies, debug_print=False):

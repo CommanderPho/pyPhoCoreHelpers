@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-
 from dataclasses import dataclass
 
 
@@ -45,7 +44,7 @@ def build_spanning_bins(variable_values, max_bin_size:float, debug_print=False):
 
 
 
-def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=None, debug_print=False):
+def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=None):
     """[summary]
 
     Args:

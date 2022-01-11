@@ -75,7 +75,7 @@ class TestIndexingMethods(unittest.TestCase):
         
     def test_compute_spanning_bins_bin_size_mode(self):
         active_position_extents = np.array([23.92332935, 261.86436665])
-        fixed_bin_size = 5
+        fixed_bin_size = 5.0
         out_digitized_variable_bins, out_binning_info = compute_spanning_bins(active_position_extents, bin_size=fixed_bin_size)
         print(f'test_compute_spanning_bins_bin_size_mode(): out_digitized_variable_bins: {out_digitized_variable_bins}, np.shape(out_digitized_variable_bins): {np.shape(out_digitized_variable_bins)}, out_binning_info: {out_binning_info}')
         self.assertEqual(out_binning_info.num_bins, np.shape(out_digitized_variable_bins)[0], f"out_binning_info.num_bins ({out_binning_info.num_bins}) must be equal to np.shape(out_digitized_variable_bins)[0] ({np.shape(out_digitized_variable_bins)[0]})!")
@@ -118,8 +118,19 @@ class TestIndexingMethods(unittest.TestCase):
         # bin_centers = get_bin_centers(self.integer_bin_edges)
         # self.assertEqual((np.shape(self.integer_bin_edges)[0] - 1), np.shape(bin_centers)[0], 'bin_centers should be one element smaller than bin_edges')
 
-
-
+    def test_build_and_compute_spanning_bins_edges_equivalency(self):
+        fixed_bin_size = 5
+        active_position_extents = np.array([23.92332935, 261.86436665])
+        build_out_digitized_variable_bins, build_out_binning_info = build_spanning_bins(active_position_extents, max_bin_size=fixed_bin_size)
+        compute_out_digitized_variable_bins, compute_out_binning_info = compute_spanning_bins(active_position_extents, num_bins=build_out_binning_info.num_bins) # use the found number of bins to directly build the compute version
+        # compute_out_digitized_variable_bins, compute_out_binning_info = compute_spanning_bins(active_position_extents, bin_size=fixed_bin_size)
+        print(f'test_build_and_compute_spanning_bins_edges_equivalency(): build_out_digitized_variable_bins: {build_out_digitized_variable_bins}, np.shape(build_out_digitized_variable_bins): {np.shape(build_out_digitized_variable_bins)}, build_out_binning_info: {build_out_binning_info}')
+        print(f'test_build_and_compute_spanning_bins_edges_equivalency(): compute_out_digitized_variable_bins: {compute_out_digitized_variable_bins}, np.shape(compute_out_digitized_variable_bins): {np.shape(compute_out_digitized_variable_bins)}, compute_out_binning_info: {compute_out_binning_info}')
+        self.assertEqual(build_out_binning_info.num_bins, compute_out_binning_info.num_bins, f"build_out_binning_info.num_bins ({build_out_binning_info.num_bins}) must be equal to compute_out_binning_info.num_bins ({compute_out_binning_info.num_bins})!")
+        # self.assertListEqual(build_out_digitized_variable_bins, compute_out_digitized_variable_bins, 'bins must be equal!')
+        self.assertAlmostEqual(build_out_digitized_variable_bins[0], compute_out_digitized_variable_bins[0], 'bins must be equal!')
+        self.assertAlmostEqual(build_out_digitized_variable_bins[1], compute_out_digitized_variable_bins[1], 'bins must be equal!')
+        self.assertAlmostEqual(build_out_digitized_variable_bins[-1], compute_out_digitized_variable_bins[-1], 'bins must be equal!')
 
 if __name__ == '__main__':
     unittest.main()

@@ -28,7 +28,7 @@ def build_spanning_bins(variable_values, max_bin_size:float, debug_print=False):
     """
     # compute extents:
     curr_variable_extents = (np.nanmin(variable_values), np.nanmax(variable_values))
-    num_subdivisions = int(np.ceil((curr_variable_extents[1] - curr_variable_extents[0])/max_bin_size))
+    num_subdivisions = int(np.ceil((curr_variable_extents[1] - curr_variable_extents[0])/max_bin_size)) # get the next integer size above float_bin_size
     actual_subdivision_step_size = (curr_variable_extents[1] - curr_variable_extents[0]) / float(num_subdivisions) # the actual exact size of the bin
     if debug_print:
         print(f'for max_bin_size: {max_bin_size} -> num_subdivisions: {num_subdivisions}, actual_subdivision_step_size: {actual_subdivision_step_size}')

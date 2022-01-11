@@ -122,3 +122,58 @@ def partition(df: pd.DataFrame, partitionColumn: str):
     return unique_values, np.array([grouped_df.get_group(aValue) for aValue in unique_values], dtype=object) # dataframes split for each unique value in the column
 
 
+
+def find_neighbours(value, df, colname):
+    """Claims to be O(N)
+    From https://stackoverflow.com/questions/30112202/how-do-i-find-the-closest-values-in-a-pandas-series-to-an-input-number
+    
+    Args:
+        value ([type]): [description]
+        df ([type]): [description]
+        colname ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    exactmatch = df[df[colname] == value]
+    if not exactmatch.empty:
+        return exactmatch.index
+    else:
+        lowerneighbour_ind = df[df[colname] < value][colname].idxmax()
+        upperneighbour_ind = df[df[colname] > value][colname].idxmin()
+        return [lowerneighbour_ind, upperneighbour_ind] 
+    
+    
+    #If the series is already sorted, an efficient method of finding the indexes is by using bisect functions.
+   
+ 
+# def get_closests(df, col, val):
+#     """ Requires already sorted lists. """
+#     lower_idx = pd.bisect_left(df[col].values, val)
+#     higher_idx = pd.bisect_right(df[col].values, val)
+#     if higher_idx == lower_idx:      #val is not in the list
+#         return lower_idx - 1, lower_idx
+#     else:                            #val is in the list
+#         return lower_idx
+
+    
+# def find_closest_values(target, source, k_matches=1):
+#     """[summary]
+    
+#     Usage:
+#         find_closest_values(target, source, k_matches=1)
+
+#     Args:
+#         target ([type]): [description]
+#         source ([type]): [description]
+#         k_matches (int, optional): [description]. Defaults to 1.
+
+#     Returns:
+#         [type]: [description]
+#     """
+#     k_above = source[source >= target].nsmallest(k_matches)
+#     k_below = source[source < target].nlargest(k_matches)
+#     k_all = pd.concat([k_below, k_above]).sort_values()
+#     return k_all
+
+    

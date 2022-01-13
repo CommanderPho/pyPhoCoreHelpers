@@ -1,4 +1,9 @@
 import numpy as np
+from io import BytesIO
+
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+from matplotlib.transforms import IdentityTransform
 
 
 def build_square_checkerboard_image(extent, num_checkerboard_squares_short_axis:int=10, debug_print=False):
@@ -34,3 +39,42 @@ def build_square_checkerboard_image(extent, num_checkerboard_squares_short_axis:
     # Grey checkerboard background:
     background_chessboard = np.add.outer(range(num_checkerboard_squares_short_axis), range(num_checkerboard_squares_long_axis)) % 2  # chessboard
     return background_chessboard
+
+
+
+def build_image_from_text(s, *, dpi, **kwargs):
+    # To convert a text string to an image, we can:
+    # - draw it on an empty and transparent figure;
+    # - save the figure to a temporary buffer using ``bbox_inches="tight",
+    #   pad_inches=0`` which will pick the correct area to save;
+    # - load the buffer using ``plt.imread``.
+    #
+    # (If desired, one can also directly save the image to the filesystem.)
+    """ 
+
+    Usage Example:    
+        fig = plt.figure()
+        rgba1 = text_to_rgba(r"IQ: $\sigma_i=15$", color="blue", fontsize=20, dpi=200)
+        rgba2 = text_to_rgba(r"some other string", color="red", fontsize=20, dpi=200)
+        # One can then draw such text images to a Figure using `.Figure.figimage`.
+        fig.figimage(rgba1, 100, 50)
+        fig.figimage(rgba2, 100, 150)
+
+        # One can also directly draw texts to a figure with positioning
+        # in pixel coordinates by using `.Figure.text` together with
+        # `.transforms.IdentityTransform`.
+        fig.text(100, 250, r"IQ: $\sigma_i=15$", color="blue", fontsize=20,
+                transform=IdentityTransform())
+        fig.text(100, 350, r"some other string", color="red", fontsize=20,
+                transform=IdentityTransform())
+        plt.show()
+
+    """
+    fig = Figure(facecolor="none")
+    fig.text(0, 0, s, **kwargs)
+    with BytesIO() as buf:
+        fig.savefig(buf, dpi=dpi, format="png", bbox_inches="tight",
+                    pad_inches=0)
+        buf.seek(0)
+        rgba = plt.imread(buf)
+    return rgba

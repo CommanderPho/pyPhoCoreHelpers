@@ -1,4 +1,4 @@
-from typing import List, Optional, OrderedDict  # for OrderedMeta
+from typing import Callable, List, Optional, OrderedDict  # for OrderedMeta
 from enum import Enum
 
 
@@ -33,6 +33,15 @@ class OrderedMeta(type):
 
 
 
+def inspect_callable_arguments(a_callable: Callable):
+    import inspect
+    fn_spec = inspect.getfullargspec(a_callable)
+    # fn_sig = inspect.signature(compute_position_grid_bin_size)
+    return fn_spec
+
+
+# def get_arguments_as_passthrough(**kwargs):
+    
 
 def get_arguments_as_optional_dict(**kwargs):
     """ Easily converts your existing argument-list style default values into a dict:

@@ -34,6 +34,25 @@ class OrderedMeta(type):
 
 
 def inspect_callable_arguments(a_callable: Callable):
+    """ Not yet validated/implemented
+    Progress:
+        import inspect
+        from neuropy.plotting.ratemaps import plot_ratemap_1D, plot_ratemap_2D
+
+        fn_spec = inspect.getfullargspec(plot_ratemap_2D)
+        fn_sig = inspect.signature(plot_ratemap_2D)
+        ?fn_sig
+
+            # fn_sig
+        dict(fn_sig.parameters)
+        # fn_sig.parameters.values()
+
+        fn_sig.parameters['plot_mode']
+        # fn_sig.parameters
+        fn_spec.args # all kwarg arguments: ['x', 'y', 'num_bins', 'debug_print']
+
+        fn_spec.defaults[-2].__class__.__name__ # a tuple of default values corresponding to each argument in args; ((64, 64), False)
+    """
     import inspect
     fn_spec = inspect.getfullargspec(a_callable)
     # fn_sig = inspect.signature(compute_position_grid_bin_size)

@@ -1,3 +1,6 @@
+import numpy as np
+from copy import deepcopy
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 class PhoActiveFigureManager2D(object):
@@ -43,16 +46,16 @@ class PhoActiveFigureManager2D(object):
     def set_geometries(cls, x:int=None, y:int=None, width:int=None, height:int=None):
         active_figure_man = plt.get_current_fig_manager() # get the active figure manager
         geom, prev_extent = cls.get_geometries(active_fig_mngr=active_figure_man)
-        updated_extent = prev_extent.copy()
+        updated_extent = np.array(prev_extent)
         # extent is of the form (x,y,dx,dy)	
         if x is not None:
             updated_extent[0] = x
         if y is not None:
             updated_extent[1] = y
         if width is not None:
-            updated_extent[3] = width
+            updated_extent[2] = width
         if height is not None:
-            updated_extent[4] = height
+            updated_extent[3] = height
   
         newX, newY, newWidth, newHeight = updated_extent
         # and then set the new extents:
@@ -101,6 +104,43 @@ class PhoActiveFigureManager2D(object):
         )
 
 
+class FigureFormatter2D(object):
+    """
+    docstring for FigureFormatter2D.
+    
+    variant
+    plot_type # the type of the plot
+    
+    
+    
+    title
+    subtitle
+    
+    """
+    def __init__(self, arg):
+        super(FigureFormatter2D, self).__init__()
+        self.arg = arg
+      
+    
+      
+    # def run(self):
+    #     title_string = ' '.join([active_pf_1D_identifier_string])
+    #     subtitle_string = ' '.join([f'{active_placefields1D.config.str_for_display(False)}'])
+        
+    #     plt.gcf().suptitle(title_string, fontsize='14')
+    #     plt.gca().set_title(subtitle_string, fontsize='10') 
+        
+    # def save_to_disk(self):
+    #     active_pf_1D_filename_prefix_string = f'Placefield1D-{active_epoch_name}'
+    #     if variant_identifier_label is not None:
+    #         active_pf_1D_filename_prefix_string = '-'.join([active_pf_1D_filename_prefix_string, variant_identifier_label])
+    #     active_pf_1D_filename_prefix_string = f'{active_pf_1D_filename_prefix_string}-' # it always ends with a '-' character
+    #     common_basename = active_placefields1D.str_for_filename(prefix_string=active_pf_1D_filename_prefix_string)
+    #     active_pf_1D_output_filepath = active_config.plotting_config.get_figure_save_path(common_parent_foldername, common_basename).with_suffix('.png')
+    #     print('Saving 1D Placefield image out to "{}"...'.format(active_pf_1D_output_filepath), end='')
+    #     plt.savefig(active_pf_1D_output_filepath)
+    #     print('\t done.')
+
 """ Further matplot exploration/prototyping
 
 # active_fig_mngr = plt.get_current_fig_manager()
@@ -127,3 +167,66 @@ class PhoActiveFigureManager2D(object):
 
 
 """
+
+
+    
+
+
+def raise_window(figname=None):
+    """ find the backend and use the appropriate method """
+    def _raise_window_Qt(figname=None):
+        """
+        Raise the plot window for Figure figname to the foreground.  If no argument
+        is given, raise the current figure.
+
+        This function will only work with a Qt graphics backend.  It assumes you
+        have already executed the command 'import matplotlib.pyplot as plt'.
+
+        Usage:
+            plt.figure('quartic')
+            plt.plot(x, x**4 - x**2, 'b', lw=3)
+            raise_window_Qt('quartic')
+
+        """
+        if figname: plt.figure(figname)
+        cfm = plt.get_current_fig_manager()
+        cfm.window.activateWindow()
+        cfm.window.raise_()
+        return cfm
+
+    def _raise_window_Tk(figname=None):
+        """
+        Raise the plot window for Figure figname to the foreground.  If no argument
+        is given, raise the current figure.
+
+        This function will only work with a Tk graphics backend.  It assumes you
+        have already executed the command 'import matplotlib.pyplot as plt'.
+
+        Usage:
+            plt.figure('quartic')
+            plt.plot(x, x**4 - x**2, 'b', lw=3)
+            raise_window_Tk('quartic')
+
+        """
+
+        if figname: plt.figure(figname)
+        cfm = plt.get_current_fig_manager()
+        cfm.window.attributes('-topmost', True)
+        cfm.window.attributes('-topmost', False)
+        return cfm
+
+    # TODO: get current backend. Assumes Qt currently.
+    backend_name = mpl.get_backend()
+    if backend_name == 'TkAgg':
+        return _raise_window_Tk(figname=figname)
+    elif backend_name == 'WXAgg':
+        raise NotImplementedError
+    elif backend_name == 'Qt5Agg':
+        return _raise_window_Qt(figname=figname)
+    else:
+        print(f"Unknown matplotlib backend type: {backend_name}")
+        raise NotImplementedError
+        
+    
+    
+

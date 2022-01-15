@@ -159,6 +159,24 @@ def build_pairwise_indicies(target_indicies, debug_print=False):
     return out_pair_indicies
 
 
+def get_dict_subset(a_dict, included_keys=None):
+    """Gets a subset of a dictionary from a list of keys (included_keys)
+
+    Args:
+        a_dict ([type]): [description]
+        included_keys ([type], optional): [description]. Defaults to None.
+
+    Returns:
+        [type]: [description]
+    """
+    if included_keys is not None:
+        return {included_key:a_dict[included_key] for included_key in included_keys} # filter the dictionary for only the keys specified
+    else:
+        return a_dict
+
+
+
+
 # def extract_windows_vectorized(array, clearing_time_index, max_time, sub_window_size):
 #     start = clearing_time_index + 1 - sub_window_size + 1
     

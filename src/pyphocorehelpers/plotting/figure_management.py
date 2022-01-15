@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 class PhoActiveFigureManager2D(object):
     """Offers convenience methods for accessing and updating the extent (size and position on the screen) for the current Matplotlib figures (via its current_figure_manager property."""
+    debug_print = False
     
     @property
     def current_figure_manager(self):
@@ -38,7 +39,8 @@ class PhoActiveFigureManager2D(object):
         # get the QTCore PyRect object
         geom = active_fig_mngr.window.geometry() # PyQt5.QtCore.QRect(8, 31, 5284, 834)
         x,y,dx,dy = geom.getRect() # (8, 31, 5284, 834)
-        print(f'geom: {geom}')
+        if cls.debug_print:
+            print(f'geom: {geom}')
         extent = (x,y,dx,dy)
         return geom, extent
 
@@ -104,6 +106,9 @@ class PhoActiveFigureManager2D(object):
         )
 
 
+
+
+    
 class FigureFormatter2D(object):
     """
     docstring for FigureFormatter2D.

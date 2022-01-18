@@ -17,6 +17,7 @@ class DynamicParameters(DiffableObject, MutableMapping):
 
     """
     debug_enabled = False
+    outcome_on_item_not_found = None
 
     def __init__(self, **kwargs):
         self._mapping = {} # initialize the base dictionary object where things will be stored
@@ -84,7 +85,10 @@ class DynamicParameters(DiffableObject, MutableMapping):
             # try to return the value of the dictionary 
             return self[item]
         except KeyError as err:
-            print(f"DynamicParameters.__getattr__(self, item: {item}) KeyError: Attribute could not be found in dictionary either!\n\t KeyError: {err}")
+            if DynamicParameters.debug_enabled:
+                print(f"DynamicParameters.__getattr__(self, item: {item}) KeyError: Attribute could not be found in dictionary either!\n\t KeyError: {err}")
+            
+            # if DynamicParameters.outcome_on_item_not_found:
             # return super(DynamicParameters, self).__setattr__(item, 'orphan')
             raise
         # except AttributeError as err:

@@ -99,16 +99,18 @@ class DynamicParameters(DiffableObject, MutableMapping):
             raise
 
 
-#     def __setattr__(self, attr, value):
-#         if attr == "__setstate__":
-#             return lambda: None
-#         elif attr == "data":
-#             # Access to the raw data variable
-#             self.data = value # to initialize the raw data
-#         else:
-#             if DynamicParameters.debug_enabled:
-#                 print(f'DynamicParameters.__setattr__(self, attr, value): attr {attr}, value {value}')
-#             self[attr] = value
+    def __setattr__(self, attr, value):
+        if attr == '__setstate__':
+            return lambda: None
+        elif ((attr == '_mapping') or (attr == '_keys_at_init')):
+            # Access to the raw data variable
+            # object.__setattr__(self, name, value)
+            super(DynamicParameters, self).__setattr__(attr, value) # call super for valid properties
+            # self._mapping = value # this would be infinitely recurrsive!
+        else:
+            if DynamicParameters.debug_enabled:
+                print(f'DynamicParameters.__setattr__(self, attr, value): attr {attr}, value {value}')
+            self[attr] = value
 
     # def _original_attributes():
     #     self._keys_at_init

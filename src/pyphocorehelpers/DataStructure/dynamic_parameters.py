@@ -1,8 +1,7 @@
 
 import collections
 from collections.abc import MutableMapping
-
-from mixins.diffable import DiffableObject
+from pyphocorehelpers.mixins.diffable import DiffableObject
 
 
 class DynamicParameters(DiffableObject, MutableMapping):

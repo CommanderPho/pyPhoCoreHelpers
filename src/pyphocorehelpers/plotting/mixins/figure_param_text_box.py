@@ -2,7 +2,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.transforms import IdentityTransform
 
-def add_figure_text_box(fig, render_text, bbox_args=dict(), text_args=dict()):
+def add_figure_text_box(fig, render_text, x=20, y=20, bbox_args=dict(), text_args=dict()):
     """ Adds a small box containing the potentially multi-line render_text to the matplotlib figure. 
     Usage:
         render_text = active_session_computation_config.str_for_attributes_list_display(key_val_sep_char=':')
@@ -16,7 +16,9 @@ def add_figure_text_box(fig, render_text, bbox_args=dict(), text_args=dict()):
     # place a text box in upper left in axes coords
     # ax.text(0.05, 0.95, render_text, transform=ax.transAxes, fontsize=12, verticalalignment='top', bbox=props)
     # active_properties_box_text = fig.text(20, 20, render_text, color="k", fontsize=12, transform=IdentityTransform(), bbox=props)
-    active_properties_box_text = fig.text(**({'x': 20, 'y': 20, 'text': render_text, 'color': 'k', 'fontsize': 12, 'transform': IdentityTransform(), 'bbox':bbox_props} | text_args))
+    # active_properties_box_text = fig.text(**({'x': 20, 'y': 20, 'text': render_text, 'color': 'k', 'fontsize': 12, 'transform': IdentityTransform(), 'bbox':bbox_props} | text_args))    
+    active_properties_box_text = fig.text(x, y, render_text, **({'color': 'k', 'fontsize': 12, 'transform': IdentityTransform(), 'bbox':bbox_props} | text_args))
+    
     return active_properties_box_text
 
 

@@ -148,4 +148,15 @@ class DynamicParameters(DiffableObject, MutableMapping):
     # For diffable parameters:
     def diff(self, other_object):
         return DiffableObject.compute_diff(self, other_object)
+
+    # Helper initialization methods:    
+    # For initialization from a different dictionary-backed object:
+    @classmethod
+    def init_from_dict(cls, a_dict):
+        return cls(**a_dict) # expand the dict as input args.
     
+    @classmethod
+    def init_from_object(cls, an_object):
+        # test to see if the object is dict-backed:
+        obj_dict_rep = an_object.__dict__
+        return cls.init_from_dict(obj_dict_rep)

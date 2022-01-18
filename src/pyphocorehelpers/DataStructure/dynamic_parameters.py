@@ -2,8 +2,10 @@
 import collections
 from collections.abc import MutableMapping
 
+from mixins.diffable import DiffableObject
 
-class DynamicParameters(MutableMapping):
+
+class DynamicParameters(DiffableObject, MutableMapping):
     """ A class that permits flexible prototyping of parameters and data needed for computations, while still allowing development-time guidance on available members.
     
         From https://treyhunner.com/2019/04/why-you-shouldnt-inherit-from-list-and-dict-in-python/#When_making_a_custom_list_or_dictionary,_remember_you_have_options
@@ -15,10 +17,10 @@ class DynamicParameters(MutableMapping):
         The abstract base classes in collections.abc are useful when you want something that’s a sequence or a mapping but is different enough from a list or a dictionary that you really should be making your own custom class.
 
     """
-    debug_enabled = True
+    debug_enabled = False
 
     def __init__(self, **kwargs):
-        self.mapping = {} # initialize the base dictionary object where things will be stored
+        self._mapping = {} # initialize the base dictionary object where things will be stored
         self._keys_at_init = list(kwargs.keys())
         self.update(kwargs)
         # for key, value in kwargs.items():
@@ -28,24 +30,24 @@ class DynamicParameters(MutableMapping):
     def __getitem__(self, key):
         if DynamicParameters.debug_enabled:
             print(f'DynamicParameters.__getitem__(self, key): key {key}')
-        return self.mapping[key]
+        return self._mapping[key]
 
     def __delitem__(self, key):
         if DynamicParameters.debug_enabled:
             print(f'DynamicParameters.__delitem__(self, key): key {key}')
-        del self.mapping[key]
+        del self._mapping[key]
 
     def __setitem__(self, key, value):
         if DynamicParameters.debug_enabled:
             print(f'DynamicParameters.__setitem__(self, key, value): key {key}, value {value}')
-        self.mapping[key] = value
+        self._mapping[key] = value
 
     def __iter__(self):
-        return iter(self.mapping)
+        return iter(self._mapping)
     def __len__(self):
-        return len(self.mapping)
+        return len(self._mapping)
     def __repr__(self):
-        return f"{type(self).__name__}({self.mapping})"
+        return f"{type(self).__name__}({self._mapping})"
 
     # Extra/Extended
     def __dir__(self):
@@ -82,9 +84,13 @@ class DynamicParameters(MutableMapping):
         try:
             # try to return the value of the dictionary 
             return self[item]
-        except AttributeError as err:
-            print(f"AttributeError: {err}")
-            return super(DynamicParameters, self).__setattr__(item, 'orphan')
+        except KeyError as err:
+            print(f"DynamicParameters.__getattr__(self, item: {item}) KeyError: Attribute could not be found in dictionary either!\n\t KeyError: {err}")
+            # return super(DynamicParameters, self).__setattr__(item, 'orphan')
+            raise
+        # except AttributeError as err:
+        #     print(f"AttributeError: {err}")
+        #     return super(DynamicParameters, self).__setattr__(item, 'orphan')
         except BaseException as err:
             print(f"Unexpected {err=}, {type(err)=}")
             raise
@@ -101,21 +107,46 @@ class DynamicParameters(MutableMapping):
 #                 print(f'DynamicParameters.__setattr__(self, attr, value): attr {attr}, value {value}')
 #             self[attr] = value
 
+    # def _original_attributes():
+    #     self._keys_at_init
+    
+    @property
+    def all_attributes(self):
+        """Any attributes on the object. """
+        return list(self.keys())
+    
+    @property
+    def original_attributes(self):
+        """The attributes that were provided initially at init. """
+        return self._keys_at_init
+    
+    @property
+    def dynamically_added_attributes(self):
+        """The attributes that were added dynamically post-init."""
+        return list(set(self.all_attributes) - set(self.original_attributes))
+    
+    
 
-#     def __hash__(self):
-#         """ custom hash function that allows use in dictionary just based off of the values and not the object instance. """
-#         # return hash((self.age, self.name))
-#         member_names_tuple = list(self.__dict__.keys())
-#         values_tuple = list(self.__dict__.values())
-#         combined_tuple = tuple(member_names_tuple + values_tuple)
-#         return hash(combined_tuple)
+    def __hash__(self):
+        """ custom hash function that allows use in dictionary just based off of the values and not the object instance. """
+        # return hash((self.age, self.name))
+        member_names_tuple = list(self.keys())
+        values_tuple = list(self.values())
+        combined_tuple = tuple(member_names_tuple + values_tuple)
+        return hash(combined_tuple)
     
     
     # def _unlisted_parameter_strings(self):
     #     """ returns the string representations of all key/value pairs that aren't normally defined. """
     #     # Dump all arguments into parameters.
     #     out_list = []
-    #     for key, value in self.__dict__.items():
+    #     for key, value in self.items():
     #         if key not in PlacefieldComputationParameters.variable_names:
     #             out_list.append(f"{key}_{value:.2f}")
     #     return out_list
+    
+    
+    # For diffable parameters:
+    def diff(self, other_object):
+        return DiffableObject.compute_diff(self, other_object)
+    

@@ -104,3 +104,14 @@ def print_seconds_human_readable(seconds):
     print(timestamp) # print the timestamp
     return h, m, s, fractional_seconds
 
+
+def print_object_memory_usage(obj):
+    """ prints the size of the passed in object in MB (Megabytes)
+    Usage:
+        print_object_memory_usage(curr_bapun_pipeline.sess)
+    """
+    size_bytes = obj.__sizeof__() # 1753723032
+    size_MB = size_bytes/(1024*1024)
+    object_size_string_MB = f'{size_MB} MB'
+    print(f'object size: {object_size_string_MB}')
+    return size_MB

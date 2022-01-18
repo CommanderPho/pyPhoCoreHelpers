@@ -11,13 +11,12 @@ class PhoActiveFigureManager2D(object):
     def current_figure_manager(self):
         """The current_figure_manager property."""
         return plt.get_current_fig_manager() # get the active figure manager
-
+ 
     @property
-    def window_extent(self):
-        """The window_extent property."""
-        return plt.get_current_fig_manager() # get the active figure manager
- 
- 
+    def figure_nums(self):
+        """The figure_nums property."""
+        return plt.get_fignums()
+  
     @property
     def window_extent(self):
         """The window_extent property."""

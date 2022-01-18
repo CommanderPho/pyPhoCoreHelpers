@@ -33,7 +33,7 @@ class TestDynamicParametersMethods(unittest.TestCase):
         self.test2 = None
 
     def test_empty_params(self):
-        self.assertEqual(len(self.test.keys()), 0, f'Should have zero members but instead has {len(self.test.keys())}')
+        self.assertEqual(len(self.test1.keys()), 0, f'Should have zero members but instead has {len(self.test1.keys())}')
 
     # def test_empty_params_add_member(self):
     #     self.assertEqual(len(self.test.keys()))

@@ -18,7 +18,7 @@ except ModuleNotFoundError as e:
     print('pyphocorehelpers_folder: {}'.format(pyphocorehelpers_folder))
     sys.path.insert(0, str(src_folder))
 finally:
-    from pyphocorehelpers.indexing_helpers import get_bin_centers, build_spanning_bins, BinningInfo, compute_spanning_bins
+    from pyphocorehelpers.indexing_helpers import get_bin_centers, build_spanning_bins, BinningInfo, compute_spanning_bins, build_spanning_grid_matrix
 
 
 class TestIndexingMethods(unittest.TestCase):
@@ -27,13 +27,38 @@ class TestIndexingMethods(unittest.TestCase):
         # Hardcoded:
         self.integer_bin_edges = np.array([0, 1, 2, 3, 4, 5])
         self.float_bin_edges = np.array([0.1, 1.1, 2.1, 3.1, 4.1, 5.1])
-        
+        self.test_x_values = np.array([ 25.81175029,  29.58859215,  33.36543401,  37.14227587,
+                40.91911773,  44.69595959,  48.47280146,  52.24964332,
+                56.02648518,  59.80332704,  63.5801689 ,  67.35701076,
+                71.13385263,  74.91069449,  78.68753635,  82.46437821,
+                86.24122007,  90.01806194,  93.7949038 ,  97.57174566,
+            101.34858752, 105.12542938, 108.90227124, 112.67911311,
+            116.45595497, 120.23279683, 124.00963869, 127.78648055,
+            131.56332241, 135.34016428, 139.11700614, 142.893848  ,
+            146.67068986, 150.44753172, 154.22437359, 158.00121545,
+            161.77805731, 165.55489917, 169.33174103, 173.10858289,
+            176.88542476, 180.66226662, 184.43910848, 188.21595034,
+            191.9927922 , 195.76963406, 199.54647593, 203.32331779,
+            207.10015965, 210.87700151, 214.65384337, 218.43068524,
+            222.2075271 , 225.98436896, 229.76121082, 233.53805268,
+            237.31489454, 241.09173641, 244.86857827, 248.64542013,
+            252.42226199, 256.19910385, 259.97594571, 263.75278758])
+
+        self.test_y_values = np.array([124.38134129, 125.42466822, 126.46799515, 127.51132208,
+            128.55464901, 129.59797594, 130.64130287, 131.6846298 ,
+            132.72795673, 133.77128366, 134.8146106 , 135.85793753,
+            136.90126446, 137.94459139, 138.98791832, 140.03124525,
+            141.07457218, 142.11789911, 143.16122604, 144.20455297,
+            145.2478799 , 146.29120684, 147.33453377, 148.3778607 ,
+            149.42118763, 150.46451456, 151.50784149, 152.55116842,
+            153.59449535])
         # unit_specific_binned_spike_counts, out_digitized_variable_bins, out_binning_info = ZhangReconstructionImplementation.time_bin_spike_counts_N_i(sess.spikes_df.copy(), time_bin_size, debug_print=debug_print) # unit_specific_binned_spike_counts.to_numpy(): (40, 85841)
 
     def tearDown(self):
         self.integer_bin_edges=None
         self.float_bin_edges = None
-        
+        self.test_x_values = None
+        self.test_y_values = None
         
     # def test_time_bin_spike_counts_N_i(self, out_digitized_variable_bins, out_binning_info):
     #     np.shape(out_digitized_variable_bins) # (85842,), array([  22.30206346,   22.32206362,   22.34206378, ..., 1739.09557005, 1739.11557021, 1739.13557036])
@@ -44,6 +69,21 @@ class TestIndexingMethods(unittest.TestCase):
         bin_centers = get_bin_centers(self.integer_bin_edges)
         self.assertEqual((np.shape(self.integer_bin_edges)[0] - 1), np.shape(bin_centers)[0], 'bin_centers should be one element smaller than bin_edges')
 
+    def test_build_spanning_grid_matrix(self):
+
+        all_positions_matrix, flat_all_positions_matrix, original_data_shape = build_spanning_grid_matrix(self.test_x_values, self.test_y_values)
+        # all_positions_matrix[0,0,:] # array([ 25.81175029, 124.38134129])
+        print(f'all_positions_matrix[0,:,:]: {np.shape(all_positions_matrix[0,:,:])}') # constant x value, spans over all y-values
+        self.assertListEqual(list(all_positions_matrix[0,:,1]), list(self.test_y_values), f'should be constant x value, spans over all y-values')
+        # np.shape(all_positions_matrix[0,:,:]) # (29, 2)
+        self.assertListEqual(list(all_positions_matrix[:,0,0]), list(self.test_x_values), f'should be constant y value, spans over all x-values')
+
+        self.assertEqual(np.shape(all_positions_matrix)[2], 2, "third dimension should be of size 2 (for x, y coords)")
+        # all_positions_matrix[:,0,:] # constant y value, spans over all x-values. 
+        # np.shape(all_positions_matrix[:,0,:]) # (64, 2)
+
+        # P_x = np.reshape(pf.occupancy, (-1, 1)) # occupancy gives the P(x) in general.
+        # F = np.hstack(F_i) # Concatenate each individual F_i to produce F
 
     def test_compute_spanning_bins_num_bins_mode(self):
         fixed_num_bins = 32

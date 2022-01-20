@@ -12,7 +12,72 @@ class BinningInfo(object):
     num_bins: int
     bin_indicies: np.ndarray
     
-    
+
+def build_spanning_grid_matrix(x_values, y_values, debug_print=False):
+    """ builds a 2D matrix with entries spanning x_values across axis 0 and spanning y_values across axis 1.
+        
+        For example, used to build a grid of position points from xbins and ybins.
+    Usage:
+        all_positions_matrix, flat_all_positions_matrix, original_data_shape = build_all_positions_matrix(active_one_step_decoder.xbin_centers, active_one_step_decoder.ybin_centers)
+    """
+    num_rows = len(y_values)
+    num_cols = len(x_values)
+
+    original_data_shape = (num_cols, num_rows) # original_position_data_shape: (64, 29)
+    if debug_print:
+        print(f'original_position_data_shape: {original_data_shape}')
+    x_only_matrix = np.repeat(np.expand_dims(x_values, 1).T, num_rows, axis=0).T
+    # np.shape(x_only_matrix) # (29, 64)
+    flat_x_only_matrix = np.reshape(x_only_matrix, (-1, 1))
+    if debug_print:
+        print(f'np.shape(x_only_matrix): {np.shape(x_only_matrix)}, np.shape(flat_x_only_matrix): {np.shape(flat_x_only_matrix)}') # np.shape(x_only_matrix): (64, 29), np.shape(flat_x_only_matrix): (1856, 1)
+    y_only_matrix = np.repeat(np.expand_dims(y_values, 1), num_cols, axis=1).T
+    # np.shape(y_only_matrix) # (29, 64)
+    flat_y_only_matrix = np.reshape(y_only_matrix, (-1, 1))
+
+    # flat_all_positions_matrix = np.array([np.append(an_x, a_y) for (an_x, a_y) in zip(flat_x_only_matrix, flat_y_only_matrix)])
+    flat_all_entries_matrix = [tuple(np.append(an_x, a_y)) for (an_x, a_y) in zip(flat_x_only_matrix, flat_y_only_matrix)] # a list of position tuples (containing two elements)
+    # reconsitute its shape:
+    all_entries_matrix = np.reshape(flat_all_entries_matrix, (original_data_shape[0], original_data_shape[1], 2))
+    if debug_print:
+        print(f'np.shape(all_positions_matrix): {np.shape(all_entries_matrix)}') # np.shape(all_positions_matrix): (1856, 2) # np.shape(all_positions_matrix): (64, 29, 2)
+        print(f'flat_all_positions_matrix[0]: {flat_all_entries_matrix[0]}\nall_positions_matrix[0,0,:]: {all_entries_matrix[0,0,:]}')
+
+    return all_entries_matrix, flat_all_entries_matrix, original_data_shape
+
+
+
+
+# class MatrixFlattenTransformer(object):
+# """ Supposed to allow easy transformation of data from a flattened representation to the original.
+# Usage:
+#     trans = MatrixFlattenTransformer(original_data_shape)
+#     test_all_positions_matrix = trans.unflatten(flat_all_positions_matrix)
+#     print(f'np.shape(test_all_positions_matrix): {np.shape(test_all_positions_matrix)}')
+# """
+#     """ TODO: does not yet work. for MatrixFlattenTransformer."""
+#     def __init__(self, original_data_shape):
+#         super(MatrixFlattenTransformer, self).__init__()
+#         self.original_data_shape = original_data_shape
+
+#     def flatten(self, data):
+#         data_shape = np.shape(data)
+#         original_flat_shape = np.prod(self.original_data_shape)
+#         # assert np.shape(data) == self.original_data_shape, f"data passed in to flatten (with shape {np.shape(data)}) is not equal to the original data shape: {self.original_data_shape}"
+#         assert data_shape == original_flat_shape, f"data passed in to flatten (with shape {data_shape}) is not equal to the original shape's number of items (shape: {self.original_data_shape}, original_flat_shape: {original_flat_shape}"
+#         return np.reshape(data, (-1, 1))
+        
+#     def unflatten(self, flat_data):
+#         flat_data_shape = np.shape(flat_data)
+#         original_data_shape_ndim = len(self.original_data_shape)
+#         # assert (flat_data_shape[:original_data_shape_ndim] == self.original_data_shape), f"data passed in to unflatten (with shape {flat_data_shape}) must match the original data shape ({self.original_data_shape}), at least up to the number of dimensions in the original"
+#         additional_dimensions = flat_data_shape[original_data_shape_ndim:]        
+#         return np.reshape(flat_data, (self.original_data_shape[0], self.original_data_shape[1], *additional_dimensions))
+        
+
+
+
+
 def build_spanning_bins(variable_values, max_bin_size:float, debug_print=False):
     """ DEPRICATED! out_digitized_variable_bins include both endpoints (bin edges)
 

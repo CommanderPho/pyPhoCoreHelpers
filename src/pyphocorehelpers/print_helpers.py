@@ -1,4 +1,5 @@
 from typing import List, Optional, OrderedDict  # for OrderedMeta
+import numpy as np
 
 
 class SimplePrintable:
@@ -21,9 +22,6 @@ class PrettyPrintable:
         # return self.as_array().__repr__() # p.text(repr(self))
 
 
-
-
-    
 class WrappingMessagePrinter(object):
     """ 
 
@@ -84,7 +82,46 @@ class WrappingMessagePrinter(object):
     #     else:
     #         print(f'{action} {contents_description} results to {str(filepath)}...', end=print_line_ending)
         
-        
+
+
+def debug_dump_object_member_shapes(obj):
+    """ prints the name, type, and shape of all member variables. 
+    Usage:
+        debug_dump_object_member_shapes(active_one_step_decoder)
+        >>>
+            time_bin_size:	||	SCALAR	||	<class 'float'>
+            pf:	||	SCALAR	||	<class 'neuropy.analyses.placefields.PfND'>
+            spikes_df:	||	np.shape: (819170, 21)	||	<class 'pandas.core.frame.DataFrame'>
+            debug_print:	||	SCALAR	||	<class 'bool'>
+            neuron_IDXs:	||	np.shape: (64,)	||	<class 'numpy.ndarray'>
+            neuron_IDs:	||	np.shape: (64,)	||	<class 'list'>
+            F:	||	np.shape: (1856, 64)	||	<class 'numpy.ndarray'>
+            P_x:	||	np.shape: (1856, 1)	||	<class 'numpy.ndarray'>
+            unit_specific_time_binned_spike_counts:	||	np.shape: (64, 1717)	||	<class 'numpy.ndarray'>
+            time_window_edges:	||	np.shape: (1718,)	||	<class 'numpy.ndarray'>
+            time_window_edges_binning_info:	||	SCALAR	||	<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>
+            total_spike_counts_per_window:	||	np.shape: (1717,)	||	<class 'numpy.ndarray'>
+            time_window_centers:	||	np.shape: (1717,)	||	<class 'numpy.ndarray'>
+            time_window_center_binning_info:	||	SCALAR	||	<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>
+            flat_p_x_given_n:	||	np.shape: (1856, 1717)	||	<class 'numpy.ndarray'>
+            p_x_given_n:	||	np.shape: (64, 29, 1717)	||	<class 'numpy.ndarray'>
+            most_likely_position_flat_indicies:	||	np.shape: (1717,)	||	<class 'numpy.ndarray'>
+            most_likely_position_indicies:	||	np.shape: (2, 1717)	||	<class 'numpy.ndarray'>
+        <<< (end output example)
+    """
+    for a_property_name, a_value in obj.__dict__.items():
+        out_strings_arr = [f'{a_property_name}:']
+        # np.isscalar(a_value)
+        a_shape = np.shape(a_value)
+        if a_shape != ():
+            out_strings_arr.append(f'np.shape: {a_shape}')
+        else:
+            out_strings_arr.append(f'SCALAR')
+            
+        out_strings_arr.append(f'{str(type(a_value))}')
+        out_string = '\t||\t'.join(out_strings_arr)
+        print(out_string)
+
 
 def print_seconds_human_readable(seconds):
     """ prints the seconds arguments as a human-redable HH::MM:SS.FRACTIONAL time. """

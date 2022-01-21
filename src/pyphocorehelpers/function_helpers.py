@@ -1,6 +1,8 @@
 from functools import reduce
 from itertools import accumulate
 from typing import List, Callable # for function composition
+from scipy.signal import find_peaks # peak-finding version 1
+from scipy.signal import argrelextrema # peak-finding version 2
 
 
 def compose_functions(*args):
@@ -21,6 +23,9 @@ def compose_functions(*args):
     return _
 
 
+
+# Peak Finding:
+# https://plotly.com/python/peak-finding/
 
 
 

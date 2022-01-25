@@ -168,11 +168,11 @@ def debug_print(*args, **kwargs):
     for i, an_ordered_arg in enumerate(args):
         out_strings.append(f'args[{i}]: {args[i]}')
         
-    for key, val in kwargs:
+    for key, val in kwargs.items():
         out_strings.append(f'{key}: {val}')
 
     out_string = '\n'.join(out_strings)
-    print(out_strings)
+    print(out_string)
     
 
 def print_callexp(*args, **kwargs):

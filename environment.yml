@@ -37,8 +37,18 @@ dependencies:
   # - optuna
   # - dask
   # - snakeviz
+    # DEVELOPMENT ONLY PACKAGES (could also be kept in a separate environment file)
+  - jupyterlab
+  - pytest
+  - pytest-cov
+  - tox
+  - pre_commit
+  - nbdime
+  - nbstripout
+  - sphinx
+  - recommonmark
   - pip:
-     - -e .  # install git checkout of pyPhoCoreHelpers in editable mode
+    #  - -e .  # install git checkout of pyPhoCoreHelpers in editable mode
      - pyPhoCoreHelpers
     #  - NeuroPy
      # add here only pip-packages that are not available in conda/conda-forge! E.g.:
@@ -49,13 +59,4 @@ dependencies:
      # - neptune-client
      # - neptune-contrib
 
-  # DEVELOPMENT ONLY PACKAGES (could also be kept in a separate environment file)
-  - jupyterlab
-  - pytest
-  - pytest-cov
-  - tox
-  - pre_commit
-  - nbdime
-  - nbstripout
-  - sphinx
-  - recommonmark
+

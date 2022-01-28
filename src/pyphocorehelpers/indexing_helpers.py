@@ -394,39 +394,103 @@ RowColTuple = namedtuple('RowColTuple', 'num_rows num_columns')
 PaginatedGridIndexSpecifierTuple = namedtuple('PaginatedGridIndexSpecifierTuple', 'linear_idx row_idx col_idx data_idx')
 RequiredSubplotsTuple = namedtuple('RequiredSubplotsTuple', 'num_required_subplots num_columns num_rows combined_indicies')
 
-def compute_paginated_grid_config(num_required_subplots, max_num_columns, max_subplots_per_page, data_indicies=None, last_figure_subplots_same_layout=True, debug_print=False):
-    """ Fills row-wise first 
+
+
+def compute_paginated_grid_config(num_required_subplots, max_num_columns, max_subplots_per_page=None, data_indicies=None, last_figure_subplots_same_layout=True, debug_print=False):
+    """ Fills row-wise first, and constrains the subplots values to just those that you need
     Args:
         num_required_subplots ([type]): [description]
         max_num_columns ([type]): [description]
-        max_subplots_per_page ([type]): [description]
+        max_subplots_per_page ([type]): If None, pagination is effectively disabled and all subplots will be on a single page.
         data_indicies ([type], optional): your indicies into your original data that will also be accessible in the main loop. Defaults to None.
-    """
+        last_figure_subplots_same_layout (bool): if True, the last page has the same number of items (same # columns and # rows) as the previous (full/complete) pages.
+        
+        
+    Example:
     
-    def _compute_subplots_grid_layout(num_page_required_subplots, page_max_num_columns):
+        subplot_no_pagination_configuration, included_combined_indicies_pages, page_grid_sizes = compute_paginated_grid_config(nMapsToShow, max_num_columns=subplots.num_columns, max_subplots_per_page=max_subplots_per_page, data_indicies=included_unit_indicies, last_figure_subplots_same_layout=last_figure_subplots_same_layout)
+        num_pages = len(included_combined_indicies_pages)
+    
+    """
+    def _compute_subplots_grid_layout(num_page_required_subplots: int, page_max_num_columns: int):
         """ For a single page """
         fixed_columns = min(page_max_num_columns, num_page_required_subplots) # if there aren't enough plots to even fill up a whole row, reduce the number of columns
         needed_rows = int(np.ceil(num_page_required_subplots / fixed_columns))
         return RowColTuple(needed_rows, fixed_columns)
     
-    def _compute_num_subplots(num_required_subplots, max_num_columns, data_indicies=None):
+    def _compute_num_subplots(num_required_subplots: int, max_num_columns: int, data_indicies=None):
+        """Computes the RequiredSubplotsTuple from the required number of subplots and the max_num_columns. We start in row[0] and begin filling to the right until we exceed max_num_columns. To avoid going over, we add a new row and continue from there.
+        """
         linear_indicies = np.arange(num_required_subplots)
         if data_indicies is None:
             data_indicies = np.arange(num_required_subplots) # the data_indicies are just the same as the lienar indicies unless otherwise specified
-        (total_needed_rows, fixed_columns) = _compute_subplots_grid_layout(num_required_subplots, max_num_columns)
+        (total_needed_rows, fixed_columns) = _compute_subplots_grid_layout(num_required_subplots, max_num_columns) # get the result for a single page before moving on
         all_row_column_indicies = np.unravel_index(linear_indicies, (total_needed_rows, fixed_columns)) # inverse is: np.ravel_multi_index(row_column_indicies, (needed_rows, fixed_columns))
         all_combined_indicies = [PaginatedGridIndexSpecifierTuple(linear_indicies[i], all_row_column_indicies[0][i], all_row_column_indicies[1][i], data_indicies[i]) for i in np.arange(len(linear_indicies))]
         return RequiredSubplotsTuple(num_required_subplots, fixed_columns, total_needed_rows, all_combined_indicies)
 
     subplot_no_pagination_configuration = _compute_num_subplots(num_required_subplots, max_num_columns=max_num_columns, data_indicies=data_indicies)
+    
+    # once we have the result for a single page, we paginate it using the chunks function to easily separate it into pages.
+    if max_subplots_per_page is None:
+        max_subplots_per_page = num_required_subplots # all subplots must fit on a single page.
     included_combined_indicies_pages = [list(chunk) for chunk in chunks(subplot_no_pagination_configuration.combined_indicies, max_subplots_per_page)]
     
     if last_figure_subplots_same_layout:
         page_grid_sizes = [RowColTuple(subplot_no_pagination_configuration.num_rows, subplot_no_pagination_configuration.num_columns) for a_page in included_combined_indicies_pages]
-        
     else:
+        # If it isn't required to have the same layout as the previous (full) pages, recompute the correct number of columns for just this page. This deals with the case when not even a full row is filled.
         page_grid_sizes = [_compute_subplots_grid_layout(len(a_page), subplot_no_pagination_configuration.num_columns) for a_page in included_combined_indicies_pages]
 
     if debug_print:
         print(f'page_grid_sizes: {page_grid_sizes}')
     return subplot_no_pagination_configuration, included_combined_indicies_pages, page_grid_sizes
+
+
+
+
+# def test_compute_paginated_grid_config(subplots:RowColTuple=(40, 3), debug_print=False):
+#      # Paging Management: Constrain the subplots values to just those that you need
+#     subplot_no_pagination_configuration, included_combined_indicies_pages, page_grid_sizes = compute_paginated_grid_config(nMapsToShow, max_num_columns=subplots.num_columns, max_subplots_per_page=None, data_indicies=included_unit_indicies, last_figure_subplots_same_layout=True)
+#     num_pages = len(included_combined_indicies_pages)
+
+#     nfigures = num_pages
+    
+    
+#     # New page-based version:
+#     for page_idx in np.arange(num_pages):
+#         if debug_print:
+#             print(f'page_idx: {page_idx}')
+#         if grid_layout_mode == 'imagegrid':
+#             active_page_grid = page_gs[page_idx]
+#             # print(f'active_page_grid: {active_page_grid}')
+            
+#         for (a_linear_index, curr_row, curr_col, curr_included_unit_index) in included_combined_indicies_pages[page_idx]:
+#             # Need to convert to page specific:
+#             curr_page_relative_linear_index = np.mod(a_linear_index, int(page_grid_sizes[page_idx].num_rows * page_grid_sizes[page_idx].num_columns))
+#             curr_page_relative_row = np.mod(curr_row, page_grid_sizes[page_idx].num_rows)
+#             curr_page_relative_col = np.mod(curr_col, page_grid_sizes[page_idx].num_columns)
+#             # print(f'a_linear_index: {a_linear_index}, curr_page_relative_linear_index: {curr_page_relative_linear_index}, curr_row: {curr_row}, curr_col: {curr_col}, curr_page_relative_row: {curr_page_relative_row}, curr_page_relative_col: {curr_page_relative_col}, curr_included_unit_index: {curr_included_unit_index}')
+            
+#             cell_idx = curr_included_unit_index
+#             pfmap = active_maps[a_linear_index]
+#             # Get the axis to plot on:
+#             if grid_layout_mode == 'gridspec':
+#                 curr_ax = figures[page_idx].add_subplot(page_gs[page_idx][a_linear_index])
+#             elif grid_layout_mode == 'imagegrid':
+#                 curr_ax = active_page_grid[curr_page_relative_linear_index]
+#             elif grid_layout_mode == 'subplot':
+#                 curr_ax = page_axes[page_idx][curr_page_relative_row, curr_page_relative_col]
+            
+#             # Plot the main heatmap for this pfmap:
+#             im = plot_single_tuning_map_2D(ratemap.xbin, ratemap.ybin, pfmap, ratemap.occupancy, neuron_extended_id=ratemap.neuron_extended_ids[cell_idx], drop_below_threshold=drop_below_threshold, brev_mode=brev_mode, plot_mode=plot_mode, ax=curr_ax)
+            
+#             if enable_spike_overlay:
+#                 spike_overlay_points = curr_ax.plot(spike_overlay_spikes[cell_idx][0], spike_overlay_spikes[cell_idx][1], markersize=2, marker=',', markeredgecolor='red', linestyle='none', markerfacecolor='red', alpha=0.10, label='spike_overlay_points')                
+#                 spike_overlay_sc = curr_ax.scatter(spike_overlay_spikes[cell_idx][0], spike_overlay_spikes[cell_idx][1], s=2, c='white', alpha=0.10, marker=',', label='spike_overlay_sc')
+            
+#             # cbar_ax = fig.add_axes([0.9, 0.3, 0.01, 0.3])
+#             # cbar = fig.colorbar(im, cax=cbar_ax)
+#             # cbar.set_label("firing rate (Hz)")
+            
+            

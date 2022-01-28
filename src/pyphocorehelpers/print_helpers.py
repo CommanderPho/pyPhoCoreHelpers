@@ -29,7 +29,11 @@ class PrettyPrintable:
 
 class WrappingMessagePrinter(object):
     """ 
-
+    
+    Examples:
+        with WrappingMessagePrinter('Saving 2D Placefield image out to "{}"...'.format(active_plot_filepath), begin_line_ending='...', finished_message='done.'):
+            for aFig in active_figures:
+                aFig.savefig(active_plot_filepath)
     """
     def __init__(self, begin_string, begin_line_ending=' ', finished_message='done.', finished_line_ending='\n', returns_string:bool=False, enable_print:bool=True):
         self.begin_string = begin_string
@@ -249,13 +253,7 @@ def print_callexp(*args, **kwargs):
             print("  {:04d} {}".format(lineno, ln))
             lineno += 1
 
-def dbg_dump(
-        *args,
-        dumpopt_stream=sys.stderr,
-        dumpopt_forcename=True,
-        dumpopt_pformat={'indent': 2},
-        dumpopt_srcinfo=1,
-        **kwargs):
+def dbg_dump(*args, dumpopt_stream=sys.stderr, dumpopt_forcename=True, dumpopt_pformat={'indent': 2}, dumpopt_srcinfo=1, **kwargs):
     """ DOES NOT WORK FROM Jupyter-lab notebook, untested in general.
     # pydump
     # A Python3 pretty-printer that also does introspection to detect the original

@@ -1,5 +1,6 @@
 from functools import reduce
 from itertools import accumulate
+from functools import wraps # This convenience func preserves name and docstring
 from typing import List, Callable # for function composition
 from scipy.signal import find_peaks # peak-finding version 1
 from scipy.signal import argrelextrema # peak-finding version 2
@@ -30,3 +31,39 @@ def compose_functions(*args):
 
 
 
+def add_method(cls):
+    """Enables post-hoc method adding to any python class using a simple decorator design. Enables easily "extending" classes at runtime or in jupyter notebooks without magic.
+        From https://gist.github.com/mgarod/09aa9c3d8a52a980bd4d738e52e5b97a
+        Credit to mgarod
+        From article https://mgarod.medium.com/dynamically-add-a-method-to-a-class-in-python-c49204b85bd6
+        
+    Usage: Example of adding two functions to a class named "cls_A"
+        # Non-decorator way (note the function must accept self)
+        # def foo(self):
+        #     print('hello world!')
+        # setattr(cls_A, 'foo', foo)
+
+        # def bar(self, s):
+        #     print(f'Message: {s}')
+        # setattr(cls_A, 'bar', bar)
+
+        # Decorator can be written to take normal functions and make them methods
+        @add_method(cls_A)
+        def foo():
+            print('hello world!')
+
+        @add_method(cls_A)
+        def bar(s):
+            print(f'Message: {s}')
+
+
+
+    """
+    def decorator(func):
+        @wraps(func) 
+        def wrapper(self, *args, **kwargs): 
+            return func(*args, **kwargs)
+        setattr(cls, func.__name__, wrapper)
+        # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
+        return func # returning func means func can still be used normally
+    return decorator

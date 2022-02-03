@@ -19,17 +19,37 @@ class BasicPyQtPlotApp(object):
     # w: pg.GraphicsLayoutWidget
 
 
-def pyqtplot_common_setup(a_title):
+def pyqtplot_common_setup(a_title, app=None, parent_root_widget=None, root_render_widget=None):
+    """[summary]
+
+    Args:
+        a_title ([type]): [description]
+        app ([type], optional): [description]. Defaults to None.
+        parent_root_widget ([type], optional): the parent root widget that contains the root_render_widget. If None, will create a new QMainWindow and add root_render_widget to that. Defaults to None.
+        root_render_widget ([type], optional): The actual widget to render in, a child of parent_root_widget. If None, a new GraphicsLayoutWidget will be created and added to parent_root_widget. Defaults to None.
+
+    Returns:
+        [type]: [description]
+    """
     # Interpret image data as row-major instead of col-major
     pg.setConfigOptions(imageAxisOrder='row-major')
     pg.setConfigOptions(antialias = True)
-    app = pg.mkQApp(a_title)
-    # print(f'type(app): {type(app)}')
-    # Create window to hold the image:
-    win = QtGui.QMainWindow()
-    win.resize(1600, 1600)
-    # Creating a GraphicsLayoutWidget as the central widget
-    w = pg.GraphicsLayoutWidget()
-    win.setCentralWidget(w)
     
-    return w, win, app
+    if app is None:
+        app = pg.mkQApp(a_title)
+    # print(f'type(app): {type(app)}')
+    
+    if root_render_widget is not None:
+        # already have a valid root_render_widget, so we don't care about parent_root_widget either way.
+        pass
+    else:        
+        # Create window to hold the image:
+        if parent_root_widget is None:
+            parent_root_widget = QtGui.QMainWindow()
+            parent_root_widget.resize(1600, 1600)
+        # Creating a GraphicsLayoutWidget as the central widget
+        if root_render_widget is None:
+            root_render_widget = pg.GraphicsLayoutWidget()
+            parent_root_widget.setCentralWidget(root_render_widget)
+    
+    return root_render_widget, parent_root_widget, app

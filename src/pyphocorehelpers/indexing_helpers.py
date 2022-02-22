@@ -49,6 +49,22 @@ def build_spanning_grid_matrix(x_values, y_values, debug_print=False):
 
 
 
+def safe_get(list, index, fallback_value):
+    """Similar to dict's .get(key, fallback) function but for lists. Returns a fallback/default value if the index is not valid for the list, otherwise returns the value at that index.
+    Args:
+        list (_type_): a list-like object
+        index (_type_): an index into the list
+        fallback_value (_type_): any value to be returned when the indexing fails
+
+    Returns:
+        _type_: the value in the list, or the fallback_value is the index is not valid for the list.
+    """
+    try:
+        return list[index]
+    except IndexError:
+        return fallback_value
+
+
 
 # class MatrixFlattenTransformer(object):
 # """ Supposed to allow easy transformation of data from a flattened representation to the original.

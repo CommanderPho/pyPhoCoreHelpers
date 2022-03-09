@@ -154,6 +154,82 @@ def print_seconds_human_readable(seconds):
     return h, m, s, fractional_seconds
 
 
+def print_dataframe_memory_usage(df):
+    """ df: a Pandas.DataFrame such as curr_active_pipeline.sess.spikes_df
+    
+    Usage:
+        from pyphocorehelpers.print_helpers import print_dataframe_memory_usage
+        print_dataframe_memory_usage(curr_active_pipeline.sess.spikes_df)
+
+    >> prints >>:        
+        ======== print_dataframe_memory_usage(df): ========
+        Index                 0.00 MB
+        t                     7.12 MB
+        t_seconds             7.12 MB
+        t_rel_seconds         7.12 MB
+        shank                 3.56 MB
+        cluster               3.56 MB
+        aclu                  3.56 MB
+        qclu                  3.56 MB
+        x                     7.12 MB
+        y                     7.12 MB
+        speed                 7.12 MB
+        traj                  3.56 MB
+        lap                   3.56 MB
+        maze_relative_lap     3.56 MB
+        maze_id               3.56 MB
+        cell_type            35.58 MB
+        flat_spike_idx        3.56 MB
+        x_loaded              7.12 MB
+        y_loaded              7.12 MB
+        lin_pos               7.12 MB
+        unit_id               3.56 MB
+        PBE_id                7.12 MB
+        dtype: object
+        ============================
+        Dataframe Total: 142.303 MB
+    """
+    print(f'======== print_dataframe_memory_usage(df): ========')
+    curr_datatypes = df.dtypes
+    each_columns_usage_bytes = df.memory_usage(deep=True)  # memory usage in bytes. Returns a Pandas.Series with the dataframe's column name as the index and a value in bytes.
+    # each_columns_usage.index
+    curr_column_names = each_columns_usage_bytes.index
+    each_columns_usage_MB = each_columns_usage_bytes.apply(lambda x: x/(1024*1024))
+    # each_columns_usage_MB
+    each_columns_usage_MB_string = each_columns_usage_MB.apply(lambda x: f'{x:.2f} MB') # Round to 2 decimal places (the nearest 0.01 MB)
+    print(f'{each_columns_usage_MB_string}')
+    
+    # Index                 0.00 MB
+    # t                     7.12 MB
+    # t_seconds             7.12 MB
+    # t_rel_seconds         7.12 MB
+    # shank                 3.56 MB
+    # cluster               3.56 MB
+    # aclu                  3.56 MB
+    # qclu                  3.56 MB
+    # x                     7.12 MB
+    # y                     7.12 MB
+    # speed                 7.12 MB
+    # traj                  3.56 MB
+    # lap                   3.56 MB
+    # maze_relative_lap     3.56 MB
+    # maze_id               3.56 MB
+    # cell_type            35.58 MB
+    # flat_spike_idx        3.56 MB
+    # x_loaded              7.12 MB
+    # y_loaded              7.12 MB
+    # lin_pos               7.12 MB
+    # unit_id               3.56 MB
+    # PBE_id                7.12 MB
+    total_df_usage_MB = each_columns_usage_MB.sum()
+    total_df_usage_MB_string = f'Dataframe Total: {total_df_usage_MB:.3f} MB' # round the total to 3 decimal places.
+    
+    print(f'============================\n{total_df_usage_MB_string}')
+    return total_df_usage_MB # return the numeric number of megabytes that this df uses.
+    
+
+    
+    
 def print_object_memory_usage(obj):
     """ prints the size of the passed in object in MB (Megabytes)
     Usage:

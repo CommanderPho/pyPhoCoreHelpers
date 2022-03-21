@@ -30,10 +30,14 @@ from PyQt5 import QtCore
 #             return self._data.columns[col]
 #         return None
 
+# Newer: https://learndataanalysis.org/display-pandas-dataframe-with-pyqt5-qtableview-widget/
+
+
 
 class PandasModel(QtCore.QAbstractTableModel):
     """ https://raw.githubusercontent.com/eyllanesc/stackoverflow/master/questions/44603119/PandasModel.py
     https://stackoverflow.com/questions/44603119/how-to-display-a-pandas-data-frame-with-pyqt5-pyside2
+    
     
     """
     def __init__(self, df = pd.DataFrame(), parent=None): 
@@ -93,6 +97,31 @@ class PandasModel(QtCore.QAbstractTableModel):
         self.layoutChanged.emit()
         
         
+
+# class pandasModel(QtCore.QAbstractTableModel):
+
+#     def __init__(self, data):
+#         QtCore.QAbstractTableModel.__init__(self)
+#         self._data = data
+
+#     def rowCount(self, parent=None):
+#         return self._data.shape[0]
+
+#     def columnCount(self, parnet=None):
+#         return self._data.shape[1]
+
+#     def data(self, index, role=Qt.DisplayRole):
+#         if index.isValid():
+#             if role == Qt.DisplayRole:
+#                 return str(self._data.iloc[index.row(), index.column()])
+#         return None
+
+#     def headerData(self, col, orientation, role):
+#         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+#             return self._data.columns[col]
+#         return None
+    
+    
 
 
 # if __name__ == '__main__':

@@ -21,6 +21,11 @@ from ..print_helpers import SimplePrintable
 #     return {key for key, val in Counter(chain.from_iterable(list_of_sets)).items() if val == 1}
 
 
+"""" 
+I think this isn't used anywhere? I'm not sure though.
+
+
+"""
 
 class DeepChainMap(ChainMap):
     'Variant of ChainMap that allows direct updates to inner scopes'

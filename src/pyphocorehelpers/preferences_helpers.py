@@ -3,7 +3,10 @@ import pandas as pd
 
 
 def set_pho_preferences():
-    """ Sets general preferences for Jupyter Notebooks """
+    """ Sets Pho Hale's general preferences for Jupyter Notebooks
+    
+    Includes increasing the number of rows/columns displayed for Pandas dataframes, and setting the numpy print options to be full-width for the jupyter notebook.
+    """
     ## Pandas display options
     # pd.set_option('display.max_columns', None)  # or 1000
     # pd.set_option('display.max_rows', None)  # or 1000

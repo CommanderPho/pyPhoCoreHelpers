@@ -508,3 +508,50 @@ def dbg_dump(*args, dumpopt_stream=sys.stderr, dumpopt_forcename=True, dumpopt_p
         return None # explicit is better than implicit
     else:
         return output.rstrip()
+    
+    
+def print_value_overview_only(a_value, should_return_string=False):
+    """ prints only basic information about a value, such as its type and shape if it has one. 
+    
+    Usage:
+    
+        test_value_1 = np.arange(15)
+        print_value_overview_only(test_value_1)
+
+        test_value_1 = list(range(15))
+        print_value_overview_only(test_value_1)
+
+        test_value_1 = 15
+        print_value_overview_only(test_value_1)
+            
+        test_value_1 = 'test_string'
+        print_value_overview_only(test_value_1)
+
+        test_value_1 = {'key1': 0.34, 'key2': 'a'}
+        print_value_overview_only(test_value_1)
+
+
+    Note:
+        str(value_type) => "<class 'numpy.ndarray'>"
+        value_type.__name__ => 'ndarray'
+        str(test_value_1.__class__).split("'") => ['<class ', 'numpy.ndarray', '>']
+    """
+    value_type = type(a_value)
+    formatted_value_type_string = str(value_type).split("'")[1] # 'numpy.ndarray'
+    value_shape = np.shape(a_value)
+    if value_shape == ():
+        # empty shape:
+        # print(f'WARNING: value_shape is ().')
+        try:
+            value_shape = len(a_value)
+        except TypeError as e:
+            value_shape = 'scalar'
+        except Exception as e:
+            raise e
+
+    output_string = f'<{formatted_value_type_string}; shape: {value_shape}>'
+    if should_return_string:
+        return output_string
+    else:
+        print(output_string)
+        return None

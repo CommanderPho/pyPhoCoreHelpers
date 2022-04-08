@@ -126,7 +126,7 @@ def debug_dump_object_member_shapes(obj):
         # np.isscalar(a_value)
         a_shape = np.shape(a_value)
         if a_shape != ():
-            out_strings_arr.append(f'np.shape: {a_shape}')
+            out_strings_arr.append(f'shape: {a_shape}')
         else:
             out_strings_arr.append(f'SCALAR')
             

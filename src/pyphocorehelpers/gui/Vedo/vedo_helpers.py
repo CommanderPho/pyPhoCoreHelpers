@@ -39,3 +39,25 @@ class VedoHelpers:
         # originally_was_use_bounds = [an_actor.GetUseBounds() for an_actor in assembly_obj.actors]
         for an_actor in assembly_obj.actors:
             an_actor.useBounds(should_use_bounds)
+            
+    @classmethod
+    def vedo_get_camera_debug_info(cls, camera, enable_print=False):
+        """ Prints the debug info for the passed in camera object.
+        
+        camera: should be a vedo camera object.
+        
+        Usage:
+            vedo_get_camera_debug_info(spike_raster_plt_3d_vedo.plt.camera)
+        
+        """
+        camera_debug_string = f'Camera:\n\tpos: {camera.GetPosition()}, distance: {camera.GetDistance()}, \n\t\tview_angle: {camera.GetViewAngle()}, roll: {camera.GetRoll()}, \n\t\torientation: {camera.GetOrientation()}'
+        if enable_print:
+            print(camera_debug_string)
+        """ 
+        Camera:
+            pos: (66.24993092335596, -75.93948792238676, 25.07713824628677), distance: 81.07267779708857, 
+                view_angle: 30.0, roll: -42.80457161107933, 
+                orientation: (-73.35587868481223, -19.227674343471744, -42.80457161107933)
+        """
+        return camera_debug_string
+    

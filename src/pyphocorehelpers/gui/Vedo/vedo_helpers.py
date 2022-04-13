@@ -3,11 +3,15 @@ from vedo import Mesh, Cone, Plotter, printc, Glyph
 from vedo import Rectangle, Lines, Plane, Axes, merge, colorMap # for StaticVedo_3DRasterHelper
 from vedo import Volume, ProgressBar, show, settings
 
-# from pyphocorehelpers.plotting.vedo_qt_helpers import MainVedoPlottingWindow
-
 
 class VedoHelpers:
-    """docstring for VedoHelpers."""
+    """docstring for VedoHelpers.
+    
+    Import with:
+    
+        from pyphocorehelpers.gui.Vedo.vedo_helpers import VedoHelpers
+    
+    """
 
     @classmethod
     def recurrsively_get_use_bounds(cls, assembly_obj):

@@ -135,8 +135,10 @@ def debug_dump_object_member_shapes(obj):
         print(out_string)
 
 
-def print_seconds_human_readable(seconds):
-    """ prints the seconds arguments as a human-redable HH::MM:SS.FRACTIONAL time. """
+def split_seconds_human_readable(seconds):
+    """ splits the seconds argument into hour, minute, seconds, and fractional_seconds components.
+        Does no formatting itself, but used by format_seconds_human_readable(...) for formatting seconds as a human-redable HH::MM:SS.FRACTIONAL time. 
+    """
     if isinstance(seconds, int):
         whole_seconds = seconds
         fractional_seconds = None
@@ -146,12 +148,22 @@ def print_seconds_human_readable(seconds):
     
     m, s = divmod(whole_seconds, 60)
     h, m = divmod(m, 60)
-    timestamp = '{0:02}:{1:02}:{2:02}'.format(h, m, s)
+    return h, m, s, fractional_seconds
+
+def format_seconds_human_readable(seconds, custom_h_m_s_format_string='{0:02}:{1:02}:{2:02}'):
+    """ returns the formatted string built from the seconds argument as a human-redable HH::MM:SS.FRACTIONAL time. """
+    h, m, s, fractional_seconds = split_seconds_human_readable(seconds)
+    formatted_timestamp_str = custom_h_m_s_format_string.format(h, m, s)
     if fractional_seconds is not None:
         frac_seconds_string = ('%f' % fractional_seconds).rstrip('0').rstrip('.').lstrip('0').lstrip('.') # strips any insignficant zeros from the right, and then '0.' string from the left.        
-        timestamp = '{}:{}'.format(timestamp, frac_seconds_string) # append the fracitonal seconds string to the timestamp string
-    print(timestamp) # print the timestamp
-    return h, m, s, fractional_seconds
+        formatted_timestamp_str = '{}:{}'.format(formatted_timestamp_str, frac_seconds_string) # append the fracitonal seconds string to the timestamp string
+    return h, m, s, fractional_seconds, formatted_timestamp_str
+
+def print_seconds_human_readable(seconds, custom_h_m_s_format_string='{0:02}:{1:02}:{2:02}'):
+    """ prints the seconds arguments as a human-redable HH::MM:SS.FRACTIONAL time. """
+    h, m, s, fractional_seconds, formatted_timestamp_str = format_seconds_human_readable(seconds, custom_h_m_s_format_string=custom_h_m_s_format_string)
+    print(formatted_timestamp_str) # print the timestamp
+    return h, m, s, fractional_seconds, formatted_timestamp_str
 
 
 def print_dataframe_memory_usage(df):

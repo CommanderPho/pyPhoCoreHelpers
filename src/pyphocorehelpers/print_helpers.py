@@ -159,10 +159,12 @@ def format_seconds_human_readable(seconds, h_m_s_format_array = ['{0:02}','{0:02
         test_seconds_array = [0, 10, 95, 1503, 543812]
 
         for test_seconds in test_seconds_array:
+            print_seconds_human_readable(test_seconds, fixed_width=True)
             print_seconds_human_readable(test_seconds)
-            print(_temp_format_seconds_human_readable(test_seconds)[-1])
 
         >> Output >>
+            00:00:00
+            00
             00:00:10
             10
             00:01:35
@@ -177,11 +179,16 @@ def format_seconds_human_readable(seconds, h_m_s_format_array = ['{0:02}','{0:02
     h, m, s, fractional_seconds = split_seconds_human_readable(seconds)
     if fixed_width or (h > 0): 
         included_h_m_s_formatted_output_strs_array.append(h_m_s_format_array[0].format(h))
-    if fixed_width or (m > 0) or (h > 0):
         # if we include hours, we must also include minutes (even if the minute components themselves are zero)
         included_h_m_s_formatted_output_strs_array.append(h_m_s_format_array[1].format(m))
-    if fixed_width or (s > 0) or (m > 0) or (h > 0):
-        # if we include hours, we must also include minutes (even if the minute components themselves are zero)
+        # if we include minutes, we must also include seconds (even if the seconds components themselves are zero)
+        included_h_m_s_formatted_output_strs_array.append(h_m_s_format_array[2].format(s))
+    elif (m > 0):
+        included_h_m_s_formatted_output_strs_array.append(h_m_s_format_array[1].format(m))
+        # if we include minutes, we must also include seconds (even if the seconds components themselves are zero)
+        included_h_m_s_formatted_output_strs_array.append(h_m_s_format_array[2].format(s))
+    else:
+        # Otherwise we have both hours and minutes as zero, but we'll display seconds no matter what (even if they are zero):
         included_h_m_s_formatted_output_strs_array.append(h_m_s_format_array[2].format(s))
 
     formatted_timestamp_str = ':'.join(included_h_m_s_formatted_output_strs_array)
@@ -191,10 +198,9 @@ def format_seconds_human_readable(seconds, h_m_s_format_array = ['{0:02}','{0:02
     return h, m, s, fractional_seconds, formatted_timestamp_str
 
 
-
-def print_seconds_human_readable(seconds, custom_h_m_s_format_string='{0:02}:{1:02}:{2:02}'):
+def print_seconds_human_readable(seconds, h_m_s_format_array = ['{0:02}','{0:02}','{0:02}'], fixed_width=False):
     """ prints the seconds arguments as a human-redable HH::MM:SS.FRACTIONAL time. """
-    h, m, s, fractional_seconds, formatted_timestamp_str = format_seconds_human_readable(seconds, custom_h_m_s_format_string=custom_h_m_s_format_string)
+    h, m, s, fractional_seconds, formatted_timestamp_str = format_seconds_human_readable(seconds, h_m_s_format_array = h_m_s_format_array, fixed_width=fixed_width)
     print(formatted_timestamp_str) # print the timestamp
     return h, m, s, fractional_seconds, formatted_timestamp_str
 

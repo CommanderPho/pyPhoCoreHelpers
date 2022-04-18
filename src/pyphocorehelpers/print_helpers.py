@@ -1,5 +1,6 @@
 from typing import List, Optional, OrderedDict  # for OrderedMeta
 import numpy as np
+import pandas as pd
 
 # Required for dbg_dump:
 import sys
@@ -92,49 +93,8 @@ class WrappingMessagePrinter(object):
     #         print(f'{action} {contents_description} results to {str(filepath)}...', end=print_line_ending)
         
 
-# def debug_print_shapes(*arg):
-#     """ prints the shape of the passed arugments """
 
-
-def debug_dump_object_member_shapes(obj):
-    """ prints the name, type, and shape of all member variables. 
-    Usage:
-        debug_dump_object_member_shapes(active_one_step_decoder)
-        >>>
-            time_bin_size:	||	SCALAR	||	<class 'float'>
-            pf:	||	SCALAR	||	<class 'neuropy.analyses.placefields.PfND'>
-            spikes_df:	||	np.shape: (819170, 21)	||	<class 'pandas.core.frame.DataFrame'>
-            debug_print:	||	SCALAR	||	<class 'bool'>
-            neuron_IDXs:	||	np.shape: (64,)	||	<class 'numpy.ndarray'>
-            neuron_IDs:	||	np.shape: (64,)	||	<class 'list'>
-            F:	||	np.shape: (1856, 64)	||	<class 'numpy.ndarray'>
-            P_x:	||	np.shape: (1856, 1)	||	<class 'numpy.ndarray'>
-            unit_specific_time_binned_spike_counts:	||	np.shape: (64, 1717)	||	<class 'numpy.ndarray'>
-            time_window_edges:	||	np.shape: (1718,)	||	<class 'numpy.ndarray'>
-            time_window_edges_binning_info:	||	SCALAR	||	<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>
-            total_spike_counts_per_window:	||	np.shape: (1717,)	||	<class 'numpy.ndarray'>
-            time_window_centers:	||	np.shape: (1717,)	||	<class 'numpy.ndarray'>
-            time_window_center_binning_info:	||	SCALAR	||	<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>
-            flat_p_x_given_n:	||	np.shape: (1856, 1717)	||	<class 'numpy.ndarray'>
-            p_x_given_n:	||	np.shape: (64, 29, 1717)	||	<class 'numpy.ndarray'>
-            most_likely_position_flat_indicies:	||	np.shape: (1717,)	||	<class 'numpy.ndarray'>
-            most_likely_position_indicies:	||	np.shape: (2, 1717)	||	<class 'numpy.ndarray'>
-        <<< (end output example)
-    """
-    for a_property_name, a_value in obj.__dict__.items():
-        out_strings_arr = [f'{a_property_name}:']
-        # np.isscalar(a_value)
-        a_shape = np.shape(a_value)
-        if a_shape != ():
-            out_strings_arr.append(f'shape: {a_shape}')
-        else:
-            out_strings_arr.append(f'SCALAR')
-            
-        out_strings_arr.append(f'{str(type(a_value))}')
-        out_string = '\t||\t'.join(out_strings_arr)
-        print(out_string)
-
-
+## Category: Formatting Seconds as Human Readable:
 def split_seconds_human_readable(seconds):
     """ splits the seconds argument into hour, minute, seconds, and fractional_seconds components.
         Does no formatting itself, but used by format_seconds_human_readable(...) for formatting seconds as a human-redable HH::MM:SS.FRACTIONAL time. 
@@ -197,7 +157,6 @@ def format_seconds_human_readable(seconds, h_m_s_format_array = ['{0:02}','{0:02
         formatted_timestamp_str = '{}:{}'.format(formatted_timestamp_str, frac_seconds_string) # append the fracitonal seconds string to the timestamp string
     return h, m, s, fractional_seconds, formatted_timestamp_str
 
-
 def print_seconds_human_readable(seconds, h_m_s_format_array = ['{0:02}','{0:02}','{0:02}'], fixed_width=False):
     """ prints the seconds arguments as a human-redable HH::MM:SS.FRACTIONAL time. """
     h, m, s, fractional_seconds, formatted_timestamp_str = format_seconds_human_readable(seconds, h_m_s_format_array = h_m_s_format_array, fixed_width=fixed_width)
@@ -205,6 +164,7 @@ def print_seconds_human_readable(seconds, h_m_s_format_array = ['{0:02}','{0:02}
     return h, m, s, fractional_seconds, formatted_timestamp_str
 
 
+## Category: Memory Usage:
 def print_dataframe_memory_usage(df):
     """ df: a Pandas.DataFrame such as curr_active_pipeline.sess.spikes_df
     
@@ -277,9 +237,6 @@ def print_dataframe_memory_usage(df):
     
     print(f'============================\n{total_df_usage_MB_string}')
     return total_df_usage_MB # return the numeric number of megabytes that this df uses.
-    
-
-    
     
 def print_object_memory_usage(obj):
     """ prints the size of the passed in object in MB (Megabytes)
@@ -560,7 +517,142 @@ def dbg_dump(*args, dumpopt_stream=sys.stderr, dumpopt_forcename=True, dumpopt_p
     else:
         return output.rstrip()
     
+## Category: Structural Overview/Outline:
+def print_keys_if_possible(curr_key, curr_value, depth=0):
+    """Prints the keys of an object if possible, in a recurrsive manner.
+
+    Args:
+        curr_key (_type_): _description_
+        curr_value (_type_): _description_
+        depth (int, optional): _description_. Defaults to 0.
+
+    Returns:
+        None
+        
+    Usage:
+        print_keys_if_possible('computed_data', curr_computations_results.computed_data, depth=0)
+        
+        - computed_data: <class 'dict'>
+            - pf1D: <class 'neuropy.analyses.placefields.PfND'>
+            - pf2D: <class 'neuropy.analyses.placefields.PfND'>
+            - pf2D_Decoder: <class 'pyphoplacecellanalysis.Analysis.reconstruction.BayesianPlacemapPositionDecoder'>
+            - pf2D_TwoStepDecoder: <class 'dict'>
+                - xbin: <class 'numpy.ndarray'> - (59,)
+                - ybin: <class 'numpy.ndarray'> - (21,)
+                - avg_speed_per_pos: <class 'numpy.ndarray'> - (59, 21)
+                - K: <class 'numpy.float64'>
+                - V: <class 'float'>
+                - sigma_t_all: <class 'numpy.ndarray'> - (59, 21)
+                - flat_sigma_t_all: <class 'numpy.ndarray'> - (1239,)
+                - C: <class 'float'>
+                - k: <class 'float'>
+                - all_x: <class 'numpy.ndarray'> - (59, 21, 2)
+                - flat_all_x: <class 'list'>
+                - original_all_x_shape: <class 'tuple'>
+                - flat_p_x_given_n_and_x_prev: <class 'numpy.ndarray'> - (1239, 1717)
+                - p_x_given_n_and_x_prev: <class 'numpy.ndarray'> - (59, 21, 1717)
+                - most_likely_position_indicies: <class 'numpy.ndarray'> - (2, 1717)
+                - most_likely_positions: <class 'numpy.ndarray'> - (2, 1717)
+                - all_scaling_factors_k: <class 'numpy.ndarray'> - (1717,)
+                - most_likely_position_flat_indicies: <class 'numpy.ndarray'> - (1717,)
+            - extended_stats: <class 'dict'>
+                - time_binned_positioned_resampler: <class 'pandas.core.resample.TimedeltaIndexResampler'>
+                - time_binned_position_df: <class 'pandas.core.frame.DataFrame'> - (1717, 18)
+                - time_binned_position_mean: <class 'pandas.core.frame.DataFrame'> - (29, 16)
+                - time_binned_position_covariance: <class 'pandas.core.frame.DataFrame'> - (16, 16)
+            - firing_rate_trends: <class 'dict'>
+                - active_rolling_window_times: <class 'pandas.core.indexes.timedeltas.TimedeltaIndex'>
+                - mean_firing_rates: <class 'numpy.ndarray'> - (39,)
+                - desired_window_length_seconds: <class 'float'>
+                - desired_window_length_bins: <class 'int'>
+                - active_firing_rates_df: <class 'pandas.core.frame.DataFrame'> - (1239, 39)
+                - moving_mean_firing_rates_df: <class 'pandas.core.frame.DataFrame'> - (1239, 39)
+            - placefield_overlap: <class 'dict'>
+                - all_pairwise_neuron_IDs_combinations: <class 'numpy.ndarray'> - (741, 2)
+                - total_pairwise_overlaps: <class 'numpy.ndarray'> - (741,)
+                - all_pairwise_overlaps: <class 'numpy.ndarray'> - (741, 59, 21)
+        
     
+    """
+    if (depth > 20):
+        print(f'OVERFLOW AT DEPTH 20!')
+        return None # overflow detection
+    else:
+        depth_string = '\t' * depth
+        curr_value_type = type(curr_value)
+        
+        if isinstance(curr_value, pd.DataFrame):
+            # DataFrame has .items() property, but we don't want it
+            print(f"{depth_string}- {curr_key}: {curr_value_type} - {curr_value.shape}")
+        elif isinstance(curr_value, np.ndarray): 
+            # elif pd.api.types.is_list_like(curr_value):
+            # Objects that are considered list-like are for example Python lists, tuples, sets, NumPy arrays, and Pandas Series.
+            # elif isinstance(curr_value, np.ndarray):            
+            print(f"{depth_string}- {curr_key}: {curr_value_type} - {np.shape(curr_value)}")
+        else:
+            # See if the curr_value has .items() or not.
+            print(f"{depth_string}- {curr_key}: {curr_value_type}")
+            try:
+                for (curr_child_key, curr_child_value) in curr_value.items():
+                    # prints the current value:
+                    # print(f"{depth_string}- {curr_child_key} - {type(curr_child_value)}")
+                    # print children keys
+                    print_keys_if_possible(curr_child_key, curr_child_value, depth=(depth+1))
+            except AttributeError:
+                # AttributeError: 'PfND' object has no attribute 'items'
+                
+                # Try to get __dict__ from the item:
+                try:
+                    curr_value_dict_rep = vars(curr_value) # gets the .__dict__ property if curr_value has one, otherwise throws a TypeError
+                    print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, depth=(depth+1))
+                    
+                except TypeError:
+                    # print(f"{depth_string}- {curr_value_type}")
+                    return None # terminal item
+    
+
+# def debug_print_shapes(*arg):
+#     """ prints the shape of the passed arugments """
+
+
+def debug_dump_object_member_shapes(obj):
+    """ prints the name, type, and shape of all member variables. 
+    Usage:
+        debug_dump_object_member_shapes(active_one_step_decoder)
+        >>>
+            time_bin_size:	||	SCALAR	||	<class 'float'>
+            pf:	||	SCALAR	||	<class 'neuropy.analyses.placefields.PfND'>
+            spikes_df:	||	np.shape: (819170, 21)	||	<class 'pandas.core.frame.DataFrame'>
+            debug_print:	||	SCALAR	||	<class 'bool'>
+            neuron_IDXs:	||	np.shape: (64,)	||	<class 'numpy.ndarray'>
+            neuron_IDs:	||	np.shape: (64,)	||	<class 'list'>
+            F:	||	np.shape: (1856, 64)	||	<class 'numpy.ndarray'>
+            P_x:	||	np.shape: (1856, 1)	||	<class 'numpy.ndarray'>
+            unit_specific_time_binned_spike_counts:	||	np.shape: (64, 1717)	||	<class 'numpy.ndarray'>
+            time_window_edges:	||	np.shape: (1718,)	||	<class 'numpy.ndarray'>
+            time_window_edges_binning_info:	||	SCALAR	||	<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>
+            total_spike_counts_per_window:	||	np.shape: (1717,)	||	<class 'numpy.ndarray'>
+            time_window_centers:	||	np.shape: (1717,)	||	<class 'numpy.ndarray'>
+            time_window_center_binning_info:	||	SCALAR	||	<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>
+            flat_p_x_given_n:	||	np.shape: (1856, 1717)	||	<class 'numpy.ndarray'>
+            p_x_given_n:	||	np.shape: (64, 29, 1717)	||	<class 'numpy.ndarray'>
+            most_likely_position_flat_indicies:	||	np.shape: (1717,)	||	<class 'numpy.ndarray'>
+            most_likely_position_indicies:	||	np.shape: (2, 1717)	||	<class 'numpy.ndarray'>
+        <<< (end output example)
+    """
+    for a_property_name, a_value in obj.__dict__.items():
+        out_strings_arr = [f'{a_property_name}:']
+        # np.isscalar(a_value)
+        a_shape = np.shape(a_value)
+        if a_shape != ():
+            out_strings_arr.append(f'shape: {a_shape}')
+        else:
+            out_strings_arr.append(f'SCALAR')
+            
+        out_strings_arr.append(f'{str(type(a_value))}')
+        out_string = '\t||\t'.join(out_strings_arr)
+        print(out_string)
+
 def print_value_overview_only(a_value, should_return_string=False):
     """ prints only basic information about a value, such as its type and shape if it has one. 
     

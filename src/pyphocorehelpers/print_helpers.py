@@ -518,7 +518,7 @@ def dbg_dump(*args, dumpopt_stream=sys.stderr, dumpopt_forcename=True, dumpopt_p
         return output.rstrip()
     
 ## Category: Structural Overview/Outline:
-def print_keys_if_possible(curr_key, curr_value, depth=0):
+def print_keys_if_possible(curr_key, curr_value, depth=0, omit_curr_item_print=False):
     """Prints the keys of an object if possible, in a recurrsive manner.
 
     Args:
@@ -580,36 +580,41 @@ def print_keys_if_possible(curr_key, curr_value, depth=0):
     else:
         depth_string = '\t' * depth
         curr_value_type = type(curr_value)
-        
-        if isinstance(curr_value, pd.DataFrame):
+    
+        if isinstance(curr_value, (pd.DataFrame, pd.TimedeltaIndex, pd.core.resample.TimedeltaIndexResampler)):
             # DataFrame has .items() property, but we don't want it
-            print(f"{depth_string}- {curr_key}: {curr_value_type} - {curr_value.shape}")
-        elif isinstance(curr_value, np.ndarray): 
+            if not omit_curr_item_print:
+                print(f"{depth_string}- {curr_key}: {curr_value_type} - {curr_value.shape}")
+        elif isinstance(curr_value, (np.ndarray, list, tuple)): 
             # elif pd.api.types.is_list_like(curr_value):
             # Objects that are considered list-like are for example Python lists, tuples, sets, NumPy arrays, and Pandas Series.
             # elif isinstance(curr_value, np.ndarray):            
-            print(f"{depth_string}- {curr_key}: {curr_value_type} - {np.shape(curr_value)}")
+            if not omit_curr_item_print:
+                print(f"{depth_string}- {curr_key}: {curr_value_type} - {np.shape(curr_value)}")
         else:
             # See if the curr_value has .items() or not.
-            print(f"{depth_string}- {curr_key}: {curr_value_type}")
+            if not omit_curr_item_print:
+                print(f"{depth_string}- {curr_key}: {curr_value_type}")
+                
             try:
                 for (curr_child_key, curr_child_value) in curr_value.items():
                     # prints the current value:
                     # print(f"{depth_string}- {curr_child_key} - {type(curr_child_value)}")
                     # print children keys
-                    print_keys_if_possible(curr_child_key, curr_child_value, depth=(depth+1))
+                    print_keys_if_possible(curr_child_key, curr_child_value, depth=(depth+1), omit_curr_item_print=False)
             except AttributeError:
                 # AttributeError: 'PfND' object has no attribute 'items'
                 
                 # Try to get __dict__ from the item:
                 try:
                     curr_value_dict_rep = vars(curr_value) # gets the .__dict__ property if curr_value has one, otherwise throws a TypeError
-                    print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, depth=(depth+1))
+                    print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, depth=depth, omit_curr_item_print=True) # do not increase depth in this regard so it prints at the same level. Also tell it not to print again.
                     
                 except TypeError:
                     # print(f"{depth_string}- {curr_value_type}")
                     return None # terminal item
     
+
 
 # def debug_print_shapes(*arg):
 #     """ prints the shape of the passed arugments """

@@ -463,6 +463,72 @@ def compute_paginated_grid_config(num_required_subplots, max_num_columns, max_su
     return subplot_no_pagination_configuration, included_combined_indicies_pages, page_grid_sizes
 
 
+def is_consecutive_no_gaps(arr, enable_debug_print=False):
+    """ Checks whether a passed array/list is a series of ascending indicies without gaps
+    
+    arr: listlike: checks if the series is from [0, ... , len(arr)-1]
+    
+    Usage:
+        cell_IDXs = extracted_cell_IDXs
+        is_consecutive_no_gaps(cell_ids, cell_IDXs)
+    """
+    if enable_debug_print:
+        print(f'is_consecutive_no_gaps(arr: {arr})')
+    comparison_correct_sequence = np.arange(len(arr)) # build a series from [0, ... , N-1]
+    differing_elements = np.setdiff1d(comparison_correct_sequence, arr)
+    if (len(differing_elements) > 0):
+        if enable_debug_print:
+            print(f'\t differing_elements: {differing_elements}')
+        return False
+    else:
+        return True
+    
+
+
+
+def validate_reverse_index_map(value_to_original_index_reverse_map, cell_IDXs, cell_ids):
+    """
+    
+    value_to_original_index_reverse_map: is a dictioanry that has any thing for its keys, but each
+        Example:
+            # Allows reverse indexing into the linear imported array using the original cell ID indicies:
+            id_arr = [ 2  3  4  5  7  8  9 10 11 12 14 17 18 21 22 23 24 25 26 27 28 29 33 34 38 39 42 44 45 46 47 48 53 55 57 58 61 62 63 64]
+            linear_flitered_ids = np.arange(len(id_arr)) # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+            value_to_original_index_reverse_map = dict(zip(id_arr, linear_flitered_ids))    
+     
+    
+    Usage:
+        cell_ids = extracted_cell_ids
+        cell_IDXs = extracted_cell_IDXs
+        reverse_cellID_index_map = ipcDataExplorer.active_session.neurons.reverse_cellID_index_map
+        validate_cell_IDs_to_CellIDXs_map(reverse_cellID_index_map, cell_ids, cell_IDXs)
+    """
+    print(f'\t cell_ids: {cell_ids}')
+    print(f'\t cell_IDXs: {cell_IDXs}')
+    if not is_consecutive_no_gaps(cell_IDXs):
+        print('cell_IDXs has gaps!')
+        return False
+    else:
+        # print(f'\t reverse_cellID_index_map: {reverse_cellID_index_map}')
+        # assert len(cell_ids) == len(cell_IDXs), f"len(cell_ids): {len(cell_ids)} != len(cell_IDXs): {len(cell_IDXs)}"
+        # # max_cell_IDX = np.max(cell_IDXs)
+        # comparison_correct_max_num_cell_IDXs = len(cell_IDXs)
+        # comparison_correct_cell_IDXs = np.arange(comparison_correct_max_num_cell_IDXs) # build a series from [0, ... , N-1]
+        # differing_elements = np.setdiff1d(comparison_correct_cell_IDXs, cell_IDXs)
+        # assert np.array_equal(cell_IDXs, comparison_correct_cell_IDXs), f"cell_IDXs deviates from idea: {cell_IDXs}\n\t differing elements: {differing_elements}"
+
+        map_start_ids = list(value_to_original_index_reverse_map.keys()) # the cellIDs that can be mapped from
+        differing_elements_ids = np.setdiff1d(map_start_ids, cell_ids)
+        num_differing_ids = len(differing_elements_ids)
+        map_destination_IDXs = list(value_to_original_index_reverse_map.values()) # the cellIDXs that can be mapped to.
+        differing_elements_IDXs = np.setdiff1d(map_destination_IDXs, cell_IDXs)
+        num_differing_IDXs = len(differing_elements_IDXs)
+        if (num_differing_IDXs > 0) or (num_differing_ids > 0):
+            print(f'\t differing_elements_IDXs: {differing_elements_IDXs}')
+            print(f'\t differing_elements_ids: {differing_elements_ids}')
+            return False
+        else:
+            return True
 
 
 # def test_compute_paginated_grid_config(subplots:RowColTuple=(40, 3), debug_print=False):

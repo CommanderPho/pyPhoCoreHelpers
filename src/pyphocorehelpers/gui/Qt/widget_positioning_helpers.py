@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
-
 from PyQt5.QtWidgets import QDesktopWidget
 
 # # from PyQt5 import QtGui

@@ -1,6 +1,6 @@
 # SyncedTimelineWindowLink
 from enum import Enum
-from pyqtgraph.Qt import QtCore
+# from pyqtgraph.Qt import QtCore
 import numpy as np
 import pandas as pd
 

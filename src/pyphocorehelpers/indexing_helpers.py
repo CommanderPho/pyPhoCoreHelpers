@@ -65,6 +65,14 @@ def safe_get(list, index, fallback_value):
         return fallback_value
 
 
+def safe_pandas_get_group(dataframe_group, key):
+    """ returns an empty dataframe if the key isn't found in the group."""
+    if key in dataframe_group.groups.keys():
+        return dataframe_group.get_group(key)
+    else:
+        original_df = dataframe_group.obj
+        return original_df.drop(original_df.index)
+    
 
 # class MatrixFlattenTransformer(object):
 # """ Supposed to allow easy transformation of data from a flattened representation to the original.

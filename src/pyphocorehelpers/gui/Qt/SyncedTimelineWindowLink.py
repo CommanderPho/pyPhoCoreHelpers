@@ -72,6 +72,17 @@ def connect_additional_controlled_plotter(source_spike_raster_plt, controlled_pl
     return sync_connection
 
 
+
+def connect_controlled_time_synchornized_plotter(source_spike_raster_plt, controlled_plt):
+    """ 
+    source_spike_raster_plt: TimeSynchronizedPlotterBase
+    
+    spike_raster_window.spike_raster_plt_2d
+    """
+    controlled_plt.on_window_changed(source_spike_raster_plt.spikes_window.active_time_window[0], source_spike_raster_plt.spikes_window.active_time_window[1])
+    sync_connection = source_spike_raster_plt.window_scrolled.connect(controlled_plt.on_window_changed) # connect the window_scrolled event to the _on_window_updated function
+    return sync_connection
+
 # class SyncedTimelineWindowLink_SyncOption(Enum):
 #         Bidirectional = 1 # Keep both synced
 #         VideoToTimeline = 2 #  Set timeline time from video

@@ -5,7 +5,7 @@ class CascadingDynamicPlotsList(DynamicParameters):
     """ 
     Creates a simple collection wrapper capable of having functions applied on its children.
     
-    Currently used in 
+    Currently used in pyphoplacecellanalysis.PhoPositionalData.plotting.spikeAndPositions.plot_placefields2D(...) to wrap multiple plot actors (for both the main pf mesh and the points)
     
     """
     def __init__(self, active_main_plotActor, active_points_plotActor):        

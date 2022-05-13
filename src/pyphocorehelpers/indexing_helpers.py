@@ -477,8 +477,8 @@ def is_consecutive_no_gaps(arr, enable_debug_print=False):
     arr: listlike: checks if the series is from [0, ... , len(arr)-1]
     
     Usage:
-        cell_IDXs = extracted_cell_IDXs
-        is_consecutive_no_gaps(cell_ids, cell_IDXs)
+        neuron_IDXs = extracted_neuron_IDXs
+        is_consecutive_no_gaps(cell_ids, neuron_IDXs)
     """
     if enable_debug_print:
         print(f'is_consecutive_no_gaps(arr: {arr})')
@@ -494,7 +494,7 @@ def is_consecutive_no_gaps(arr, enable_debug_print=False):
 
 
 
-def validate_reverse_index_map(value_to_original_index_reverse_map, cell_IDXs, cell_ids):
+def validate_reverse_index_map(value_to_original_index_reverse_map, neuron_IDXs, cell_ids):
     """
     
     value_to_original_index_reverse_map: is a dictioanry that has any thing for its keys, but each
@@ -507,29 +507,29 @@ def validate_reverse_index_map(value_to_original_index_reverse_map, cell_IDXs, c
     
     Usage:
         cell_ids = extracted_cell_ids
-        cell_IDXs = extracted_cell_IDXs
+        neuron_IDXs = extracted_neuron_IDXs
         reverse_cellID_index_map = ipcDataExplorer.active_session.neurons.reverse_cellID_index_map
-        validate_cell_IDs_to_CellIDXs_map(reverse_cellID_index_map, cell_ids, cell_IDXs)
+        validate_cell_IDs_to_CellIDXs_map(reverse_cellID_index_map, cell_ids, neuron_IDXs)
     """
     print(f'\t cell_ids: {cell_ids}')
-    print(f'\t cell_IDXs: {cell_IDXs}')
-    if not is_consecutive_no_gaps(cell_IDXs):
-        print('cell_IDXs has gaps!')
+    print(f'\t neuron_IDXs: {neuron_IDXs}')
+    if not is_consecutive_no_gaps(neuron_IDXs):
+        print('neuron_IDXs has gaps!')
         return False
     else:
         # print(f'\t reverse_cellID_index_map: {reverse_cellID_index_map}')
-        # assert len(cell_ids) == len(cell_IDXs), f"len(cell_ids): {len(cell_ids)} != len(cell_IDXs): {len(cell_IDXs)}"
-        # # max_cell_IDX = np.max(cell_IDXs)
-        # comparison_correct_max_num_cell_IDXs = len(cell_IDXs)
-        # comparison_correct_cell_IDXs = np.arange(comparison_correct_max_num_cell_IDXs) # build a series from [0, ... , N-1]
-        # differing_elements = np.setdiff1d(comparison_correct_cell_IDXs, cell_IDXs)
-        # assert np.array_equal(cell_IDXs, comparison_correct_cell_IDXs), f"cell_IDXs deviates from idea: {cell_IDXs}\n\t differing elements: {differing_elements}"
+        # assert len(cell_ids) == len(neuron_IDXs), f"len(cell_ids): {len(cell_ids)} != len(neuron_IDXs): {len(neuron_IDXs)}"
+        # # max_neuron_IDX = np.max(neuron_IDXs)
+        # comparison_correct_max_num_neuron_IDXs = len(neuron_IDXs)
+        # comparison_correct_neuron_IDXs = np.arange(comparison_correct_max_num_neuron_IDXs) # build a series from [0, ... , N-1]
+        # differing_elements = np.setdiff1d(comparison_correct_neuron_IDXs, neuron_IDXs)
+        # assert np.array_equal(neuron_IDXs, comparison_correct_neuron_IDXs), f"neuron_IDXs deviates from idea: {neuron_IDXs}\n\t differing elements: {differing_elements}"
 
         map_start_ids = list(value_to_original_index_reverse_map.keys()) # the cellIDs that can be mapped from
         differing_elements_ids = np.setdiff1d(map_start_ids, cell_ids)
         num_differing_ids = len(differing_elements_ids)
         map_destination_IDXs = list(value_to_original_index_reverse_map.values()) # the cellIDXs that can be mapped to.
-        differing_elements_IDXs = np.setdiff1d(map_destination_IDXs, cell_IDXs)
+        differing_elements_IDXs = np.setdiff1d(map_destination_IDXs, neuron_IDXs)
         num_differing_IDXs = len(differing_elements_IDXs)
         if (num_differing_IDXs > 0) or (num_differing_ids > 0):
             print(f'\t differing_elements_IDXs: {differing_elements_IDXs}')
@@ -562,7 +562,7 @@ def validate_reverse_index_map(value_to_original_index_reverse_map, cell_IDXs, c
 #             curr_page_relative_col = np.mod(curr_col, page_grid_sizes[page_idx].num_columns)
 #             # print(f'a_linear_index: {a_linear_index}, curr_page_relative_linear_index: {curr_page_relative_linear_index}, curr_row: {curr_row}, curr_col: {curr_col}, curr_page_relative_row: {curr_page_relative_row}, curr_page_relative_col: {curr_page_relative_col}, curr_included_unit_index: {curr_included_unit_index}')
             
-#             cell_idx = curr_included_unit_index
+#             neuron_IDX = curr_included_unit_index
 #             pfmap = active_maps[a_linear_index]
 #             # Get the axis to plot on:
 #             if grid_layout_mode == 'gridspec':
@@ -573,11 +573,11 @@ def validate_reverse_index_map(value_to_original_index_reverse_map, cell_IDXs, c
 #                 curr_ax = page_axes[page_idx][curr_page_relative_row, curr_page_relative_col]
             
 #             # Plot the main heatmap for this pfmap:
-#             im = plot_single_tuning_map_2D(ratemap.xbin, ratemap.ybin, pfmap, ratemap.occupancy, neuron_extended_id=ratemap.neuron_extended_ids[cell_idx], drop_below_threshold=drop_below_threshold, brev_mode=brev_mode, plot_mode=plot_mode, ax=curr_ax)
+#             im = plot_single_tuning_map_2D(ratemap.xbin, ratemap.ybin, pfmap, ratemap.occupancy, neuron_extended_id=ratemap.neuron_extended_ids[neuron_IDX], drop_below_threshold=drop_below_threshold, brev_mode=brev_mode, plot_mode=plot_mode, ax=curr_ax)
             
 #             if enable_spike_overlay:
-#                 spike_overlay_points = curr_ax.plot(spike_overlay_spikes[cell_idx][0], spike_overlay_spikes[cell_idx][1], markersize=2, marker=',', markeredgecolor='red', linestyle='none', markerfacecolor='red', alpha=0.10, label='spike_overlay_points')                
-#                 spike_overlay_sc = curr_ax.scatter(spike_overlay_spikes[cell_idx][0], spike_overlay_spikes[cell_idx][1], s=2, c='white', alpha=0.10, marker=',', label='spike_overlay_sc')
+#                 spike_overlay_points = curr_ax.plot(spike_overlay_spikes[neuron_IDX][0], spike_overlay_spikes[neuron_IDX][1], markersize=2, marker=',', markeredgecolor='red', linestyle='none', markerfacecolor='red', alpha=0.10, label='spike_overlay_points')                
+#                 spike_overlay_sc = curr_ax.scatter(spike_overlay_spikes[neuron_IDX][0], spike_overlay_spikes[neuron_IDX][1], s=2, c='white', alpha=0.10, marker=',', label='spike_overlay_sc')
             
 #             # cbar_ax = fig.add_axes([0.9, 0.3, 0.01, 0.3])
 #             # cbar = fig.colorbar(im, cax=cbar_ax)

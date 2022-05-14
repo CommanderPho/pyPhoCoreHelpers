@@ -496,7 +496,8 @@ def is_consecutive_no_gaps(arr, enable_debug_print=False):
 
 def validate_reverse_index_map(value_to_original_index_reverse_map, neuron_IDXs, cell_ids):
     """
-    
+    Used to be called `validate_cell_IDs_to_CellIDXs_map`
+
     value_to_original_index_reverse_map: is a dictioanry that has any thing for its keys, but each
         Example:
             # Allows reverse indexing into the linear imported array using the original cell ID indicies:
@@ -509,7 +510,7 @@ def validate_reverse_index_map(value_to_original_index_reverse_map, neuron_IDXs,
         cell_ids = extracted_cell_ids
         neuron_IDXs = extracted_neuron_IDXs
         reverse_cellID_index_map = ipcDataExplorer.active_session.neurons.reverse_cellID_index_map
-        validate_cell_IDs_to_CellIDXs_map(reverse_cellID_index_map, cell_ids, neuron_IDXs)
+        validate_reverse_index_map(reverse_cellID_index_map, cell_ids, neuron_IDXs)
     """
     print(f'\t cell_ids: {cell_ids}')
     print(f'\t neuron_IDXs: {neuron_IDXs}')

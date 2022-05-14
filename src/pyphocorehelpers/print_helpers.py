@@ -194,7 +194,7 @@ def print_dataframe_memory_usage(df):
         x_loaded              7.12 MB
         y_loaded              7.12 MB
         lin_pos               7.12 MB
-        unit_id               3.56 MB
+        fragile_linear_neuron_IDX               3.56 MB
         PBE_id                7.12 MB
         dtype: object
         ============================
@@ -230,7 +230,7 @@ def print_dataframe_memory_usage(df):
     # x_loaded              7.12 MB
     # y_loaded              7.12 MB
     # lin_pos               7.12 MB
-    # unit_id               3.56 MB
+    # fragile_linear_neuron_IDX               3.56 MB
     # PBE_id                7.12 MB
     total_df_usage_MB = each_columns_usage_MB.sum()
     total_df_usage_MB_string = f'Dataframe Total: {total_df_usage_MB:.3f} MB' # round the total to 3 decimal places.

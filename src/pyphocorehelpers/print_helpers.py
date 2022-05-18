@@ -576,7 +576,8 @@ def print_keys_if_possible(curr_key, curr_value, depth=0, omit_curr_item_print=F
     """
     if (depth > 20):
         print(f'OVERFLOW AT DEPTH 20!')
-        return None # overflow detection
+        raise OverflowError
+        # return None # overflow detection
     else:
         depth_string = '\t' * depth
         curr_value_type = type(curr_value)

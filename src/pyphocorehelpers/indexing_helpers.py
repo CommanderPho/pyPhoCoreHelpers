@@ -494,7 +494,7 @@ def is_consecutive_no_gaps(arr, enable_debug_print=False):
 
 
 
-def validate_reverse_index_map(value_to_original_index_reverse_map, neuron_IDXs, cell_ids):
+def validate_reverse_index_map(value_to_original_index_reverse_map, neuron_IDXs, cell_ids, debug_print=True):
     """
     Used to be called `validate_cell_IDs_to_CellIDXs_map`
 
@@ -512,20 +512,14 @@ def validate_reverse_index_map(value_to_original_index_reverse_map, neuron_IDXs,
         reverse_cellID_index_map = ipcDataExplorer.active_session.neurons.reverse_cellID_index_map
         validate_reverse_index_map(reverse_cellID_index_map, cell_ids, neuron_IDXs)
     """
-    print(f'\t cell_ids: {cell_ids}')
-    print(f'\t neuron_IDXs: {neuron_IDXs}')
-    if not is_consecutive_no_gaps(neuron_IDXs):
-        print('neuron_IDXs has gaps!')
+    if debug_print:
+        print(f'\t cell_ids: {cell_ids}')
+        print(f'\t neuron_IDXs: {neuron_IDXs}')
+    if not is_consecutive_no_gaps(neuron_IDXs, enable_debug_print=debug_print):
+        if debug_print:
+            print('neuron_IDXs has gaps!')
         return False
     else:
-        # print(f'\t reverse_cellID_index_map: {reverse_cellID_index_map}')
-        # assert len(cell_ids) == len(neuron_IDXs), f"len(cell_ids): {len(cell_ids)} != len(neuron_IDXs): {len(neuron_IDXs)}"
-        # # max_neuron_IDX = np.max(neuron_IDXs)
-        # comparison_correct_max_num_neuron_IDXs = len(neuron_IDXs)
-        # comparison_correct_neuron_IDXs = np.arange(comparison_correct_max_num_neuron_IDXs) # build a series from [0, ... , N-1]
-        # differing_elements = np.setdiff1d(comparison_correct_neuron_IDXs, neuron_IDXs)
-        # assert np.array_equal(neuron_IDXs, comparison_correct_neuron_IDXs), f"neuron_IDXs deviates from idea: {neuron_IDXs}\n\t differing elements: {differing_elements}"
-
         map_start_ids = list(value_to_original_index_reverse_map.keys()) # the cellIDs that can be mapped from
         differing_elements_ids = np.setdiff1d(map_start_ids, cell_ids)
         num_differing_ids = len(differing_elements_ids)
@@ -533,55 +527,9 @@ def validate_reverse_index_map(value_to_original_index_reverse_map, neuron_IDXs,
         differing_elements_IDXs = np.setdiff1d(map_destination_IDXs, neuron_IDXs)
         num_differing_IDXs = len(differing_elements_IDXs)
         if (num_differing_IDXs > 0) or (num_differing_ids > 0):
-            print(f'\t differing_elements_IDXs: {differing_elements_IDXs}')
-            print(f'\t differing_elements_ids: {differing_elements_ids}')
+            if debug_print:
+                print(f'\t differing_elements_IDXs: {differing_elements_IDXs}')
+                print(f'\t differing_elements_ids: {differing_elements_ids}')
             return False
         else:
             return True
-
-
-# def test_compute_paginated_grid_config(subplots:RowColTuple=(40, 3), debug_print=False):
-#      # Paging Management: Constrain the subplots values to just those that you need
-#     subplot_no_pagination_configuration, included_combined_indicies_pages, page_grid_sizes = compute_paginated_grid_config(nMapsToShow, max_num_columns=subplots.num_columns, max_subplots_per_page=None, data_indicies=included_unit_indicies, last_figure_subplots_same_layout=True)
-#     num_pages = len(included_combined_indicies_pages)
-
-#     nfigures = num_pages
-    
-    
-#     # New page-based version:
-#     for page_idx in np.arange(num_pages):
-#         if debug_print:
-#             print(f'page_idx: {page_idx}')
-#         if grid_layout_mode == 'imagegrid':
-#             active_page_grid = page_gs[page_idx]
-#             # print(f'active_page_grid: {active_page_grid}')
-            
-#         for (a_linear_index, curr_row, curr_col, curr_included_unit_index) in included_combined_indicies_pages[page_idx]:
-#             # Need to convert to page specific:
-#             curr_page_relative_linear_index = np.mod(a_linear_index, int(page_grid_sizes[page_idx].num_rows * page_grid_sizes[page_idx].num_columns))
-#             curr_page_relative_row = np.mod(curr_row, page_grid_sizes[page_idx].num_rows)
-#             curr_page_relative_col = np.mod(curr_col, page_grid_sizes[page_idx].num_columns)
-#             # print(f'a_linear_index: {a_linear_index}, curr_page_relative_linear_index: {curr_page_relative_linear_index}, curr_row: {curr_row}, curr_col: {curr_col}, curr_page_relative_row: {curr_page_relative_row}, curr_page_relative_col: {curr_page_relative_col}, curr_included_unit_index: {curr_included_unit_index}')
-            
-#             neuron_IDX = curr_included_unit_index
-#             pfmap = active_maps[a_linear_index]
-#             # Get the axis to plot on:
-#             if grid_layout_mode == 'gridspec':
-#                 curr_ax = figures[page_idx].add_subplot(page_gs[page_idx][a_linear_index])
-#             elif grid_layout_mode == 'imagegrid':
-#                 curr_ax = active_page_grid[curr_page_relative_linear_index]
-#             elif grid_layout_mode == 'subplot':
-#                 curr_ax = page_axes[page_idx][curr_page_relative_row, curr_page_relative_col]
-            
-#             # Plot the main heatmap for this pfmap:
-#             im = plot_single_tuning_map_2D(ratemap.xbin, ratemap.ybin, pfmap, ratemap.occupancy, neuron_extended_id=ratemap.neuron_extended_ids[neuron_IDX], drop_below_threshold=drop_below_threshold, brev_mode=brev_mode, plot_mode=plot_mode, ax=curr_ax)
-            
-#             if enable_spike_overlay:
-#                 spike_overlay_points = curr_ax.plot(spike_overlay_spikes[neuron_IDX][0], spike_overlay_spikes[neuron_IDX][1], markersize=2, marker=',', markeredgecolor='red', linestyle='none', markerfacecolor='red', alpha=0.10, label='spike_overlay_points')                
-#                 spike_overlay_sc = curr_ax.scatter(spike_overlay_spikes[neuron_IDX][0], spike_overlay_spikes[neuron_IDX][1], s=2, c='white', alpha=0.10, marker=',', label='spike_overlay_sc')
-            
-#             # cbar_ax = fig.add_axes([0.9, 0.3, 0.01, 0.3])
-#             # cbar = fig.colorbar(im, cax=cbar_ax)
-#             # cbar.set_label("firing rate (Hz)")
-            
-            

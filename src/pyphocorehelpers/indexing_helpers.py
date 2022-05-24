@@ -279,18 +279,26 @@ def interleave_elements(start_points, end_points):
 
 
 
-def get_dict_subset(a_dict, included_keys=None):
+def get_dict_subset(a_dict, included_keys=None, require_all_keys=False):
     """Gets a subset of a dictionary from a list of keys (included_keys)
 
     Args:
         a_dict ([type]): [description]
         included_keys ([type], optional): [description]. Defaults to None.
+        require_all_keys: Bool, if True, requires all keys in included_keys to be in the dictionary (a_dict)
 
     Returns:
         [type]: [description]
     """
     if included_keys is not None:
-        return {included_key:a_dict[included_key] for included_key in included_keys} # filter the dictionary for only the keys specified
+        if require_all_keys:
+            return {included_key:a_dict[included_key] for included_key in included_keys} # filter the dictionary for only the keys specified
+        else:
+            out_dict = {}
+            for included_key in included_keys:
+                if included_key in a_dict.keys():
+                    out_dict[included_key] = a_dict[included_key]
+            return out_dict
     else:
         return a_dict
 

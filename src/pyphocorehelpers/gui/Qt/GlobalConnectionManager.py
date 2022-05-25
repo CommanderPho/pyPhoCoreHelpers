@@ -20,21 +20,12 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
     
     def __init__(self, owning_application: QtWidgets.QApplication, parent=None, **kwargs):
         super(GlobalConnectionManager, self).__init__(parent, **kwargs)
-        # super(GlobalConnectionManager, self).__init__()
-        
-        # if GlobalConnectionManager._currentInstance is not None:
-        #     print(f'GlobalConnectionManager already exists! Returning extant instance!')
-        #     self = GlobalConnectionManager._currentInstance
-        #     return
-        # else:
-        #     print(f'GlobalConnectionManager: does not already exist, creating new instance!')
         
         if owning_application is None or not isinstance(owning_application, QtWidgets.QApplication):
             # app was never constructed is already deleted or is an
             # QCoreApplication/QGuiApplication and not a full QApplication
             raise NotImplementedError
         
-        # super(GlobalConnectionManager, self).__init__()
         # Setup member variables:
         self._registered_available_drivers = IndexedOrderedDict({})
         self._registered_available_drivables = IndexedOrderedDict({})
@@ -44,8 +35,6 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
         # Setup internal connections:
         # owning_application.aboutToQuit.connect(self.on_application_quit)
 
-        # Set the class variable to this newly created instance
-        # GlobalConnectionManager._currentInstance = self
 
     @property
     def registered_available_drivers(self):
@@ -251,7 +240,6 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
             controlled_plt:
                 .disable_ui_window_updating_controls()
                 .update_window_start_end(float, float)
-        
         
         Usage:
         

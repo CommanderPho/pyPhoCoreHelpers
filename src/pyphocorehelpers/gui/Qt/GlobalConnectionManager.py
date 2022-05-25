@@ -3,24 +3,38 @@
 from indexed import IndexedOrderedDict
 from qtpy import QtCore, QtWidgets, QtGui
 
-class GlobalConnectionManager(QtCore.QObject):
+""" 
+Requires 
+
+https://github.com/jazzycamel/PyQt5Singleton.git
+
+pip install PyQt5Singleton
+
+"""
+from PyQt5Singleton import Singleton
+
+
+class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
     """ A singleton owned by the QApplication instance that owns connections between widgets/windows and includes tools for discovering widgets to control/be controlled by. """
     _currentInstance = None
     
-    def __init__(self, owning_application: QtWidgets.QApplication):
-        if GlobalConnectionManager._currentInstance is not None:
-            print(f'GlobalConnectionManager already exists! Returning extant instance!')
-            self = GlobalConnectionManager._currentInstance
-            return
-        else:
-            print(f'GlobalConnectionManager: does not already exist, creating new instance!')
+    def __init__(self, owning_application: QtWidgets.QApplication, parent=None, **kwargs):
+        super(GlobalConnectionManager, self).__init__(parent, **kwargs)
+        # super(GlobalConnectionManager, self).__init__()
+        
+        # if GlobalConnectionManager._currentInstance is not None:
+        #     print(f'GlobalConnectionManager already exists! Returning extant instance!')
+        #     self = GlobalConnectionManager._currentInstance
+        #     return
+        # else:
+        #     print(f'GlobalConnectionManager: does not already exist, creating new instance!')
         
         if owning_application is None or not isinstance(owning_application, QtWidgets.QApplication):
             # app was never constructed is already deleted or is an
             # QCoreApplication/QGuiApplication and not a full QApplication
             raise NotImplementedError
         
-        super(GlobalConnectionManager, self).__init__()
+        # super(GlobalConnectionManager, self).__init__()
         # Setup member variables:
         self._registered_available_drivers = IndexedOrderedDict({})
         self._registered_available_drivables = IndexedOrderedDict({})
@@ -31,7 +45,7 @@ class GlobalConnectionManager(QtCore.QObject):
         # owning_application.aboutToQuit.connect(self.on_application_quit)
 
         # Set the class variable to this newly created instance
-        GlobalConnectionManager._currentInstance = self
+        # GlobalConnectionManager._currentInstance = self
 
     @property
     def registered_available_drivers(self):
@@ -70,9 +84,11 @@ class GlobalConnectionManager(QtCore.QObject):
         
         return found_driver_key, found_drivable_key
         
-    def connect_drivable_to_driver(self, drivable, driver):
+    def connect_drivable_to_driver(self, drivable, driver, custom_connect_function=None):
         """ attempts to connect the drivable to the driver. 
         drivable/driver can either be a key for a drivable/driver already registered or the drivable/driver itself.
+        
+        custom_connect_function: is an optional Callable that takes the driver, drivable as input and returns a connection.
         """
         # Get key for drivable:
         if isinstance(drivable, str):
@@ -93,7 +109,14 @@ class GlobalConnectionManager(QtCore.QObject):
         ## Make sure the connection doesn't already exist:
         extant_connection = self.active_connections.get(drivable, None)
         if extant_connection is None:
-            new_connection_obj = connect_additional_controlled_plotter(self.spike_raster_plt_2d, controlled_plt=drivable)
+            ## Make the connection:
+            if custom_connect_function is not None:
+                # Perform the custom connection function:
+                new_connection_obj = custom_connect_function(driver, drivable)
+            else:
+                # Otherwise perform the default:
+                new_connection_obj = GlobalConnectionManager.connect_additional_controlled_plotter(driver, controlled_plt=drivable)
+                
             self.active_connections[drivable] = new_connection_obj # add the connection object to the self.active_connections array
             return self.active_connections[drivable]
         else:
@@ -102,7 +125,7 @@ class GlobalConnectionManager(QtCore.QObject):
                 
         ## Make the connection:
         ## Sync ipspikesDataExplorer to raster window:
-        extra_interactive_spike_behavior_browser_sync_connection = spike_raster_window.connect_additional_controlled_plotter(controlled_plt=ipspikesDataExplorer)
+        # extra_interactive_spike_behavior_browser_sync_connection = spike_raster_window.connect_additional_controlled_plotter(controlled_plt=ipspikesDataExplorer)
         # extra_interactive_spike_behavior_browser_sync_connection = _connect_additional_controlled_plotter(spike_raster_window.spike_raster_plt_2d, ipspikesDataExplorer)
 
     
@@ -260,37 +283,36 @@ class GlobalConnectionManager(QtCore.QObject):
         """ 
         source_spike_raster_plt: TimeSynchronizedPlotterBase
         
-        spike_raster_window.spike_raster_plt_2d
+            Identical to the connect_additional_controlled_plotter(...) but uses on_window_changed(...) instead of update_window_start_end(...)
         """
         controlled_plt.on_window_changed(source_spike_raster_plt.spikes_window.active_time_window[0], source_spike_raster_plt.spikes_window.active_time_window[1])
         sync_connection = source_spike_raster_plt.window_scrolled.connect(controlled_plt.on_window_changed) # connect the window_scrolled event to the _on_window_updated function
         return sync_connection
 
 
-    # Perform Initial (one-time) update from source -> controlled:
-    @classmethod
-    def connect_additional_controlled_spike_raster_plotter(cls, spike_raster_plt_2d, controlled_spike_raster_plt):
-        """ Connect an additional plotter to a source that's driving the update of the data-window:
+    # @classmethod
+    # def connect_additional_controlled_spike_raster_plotter(cls, spike_raster_plt_2d, controlled_spike_raster_plt):
+    #     """ Connect an additional plotter to a source that's driving the update of the data-window:
         
-        Requirements:
-            source_spike_raster_plt:
-                .spikes_window.active_time_window
-                .window_scrolled
+    #     Requirements:
+    #         source_spike_raster_plt:
+    #             .spikes_window.active_time_window
+    #             .window_scrolled
             
-            controlled_spike_raster_plt:
-                .spikes_window.update_window_start_end(float, float)
+    #         controlled_spike_raster_plt:
+    #             .spikes_window.update_window_start_end(float, float)
             
-        Usage:
+    #     Usage:
             
-            spike_raster_plt_3d, spike_raster_plt_2d, spike_3d_to_2d_window_connection = build_spike_3d_raster_with_2d_controls(curr_spikes_df)
-            spike_raster_plt_3d_vedo = Spike3DRaster_Vedo(curr_spikes_df, window_duration=15.0, window_start_time=30.0, neuron_colors=None, neuron_sort_order=None)
-            extra_vedo_sync_connection = connect_additional_controlled_spike_raster_plotter(spike_raster_plt_2d, spike_raster_plt_3d_vedo)
+    #         spike_raster_plt_3d, spike_raster_plt_2d, spike_3d_to_2d_window_connection = build_spike_3d_raster_with_2d_controls(curr_spikes_df)
+    #         spike_raster_plt_3d_vedo = Spike3DRaster_Vedo(curr_spikes_df, window_duration=15.0, window_start_time=30.0, neuron_colors=None, neuron_sort_order=None)
+    #         extra_vedo_sync_connection = connect_additional_controlled_spike_raster_plotter(spike_raster_plt_2d, spike_raster_plt_3d_vedo)
         
-        """
-        controlled_spike_raster_plt.spikes_window.update_window_start_end(spike_raster_plt_2d.spikes_window.active_time_window[0], spike_raster_plt_2d.spikes_window.active_time_window[1])
-        # Connect to update self when video window playback position changes
-        sync_connection = spike_raster_plt_2d.window_scrolled.connect(controlled_spike_raster_plt.spikes_window.update_window_start_end)
-        return sync_connection
+    #     """
+    #     controlled_spike_raster_plt.spikes_window.update_window_start_end(spike_raster_plt_2d.spikes_window.active_time_window[0], spike_raster_plt_2d.spikes_window.active_time_window[1])
+    #     # Connect to update self when video window playback position changes
+    #     sync_connection = spike_raster_plt_2d.window_scrolled.connect(controlled_spike_raster_plt.spikes_window.update_window_start_end)
+    #     return sync_connection
 
 
 ### Usesful Examples:
@@ -315,4 +337,43 @@ class GlobalConnectionManager(QtCore.QObject):
 # 		pass
 # 	except AttributeError:  # PySide has deleted signal
 # 		pass
+
+
+class GlobalConnectionManagerAccessingMixin:
+    """ Implementor owns a connection manager instance which it usually uses to register itself or its children as drivers/drivable
     
+    Required Properties:
+        ._connection_man
+    """
+    @property
+    def connection_man(self):
+        """The connection_man property."""
+        return self._connection_man
+    
+    
+    def GlobalConnectionManagerAccessingMixin_on_init(self, owning_application=None):
+        if owning_application is None:
+            owning_application = QtWidgets.QApplication.instance() # <PyQt5.QtWidgets.QApplication at 0x1d44a4891f0>
+            if owning_application is None:
+                print(f'could not get valid QApplication instance!')
+                raise NotImplementedError
+        
+        # Set self._connection_man:    
+        self._connection_man = GlobalConnectionManager(owning_application=owning_application)
+        
+    ########################################################
+    ## For GlobalConnectionManagerAccessingMixin conformance:
+    ########################################################
+    
+    # @QtCore.pyqtSlot()
+    def GlobalConnectionManagerAccessingMixin_on_setup(self):
+        """ perfrom registration of drivers/drivables:"""
+        ## TODO: register children
+        pass
+
+    # @QtCore.pyqtSlot()
+    def GlobalConnectionManagerAccessingMixin_on_destroy(self):
+        """ perfrom teardown/destruction of anything that needs to be manually removed or released """
+        ## TODO: unregister children
+        pass
+        

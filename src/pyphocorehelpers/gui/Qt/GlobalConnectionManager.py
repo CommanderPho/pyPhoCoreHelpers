@@ -147,7 +147,7 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
     @classmethod
     def disambiguate_registered_name(cls, registraction_dict, extant_name):
         """ attempts to create a unique name for the driver/drivee that doesn't already exist in the dict and return it """
-        matching_names_with_prefix = filter(lambda x: x.startswith(extant_name), list(registraction_dict.keys()))
+        matching_names_with_prefix = list(filter(lambda x: x.startswith(extant_name), list(registraction_dict.keys())))
         itr_index = len(matching_names_with_prefix) # get the next number after the previous matching names to build a string like # "RasterPlot2D_1"
         proposed_driver_identifier = f'{extant_name}_{itr_index}'
         # Proposed name shouldn't exist:

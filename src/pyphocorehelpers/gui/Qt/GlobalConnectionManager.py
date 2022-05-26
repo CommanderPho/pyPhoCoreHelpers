@@ -129,11 +129,11 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
         return self.registered_available_drivables
 
     #### ================ Utility Methods:
-    def disambiguate_driver_name(self, extant_name):
+    def _disambiguate_driver_name(self, extant_name):
         """ attempts to create a unique name for the driver that doesn't already exist in the dict and return it """
         return GlobalConnectionManager.disambiguate_registered_name(self._registered_available_drivers, extant_name)
     
-    def disambiguate_drivable_name(self, extant_name):
+    def _disambiguate_drivable_name(self, extant_name):
         """ attempts to create a unique name for the drivable that doesn't already exist in the dict and return it """
         return GlobalConnectionManager.disambiguate_registered_name(self._registered_available_drivables, extant_name)
     

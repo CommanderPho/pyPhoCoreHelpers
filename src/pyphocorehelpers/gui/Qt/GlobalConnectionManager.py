@@ -118,6 +118,10 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
         # extra_interactive_spike_behavior_browser_sync_connection = spike_raster_window.connect_additional_controlled_plotter(controlled_plt=ipspikesDataExplorer)
         # extra_interactive_spike_behavior_browser_sync_connection = _connect_additional_controlled_plotter(spike_raster_window.spike_raster_plt_2d, ipspikesDataExplorer)
 
+    def disconnect_drivable(self, drivable):
+        """ disconnects the drivable from any drivers. """
+        self.unregister_object(drivable)
+        
     
         #### ================ Access Methods:
     def get_available_drivers(self):

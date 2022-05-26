@@ -77,7 +77,8 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
         """ attempts to connect the drivable to the driver. 
         drivable/driver can either be a key for a drivable/driver already registered or the drivable/driver itself.
         
-        custom_connect_function: is an optional Callable that takes the driver, drivable as input and returns a connection.
+        Inputs:
+            custom_connect_function: is an optional Callable that takes the driver, drivable as input and returns a connection.
         """
         # Get key for drivable:
         if isinstance(drivable, str):

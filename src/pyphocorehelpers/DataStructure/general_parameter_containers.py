@@ -1,37 +1,18 @@
     
 from pyphocorehelpers.general_helpers import OrderedMeta
-from pyphocorehelpers.print_helpers import SimplePrintable, PrettyPrintable
+from pyphocorehelpers.print_helpers import SimplePrintable, PrettyPrintable, iPythonKeyCompletingMixin
 
+from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters
 
-class VisualizationParameters(PrettyPrintable, SimplePrintable, metaclass=OrderedMeta):
-    def __init__(self, name) -> None:
-        # super(VisualizationParameters, self).__init__(**kwargs)
-        self.name = name
-        # self.__dict__ = (self.__dict__ | kwargs)
-        
-    # def __init__(self, name, **kwargs) -> None:
-    #     # super(VisualizationParameters, self).__init__(**kwargs)
-    #     self.name = name
-    #     # self.__dict__ = (self.__dict__ | kwargs)
+class VisualizationParameters(iPythonKeyCompletingMixin, DynamicParameters):        
+    def __init__(self, name, **kwargs) -> None:
+        super(VisualizationParameters, self).__init__(name=name, **kwargs)
     
 
-class DebugHelper(PrettyPrintable, SimplePrintable, metaclass=OrderedMeta):
-    # def __init__(self, name, **kwargs) -> None:
-    def __init__(self, name) -> None:
-        # super(DebugHelper, self).__init__(**kwargs)
-        self.name = name
-        # self.__dict__ = (self.__dict__ | kwargs)
+class DebugHelper(iPythonKeyCompletingMixin, DynamicParameters):
+    def __init__(self, name, **kwargs) -> None:
+        super(DebugHelper, self).__init__(name=name, **kwargs)
 
-
-
-class RenderPlots(PrettyPrintable, SimplePrintable, metaclass=OrderedMeta):
-    def __init__(self, name) -> None:
-        # super(RenderPlots, self).__init__(**kwargs)
-        self.name = name
-        # self.__dict__ = (self.__dict__ | kwargs)
-        
-    # def __init__(self, name, **kwargs) -> None:
-    #     # super(VisualizationParameters, self).__init__(**kwargs)
-    #     self.name = name
-    #     # self.__dict__ = (self.__dict__ | kwargs)
-    
+class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
+    def __init__(self, name, **kwargs) -> None:
+        super(RenderPlots, self).__init__(name=name, **kwargs)

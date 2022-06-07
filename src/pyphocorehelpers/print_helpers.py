@@ -14,12 +14,18 @@ class SimplePrintable:
         return f"<{self.__class__.__name__}: {self.__dict__};>"
 
 
-class PrettyPrintable:
-    def keys(self) -> List[Optional[str]]:
-        return self.__dict__.keys()
-
+class iPythonKeyCompletingMixin:
+    """ Enables iPython key completion
+    Requires Implementors to provide:
+        self.keys()
+    """
     def _ipython_key_completions_(self) -> List[Optional[str]]:
         return self.keys()
+    
+
+class PrettyPrintable(iPythonKeyCompletingMixin):
+    def keys(self) -> List[Optional[str]]:
+        return self.__dict__.keys()
 
     def _repr_pretty_(self, p, cycle=False):
         """The cycle parameter will be true if the representation recurses - e.g. if you put a container inside itself."""

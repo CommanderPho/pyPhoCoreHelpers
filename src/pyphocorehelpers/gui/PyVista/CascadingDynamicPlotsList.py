@@ -42,7 +42,9 @@ class CascadingDynamicPlotsList(DynamicParameters):
     
     @staticmethod    
     def apply_on_all(seq, method, *args, **kwargs):
-        """ by Ants Aasma, answered Apr 21, 2010 at 10:30 """
+        """ Applies a method with the specified name to all objects in the sequence, passing the same *args and **kwargs
+            by Ants Aasma, answered Apr 21, 2010 at 10:30 
+        """
         for obj in seq:
             getattr(obj, method)(*args, **kwargs)
             

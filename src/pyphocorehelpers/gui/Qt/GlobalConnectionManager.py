@@ -64,12 +64,23 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
         # For Driver list:
         found_driver_key, found_object = GlobalConnectionManager._unregister_object(self._registered_available_drivers, control_object=control_object)
         if found_driver_key is not None:
-            print(f'removed object with key {found_driver_key} from drivers list.')
+            if debug_print:
+                print(f'removed object with key {found_driver_key} from drivers list.')
         
         # For Drivable List:
-        found_drivable_key, found_object = GlobalConnectionManager._unregister_object(self._registered_available_drivables, control_object=control_object)
+        found_drivable_key, found_drivable_object = GlobalConnectionManager._unregister_object(self._registered_available_drivables, control_object=control_object)
         if found_drivable_key is not None:
-            print(f'removed object with key {found_drivable_key} from drivers list.')    
+            if debug_print:
+                print(f'removed object with key {found_drivable_key} from drivable list.')
+            # Remove the connections as well:
+            # self.active_connections[found_drivable_object] = None # remove the connection
+            found_connection = self.active_connections.pop(found_drivable_object, None)
+            if found_connection is not None:
+                if debug_print:
+                    print(f'found connection corresponding to object to be removed. Removing connection...')
+                found_connection = None
+                if debug_print:
+                    print('\tdone.')
         
         return found_driver_key, found_drivable_key
         
@@ -348,7 +359,7 @@ class GlobalConnectionManagerAccessingMixin:
         if owning_application is None:
             owning_application = QtWidgets.QApplication.instance() # <PyQt5.QtWidgets.QApplication at 0x1d44a4891f0>
             if owning_application is None:
-                print(f'could not get valid QApplication instance!')
+                print(f'ERROR: could not get valid QApplication instance!')
                 raise NotImplementedError
         
         # Set self._connection_man:    

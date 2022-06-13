@@ -140,17 +140,7 @@ class DynamicParameters(DiffableObject, MutableMapping):
         combined_tuple = tuple(member_names_tuple + values_tuple)
         return hash(combined_tuple)
     
-    
-    # def _unlisted_parameter_strings(self):
-    #     """ returns the string representations of all key/value pairs that aren't normally defined. """
-    #     # Dump all arguments into parameters.
-    #     out_list = []
-    #     for key, value in self.items():
-    #         if key not in PlacefieldComputationParameters.variable_names:
-    #             out_list.append(f"{key}_{value:.2f}")
-    #     return out_list
-    
-    
+        
     # For diffable parameters:
     def diff(self, other_object):
         return DiffableObject.compute_diff(self, other_object)

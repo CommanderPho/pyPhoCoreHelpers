@@ -1,6 +1,7 @@
 from typing import Callable, List, Optional, OrderedDict  # for OrderedMeta
 from enum import Enum
-
+import re # for CodeConversion
+import numpy as np # for CodeConversion
 
 
 class OrderedMeta(type):
@@ -70,9 +71,114 @@ def get_arguments_as_optional_dict(**kwargs):
 
             Output: ", **({'point_size': 8, 'font_size': 10, 'name': 'build_center_labels_test', 'shape_opacity': 0.8, 'show_points': False} | kwargs)"
     """
-    print(', **(' + f'{kwargs}' + ' | kwargs)')
+    CodeConversion.get_arguments_as_optional_dict(**kwargs)
 
 
+
+
+class CodeConversion(object):
+    """ Converts code (usually passed as text) to various alternative formats to ease development workflows. 
+    
+    
+    """
+    @classmethod
+    def stripComments(cls, code):
+        code = str(code)
+        # any '#' comment (not just new lines 
+        any_line_comment_format = r'(?m) *#.*\n?'
+        standalone_full_line_comment_only_format = r'(?m)^ *#.*\n?' # matches only lines that start with a line comment
+        end_line_only_comment_format = r'(?m)(?!\s*\w+\s)+#.*\n?' # Match only the comments at the end of lines, actually also includes the comment-only lines
+        
+        # format_str = standalone_full_line_comment_only_format
+        format_str = end_line_only_comment_format
+        return re.sub(format_str, '', code) 
+
+    @classmethod
+    def convert_defn_line_to_dictionary_line(cls, code_line):
+        code_line = str(code_line)
+        format_str = r'^\s*(?P<var_name>\w+)(?P<equals_portion>\s*=\s*)(?P<end_portion>.+)\n?' # gets the start of the line followed by any amount of whitespace followed by a variable name followed by an equals sign 
+        m = re.match(format_str, code_line)
+        if m is None:
+            return ''
+        else:
+            matches_group = m.groupdict()  # {'var_name': 'Malcolm', 'equals_portion': 'Reynolds', 'end_portion': ''}
+            dict_line = f"'{matches_group['var_name'].strip()}': {matches_group['end_portion'].strip()}"
+            # prepend with "'" to turn variable name into a key
+            # replace '=' with "':"
+            return dict_line
+   
+   
+    @classmethod     
+    def convert_defn_lines_to_dictionary(cls, code, multiline_dict_defn=True, multiline_members_indent='    '):
+        """ 
+            code: lines of code that define several python variables to be converted to dictionary entries
+            multiline_dict_defn: if True, each entry is converted to a new line (multi-line dict defn). Otherwise inline dict defn.
+            
+            
+        Examples:
+            test_parameters_defns_code_string = '''
+                max_num_spikes_per_neuron = 20000 # the number of spikes to truncate each neuron's timeseries to
+                kleinberg_parameters = DynamicParameters(s=2, gamma=0.1)
+                use_progress_bar = False # whether to use a tqdm progress bar
+                debug_print = False # whether to print debug-level progress using traditional print(...) statements
+            '''
+            >>> "\nmax_num_spikes_per_neuron = 20000 # the number of spikes to truncate each neuron's timeseries to\nkleinberg_parameters = DynamicParameters(s=2, gamma=0.1)\nuse_progress_bar = False # whether to use a tqdm progress bar\ndebug_print = False # whether to print debug-level progress using traditional print(...) statements\n"
+
+            active_str = convert_defn_lines_to_dictionary(test_parameters_defns_code_string, multiline_dict_defn=False)
+            active_str
+            >>> "{'max_num_spikes_per_neuron': 20000, 'kleinberg_parameters': DynamicParameters(s=2, gamma=0.1), 'use_progress_bar': False, 'debug_print': False}"
+
+            print(convert_defn_lines_to_dictionary(test_parameters_defns_code_string, multiline_dict_defn=True))
+            >>>
+                {
+                'max_num_spikes_per_neuron': 20000,
+                'kleinberg_parameters': DynamicParameters(s=2, gamma=0.1),
+                'use_progress_bar': False,
+                'debug_print': False
+                }
+        """
+        code = str(code)
+        code_lines = code.splitlines() # assumes one definition per line
+        formatted_code_lines = []
+
+        for i in np.arange(len(code_lines)):
+            # Remove any trailing comments:
+            curr_code_line = code_lines[i]
+            curr_code_line = curr_code_line.strip() # strip leading and trailing whitespace
+            if len(curr_code_line) > 0:
+                curr_code_line = cls.stripComments(curr_code_line).strip()
+                curr_code_line = cls.convert_defn_line_to_dictionary_line(curr_code_line).strip()
+                if multiline_dict_defn:
+                    # if multiline dict, indent the entries by the specified amount
+                    curr_code_line = f'{multiline_members_indent}{curr_code_line}'
+
+                formatted_code_lines.append(curr_code_line)
+        # formatted_code_lines
+        # Build final flattened output string:
+        if multiline_dict_defn:
+            dict_entry_seprator=',\n'
+            dict_prefix = '{\n'
+            dict_suffix = '\n}\n'
+        else:
+            dict_entry_seprator=', '
+            dict_prefix = '{'
+            dict_suffix = '}'
+            
+        flat_dict_member_code_str = dict_entry_seprator.join(formatted_code_lines)
+        final_dict_defn_str = dict_prefix + flat_dict_member_code_str + dict_suffix
+        return final_dict_defn_str
+
+    ## Static Helpers:
+    @classmethod
+    def get_arguments_as_optional_dict(cls, **kwargs):
+        """ Easily converts your existing argument-list style default values into a dict:
+                Defines a simple function that takes only **kwargs as its inputs and prints the values it recieves. Paste your values as arguments to the function call. The dictionary will be output to the console, so you can easily copy and paste. 
+            Usage:
+                >>> get_arguments_as_optional_dict(point_size=8, font_size=10, name='build_center_labels_test', shape_opacity=0.8, show_points=False)
+
+                Output: ", **({'point_size': 8, 'font_size': 10, 'name': 'build_center_labels_test', 'shape_opacity': 0.8, 'show_points': False} | kwargs)"
+        """
+        print(', **(' + f'{kwargs}' + ' | kwargs)')
 
 
 

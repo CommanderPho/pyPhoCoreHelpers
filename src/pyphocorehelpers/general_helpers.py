@@ -95,7 +95,7 @@ class CodeConversion(object):
 
     @classmethod
     def _match_and_parse_defn_line(cls, code_line):
-        """Converts a single line of code that defines a variable to a line of a dictionary.
+        """Converts a single line of code that defines a variable to a dictionary consisting of {'var_name': str, 'equals_portion': str, 'end_portion': str}
 
         Args:
             code_line (_type_): _description_
@@ -116,12 +116,6 @@ class CodeConversion(object):
     @classmethod
     def _convert_defn_line_to_dictionary_line(cls, code_line):
         """Converts a single line of code that defines a variable to a line of a dictionary.
-
-        Args:
-            code_line (_type_): _description_
-
-        Returns:
-            _type_: _description_
         """
         code_line = str(code_line)
         matches_dict = cls._match_and_parse_defn_line(code_line)        
@@ -131,6 +125,22 @@ class CodeConversion(object):
             # Format as dictionary:
             dict_line = f"'{matches_dict['var_name'].strip()}': {matches_dict['end_portion'].strip()}"
             return dict_line
+        
+        
+    @classmethod
+    def _convert_defn_line_to_parameter_list_item(cls, code_line):
+        """Converts a single line of code that defines a variable to a single entry in a parameter list.
+        """
+        code_line = str(code_line)
+        matches_dict = cls._match_and_parse_defn_line(code_line)        
+        if matches_dict is None:
+            return ''
+        else:
+            # Format as entry in a parameter list:
+            param_item = f"{matches_dict['var_name'].strip()}={matches_dict['end_portion'].strip()}"
+            return param_item
+        
+        
    
    
     @classmethod     
@@ -192,6 +202,49 @@ class CodeConversion(object):
         flat_dict_member_code_str = dict_entry_seprator.join(formatted_code_lines)
         final_dict_defn_str = dict_prefix + flat_dict_member_code_str + dict_suffix
         return final_dict_defn_str
+    
+    
+    @classmethod     
+    def convert_defn_lines_to_parameters_list(cls, code):
+        """ 
+        Inputs:
+            code: lines of code that define several python variables to be converted to parameters, as would be passed into a function
+            
+            
+        Examples:
+            test_parameters_defns_code_string = '''
+                max_num_spikes_per_neuron = 20000 # the number of spikes to truncate each neuron's timeseries to
+                kleinberg_parameters = DynamicParameters(s=2, gamma=0.1)
+                use_progress_bar = False # whether to use a tqdm progress bar
+                debug_print = False # whether to print debug-level progress using traditional print(...) statements
+            '''
+
+            CodeConversion.convert_defn_lines_to_parameters_list(test_parameters_defns_code_string)
+            >>> 'max_num_spikes_per_neuron=20000, kleinberg_parameters=DynamicParameters(s=2, gamma=0.1), use_progress_bar=False, debug_print=False'
+
+        """
+        code = str(code)
+        code_lines = code.splitlines() # assumes one definition per line
+        formatted_code_lines = []
+
+        for i in np.arange(len(code_lines)):
+            # Remove any trailing comments:
+            curr_code_line = code_lines[i]
+            curr_code_line = curr_code_line.strip() # strip leading and trailing whitespace
+            if len(curr_code_line) > 0:
+                curr_code_line = cls._stripComments(curr_code_line).strip()
+                curr_code_line = cls._convert_defn_line_to_parameter_list_item(curr_code_line).strip()
+                formatted_code_lines.append(curr_code_line)
+        # formatted_code_lines
+        # Build final flattened output string:
+        item_entry_seprator=', '
+        list_prefix = '' # '['
+        list_suffix = '' # ']'    
+        flat_list_member_code_str = item_entry_seprator.join(formatted_code_lines)
+        final_list_defn_str = list_prefix + flat_list_member_code_str + list_suffix
+        return final_list_defn_str
+    
+    
 
     ## Static Helpers:
     @classmethod

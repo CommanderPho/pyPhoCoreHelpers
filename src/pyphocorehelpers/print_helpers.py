@@ -524,7 +524,8 @@ def dbg_dump(*args, dumpopt_stream=sys.stderr, dumpopt_forcename=True, dumpopt_p
         return output.rstrip()
     
 ## Category: Structural Overview/Outline:
-def print_keys_if_possible(curr_key, curr_value, depth=0, omit_curr_item_print=False):
+_GLOBAL_MAX_DEPTH = 20
+def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_curr_item_print=False):
     """Prints the keys of an object if possible, in a recurrsive manner.
 
     Args:
@@ -580,10 +581,14 @@ def print_keys_if_possible(curr_key, curr_value, depth=0, omit_curr_item_print=F
         
     
     """
-    if (depth > 20):
-        print(f'OVERFLOW AT DEPTH 20!')
+    if (depth >= _GLOBAL_MAX_DEPTH):
+        print(f'OVERFLOW AT DEPTH {_GLOBAL_MAX_DEPTH}!')
         raise OverflowError
         # return None # overflow detection
+    elif (depth > max_depth):
+        # print(f'finished at DEPTH {depth} with max_depth: {max_depth}!')
+        return None
+        
     else:
         depth_string = '\t' * depth
         curr_value_type = type(curr_value)
@@ -608,14 +613,14 @@ def print_keys_if_possible(curr_key, curr_value, depth=0, omit_curr_item_print=F
                     # prints the current value:
                     # print(f"{depth_string}- {curr_child_key} - {type(curr_child_value)}")
                     # print children keys
-                    print_keys_if_possible(curr_child_key, curr_child_value, depth=(depth+1), omit_curr_item_print=False)
+                    print_keys_if_possible(curr_child_key, curr_child_value, max_depth=max_depth, depth=(depth+1), omit_curr_item_print=False)
             except AttributeError:
                 # AttributeError: 'PfND' object has no attribute 'items'
                 
                 # Try to get __dict__ from the item:
                 try:
                     curr_value_dict_rep = vars(curr_value) # gets the .__dict__ property if curr_value has one, otherwise throws a TypeError
-                    print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, depth=depth, omit_curr_item_print=True) # do not increase depth in this regard so it prints at the same level. Also tell it not to print again.
+                    print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, max_depth=max_depth, depth=depth, omit_curr_item_print=True) # do not increase depth in this regard so it prints at the same level. Also tell it not to print again.
                     
                 except TypeError:
                     # print(f"{depth_string}- {curr_value_type}")

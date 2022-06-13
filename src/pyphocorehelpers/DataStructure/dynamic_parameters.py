@@ -55,6 +55,24 @@ class DynamicParameters(DiffableObject, MutableMapping):
             print(f'DynamicParameters.__dir__(self)')
         return self.keys()
 
+
+    def __or__(self, other):
+        """ Used with vertical bar operator: |
+        
+        Usage:
+            (_test_complete_spike_analysis_config | _test_partial_spike_analysis_config)    
+        """
+        if isinstance(other, (dict)):
+            other_dict = other
+        elif isinstance(other, DynamicParameters):
+            other_dict = other.to_dict()
+        else:
+            raise NotImplementedError            
+            
+        dict_or = self.to_dict().__or__(other_dict)
+        return DynamicParameters.init_from_dict(dict_or)
+        
+        
     ## Enable access by object members:
 #     def __getattr__(self, attr):
 #         # Fake a __getstate__ method that returns None
@@ -145,6 +163,10 @@ class DynamicParameters(DiffableObject, MutableMapping):
     def diff(self, other_object):
         return DiffableObject.compute_diff(self, other_object)
 
+
+    def to_dict(self):
+        return dict(self.items())
+        
     # Helper initialization methods:    
     # For initialization from a different dictionary-backed object:
     @classmethod

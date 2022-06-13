@@ -82,7 +82,7 @@ class CodeConversion(object):
     
     """
     @classmethod
-    def stripComments(cls, code):
+    def _stripComments(cls, code):
         code = str(code)
         # any '#' comment (not just new lines 
         any_line_comment_format = r'(?m) *#.*\n?'
@@ -94,17 +94,42 @@ class CodeConversion(object):
         return re.sub(format_str, '', code) 
 
     @classmethod
-    def convert_defn_line_to_dictionary_line(cls, code_line):
+    def _match_and_parse_defn_line(cls, code_line):
+        """Converts a single line of code that defines a variable to a line of a dictionary.
+
+        Args:
+            code_line (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         code_line = str(code_line)
         format_str = r'^\s*(?P<var_name>\w+)(?P<equals_portion>\s*=\s*)(?P<end_portion>.+)\n?' # gets the start of the line followed by any amount of whitespace followed by a variable name followed by an equals sign 
         m = re.match(format_str, code_line)
         if m is None:
-            return ''
+            return None
         else:
             matches_group = m.groupdict()  # {'var_name': 'Malcolm', 'equals_portion': 'Reynolds', 'end_portion': ''}
-            dict_line = f"'{matches_group['var_name'].strip()}': {matches_group['end_portion'].strip()}"
-            # prepend with "'" to turn variable name into a key
-            # replace '=' with "':"
+            return matches_group
+        
+
+    @classmethod
+    def _convert_defn_line_to_dictionary_line(cls, code_line):
+        """Converts a single line of code that defines a variable to a line of a dictionary.
+
+        Args:
+            code_line (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        code_line = str(code_line)
+        matches_dict = cls._match_and_parse_defn_line(code_line)        
+        if matches_dict is None:
+            return ''
+        else:
+            # Format as dictionary:
+            dict_line = f"'{matches_dict['var_name'].strip()}': {matches_dict['end_portion'].strip()}"
             return dict_line
    
    
@@ -146,8 +171,8 @@ class CodeConversion(object):
             curr_code_line = code_lines[i]
             curr_code_line = curr_code_line.strip() # strip leading and trailing whitespace
             if len(curr_code_line) > 0:
-                curr_code_line = cls.stripComments(curr_code_line).strip()
-                curr_code_line = cls.convert_defn_line_to_dictionary_line(curr_code_line).strip()
+                curr_code_line = cls._stripComments(curr_code_line).strip()
+                curr_code_line = cls._convert_defn_line_to_dictionary_line(curr_code_line).strip()
                 if multiline_dict_defn:
                     # if multiline dict, indent the entries by the specified amount
                     curr_code_line = f'{multiline_members_indent}{curr_code_line}'

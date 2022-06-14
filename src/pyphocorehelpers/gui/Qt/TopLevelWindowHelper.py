@@ -2,7 +2,8 @@ from indexed import IndexedOrderedDict
 
 
 class TopLevelWindowHelper:
-    """
+    """ Not quite finished, but tools to interact with the active QtWidgets and QWindows at the top-level
+    
     # app = pg.mkQApp()
     app = pg.mkQApp(spike_raster_window.applicationName) # <PyQt5.QtWidgets.QApplication at 0x1d44a4891f0>
     

@@ -43,7 +43,7 @@
      <item row="0" column="0">
       <widget class="QLabel" name="lblMain">
        <property name="text">
-        <string>TextLabel</string>
+        <string>Path</string>
        </property>
       </widget>
      </item>

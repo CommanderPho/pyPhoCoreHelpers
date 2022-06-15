@@ -58,7 +58,7 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
-        self.lblMain.setText(_translate("Form", "TextLabel"))
+        self.lblMain.setText(_translate("Form", "Path"))
         self.txtFilePath.setPlaceholderText(_translate("Form", "No file selected"))
         self.btnAlternate.setToolTip(_translate("Form", "An alternative action"))
 

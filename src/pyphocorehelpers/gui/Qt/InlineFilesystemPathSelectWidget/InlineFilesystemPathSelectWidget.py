@@ -9,8 +9,32 @@ from qtpy.QtWidgets import QWidget, QStyle
 import pyphoplacecellanalysis.External.pyqtgraph as pg
 
 class InlineFilesystemPathSelectWidget(QWidget):
-    """ A widget that displays a label, the currently selected filesystem path, and a button to choose a new path. """
+    """ A widget that displays a label, the currently selected filesystem path, and a button to choose a new path.
+    
+    Properties:
+        is_save_mode: bool = False # if true, the dialog created by the widget is that produced when saving. Allows specifying default file extensions and file names
+
+        # Commmon:
+        label: str = 'Path' # The text displayed to the left of the path
+        path_type: str = 'folder' # {'file', 'folder'}
+        
+        # save mode only:
+        
+        
+        
+        # Non-save mode only:
+        allows_multiple: bool = False # If True, allows multiple selections to be made. Only relevant for 
+        
+    Usage:
+        from pyphocorehelpers.gui.Qt.InlineFilesystemPathSelectWidget.InlineFilesystemPathSelectWidget import InlineFilesystemPathSelectWidget
+        InlineFilesystemPathSelectWidget('Root')
+    """
+    label: str = 'Path Test'
+    is_save_mode: bool = False # if true, the dialog created by the widget is that produced when saving. Allows specifying default file extensions and file names
+    path_type: str = 'folder' # {'file', 'folder'}
+    allows_multiple: bool = False # If True, allows multiple selections to be made. Only relevant for 
     sigFileSelectionChanged = QtCore.Signal(str)
+    
     
     @property
     def path(self):
@@ -24,25 +48,32 @@ class InlineFilesystemPathSelectWidget(QWidget):
         self.ui.txtFilePath.setText(str(value))
         
         
-    @property
-    def is_save_mode(self):
-        """The is_save_mode property."""
-        return self._is_save_mode
-    @is_save_mode.setter
-    def is_save_mode(self, value):
-        self._is_save_mode = value
+    # @property
+    # def is_save_mode(self):
+    #     """The is_save_mode property."""
+    #     return self._is_save_mode
+    # @is_save_mode.setter
+    # def is_save_mode(self, value):
+    #     self._is_save_mode = value
         
-    def __init__(self, parent=None, is_save_mode=False):
+    def __init__(self, label=None, is_save_mode=False, path_type='folder', allows_multiple=False, parent=None):
         super().__init__(parent=parent) # Call the inherited classes __init__ method
         self.ui = Ui_Form()
         self.ui.setupUi(self) # builds the design from the .ui onto this widget.
         
-        self._is_save_mode = is_save_mode
+        # self._is_save_mode = is_save_mode
+        self.label = label
+        self.is_save_mode = is_save_mode
+        self.path_type = path_type
+        self.allows_multiple = allows_multiple
         
         self.initUI()
         self.show() # Show the GUI
 
     def initUI(self):
+        self.ui.lblMain.setText(self.label)
+        self.ui.lblMain.adjustSize()
+        
         pixmapi = getattr(QStyle, 'SP_DirIcon')
         icon = self.style().standardIcon(pixmapi)
         self.ui.btnSelectFile.setIcon(icon)
@@ -59,26 +90,36 @@ class InlineFilesystemPathSelectWidget(QWidget):
          return 
      
     @QtCore.Slot()
-    def selectPathDialog(self, fileName=None, startDir=None):
+    def selectPathDialog(self, startDir=None):
         if startDir is None:
             startDir = str(self.path)
         if startDir is None:
             startDir = '.'
         # self.ui.fileDialog = pg.FileDialog(None, "Select File", startDir, "Custom Eval Node (*.pEval)")
-        
-        # Select folder mode:
-        self.ui.fileDialog = pg.FileDialog.getExistingDirectory(None, "Select Folder", startDir)
-        
-        
+    
         # folderpath = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Folder')
         
-        if self._is_save_mode:
-            self.ui.fileDialog.setDefaultSuffix("pEval")
-            self.ui.fileDialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave) 
-            
-        self.ui.fileDialog.show()
-        self.ui.fileDialog.fileSelected.connect(self.onDialogComplete)
+        # if self._is_save_mode:
+        #     self.ui.fileDialog.setDefaultSuffix("pEval")
+        #     self.ui.fileDialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave) 
+                    
+        # self.ui.fileDialog.show()
+        # self.ui.fileDialog.fileSelected.connect(self.onDialogComplete)
         
+        ## MODAL MODE:
+        
+        if self.path_type == 'folder':
+             # Select folder mode:
+            selected_path = pg.FileDialog.getExistingDirectory(None, "Select Folder", startDir)
+        elif self.path_type == 'file':
+            selected_path = pg.FileDialog.getOpenFileName(None, "Select File", startDir)
+        else:
+            raise NotImplementedError
+        
+       
+        self.onDialogComplete(selected_path)
+        
+    
      
     # def loadFile(self, fileName=None, startDir=None):
     #     """Load a Custom Eval Node (``*.pEval``) file.

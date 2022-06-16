@@ -4,7 +4,9 @@ from pyphocorehelpers.DataStructure.data_structure_builders import Width_Height_
 
 ## Centroid point for camera
 def centeroidnp(arr):
-    # Calculate the centroid of an array of points
+    """ Calculate the centroid of an array of points
+        History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
+    """
     length = arr.shape[0]
     sum_x = np.sum(arr[:, 0])
     sum_y = np.sum(arr[:, 1])
@@ -12,7 +14,9 @@ def centeroidnp(arr):
 
 
 def min_max_bounds(arr):
-    # Calculate the min and max of an array of points
+    """ Calculate the min and max of an array of points
+        History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
+    """
     max_x = np.amax(arr[:, 0])
     max_y = np.amax(arr[:, 1])
     min_x = np.amin(arr[:, 0])
@@ -21,7 +25,9 @@ def min_max_bounds(arr):
 
 
 def bounds_midpoint(arr):
-    # calculates the (x, y) midpoint given input in the format [min_x, max_x, min_y, max_y]
+    """ calculates the (x, y) midpoint given input in the format [min_x, max_x, min_y, max_y]
+        History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
+    """
     min_x, max_x, min_y, max_y = arr
     return [(min_x + max_x)/2.0, (min_y + max_y)/2.0]
 

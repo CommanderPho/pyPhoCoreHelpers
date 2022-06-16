@@ -8,6 +8,7 @@
 [![Monthly Downloads](https://pepy.tech/badge/pyPhoCoreHelpers/month)](https://pepy.tech/project/pyPhoCoreHelpers)
 [![Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Twitter)](https://twitter.com/pyPhoCoreHelpers)
 -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6647473.svg)](https://doi.org/10.5281/zenodo.6647473)
 
 # pyPhoCoreHelpers
 

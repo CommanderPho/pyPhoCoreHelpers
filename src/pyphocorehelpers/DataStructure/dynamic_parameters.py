@@ -23,10 +23,7 @@ class DynamicParameters(DiffableObject, MutableMapping):
         self._mapping = {} # initialize the base dictionary object where things will be stored
         self._keys_at_init = list(kwargs.keys())
         self.update(kwargs)
-        # for key, value in kwargs.items():
-        #     # setattr(self, key, value)
-        #     self[key] = value
-
+       
     def __getitem__(self, key):
         if DynamicParameters.debug_enabled:
             print(f'DynamicParameters.__getitem__(self, key): key {key}')

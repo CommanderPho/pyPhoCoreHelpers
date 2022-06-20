@@ -2,10 +2,24 @@ from pyphocorehelpers.print_helpers import SimplePrintable, PrettyPrintable, iPy
 from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters
 
 
+
 class NestedRenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
-    """ 
+    """ This class was supposed to provide a hierarchical alternative to a flat "RenderPlots" item: 
+    
+    
+    TODO: not yet finished/working
+    
         from pyphocorehelpers.DataStructure.NestedRenderPlots import NestedRenderPlots
     
+    
+    
+    TESTING DOCS:
+    
+            _test_nested_render_plots.main_plot_widget.render_time_epochs.add_item(obj=active_pbe_interval_rects_item, name='pbe_interval_rects_item', tags=['PBE', 'IntervalRectsItem'])
+            _test_nested_render_plots.get_hierarchy_render_items()
+
+
+
     """
     
     @property

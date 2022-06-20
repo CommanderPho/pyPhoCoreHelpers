@@ -16,3 +16,10 @@ class DebugHelper(iPythonKeyCompletingMixin, DynamicParameters):
 class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
     def __init__(self, name, **kwargs) -> None:
         super(RenderPlots, self).__init__(name=name, **kwargs)
+
+
+class RenderPlotsData(iPythonKeyCompletingMixin, DynamicParameters):
+    def __init__(self, name, **kwargs) -> None:
+        super(RenderPlotsData, self).__init__(name=name, **kwargs)
+
+

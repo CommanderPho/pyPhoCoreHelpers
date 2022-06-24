@@ -29,17 +29,19 @@ def compose_functions_with_error_handling(*args):
     Note that functions are composed from right-to-left, meaning that the first function input is the outermost function
     Usage:
         post_load_functions = [lambda a_loaded_sess: estimation_session_laps(a_loaded_sess), lambda a_loaded_sess: a_loaded_sess.filtered_by_neuron_type('pyramidal')]
-    composed_post_load_function = compose_functions(*post_load_functions) # functions are composed right-to-left (math order)
-    composed_post_load_function(curr_kdiba_pipeline.sess)
+        composed_post_load_function = compose_functions(*post_load_functions) # functions are composed right-to-left (math order)
+        composed_post_load_function(curr_kdiba_pipeline.sess)
     """
     def _(x):
         result = x # initially set the result to the input
-        accumulated_errors = [] # empty list for keeping track of exceptions
+        # accumulated_errors = [] # empty list for keeping track of exceptions
+        accumulated_errors = dict() # empty list for keeping track of exceptions
         for f in reversed(args):
             try:
                 temp_result = f(result) # evaluate the function 'f' using the result provided from the previous output or the initial input
             except (TypeError, ValueError, NameError, AttributeError, KeyError) as e:
-                accumulated_errors.append(e) # add the error to the accumulated error array
+                accumulated_errors[f] = (e, result)
+                # accumulated_errors.append(e) # add the error to the accumulated error array
                 temp_result = result # restore the result from prior to the calculations?
                 # result shouldn't be updated unless there wasn't an error, so it should be fine to move on to the next function
             else:
@@ -49,7 +51,6 @@ def compose_functions_with_error_handling(*args):
             #     # do this no matter what
             #     # result
             #     pass
-    
         return result, accumulated_errors # new function returns both the result and the accumulated errors
     return _
 

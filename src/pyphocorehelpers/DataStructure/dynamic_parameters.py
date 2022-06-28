@@ -69,28 +69,6 @@ class DynamicParameters(DiffableObject, MutableMapping):
         dict_or = self.to_dict().__or__(other_dict)
         return DynamicParameters.init_from_dict(dict_or)
         
-        
-    ## Enable access by object members:
-#     def __getattr__(self, attr):
-#         # Fake a __getstate__ method that returns None
-
-#         # AttributeError: 'DynamicParameters' object has no attribute 'prop0'
-#         if attr == "data":
-#             # Access to the raw data variable
-#             return self.data
-#         else:
-#             if DynamicParameters.debug_enabled:
-#                 print(f'DynamicParameters.__getattr__(self, attr): attr {attr}')
-#             return self[attr]
-
-
-    # This works, but is un-needed
-    # def __getattribute__(self, item):
-    #      # Gets called when an attribute is accessed
-    #     if DynamicParameters.debug_enabled:
-    #         print(f'DynamicParameters.__getattribute__(self, item): item {item}')
-    #     # Calling the super class to avoid recursion
-    #     return super(DynamicParameters, self).__getattribute__(item)
 
     def __getattr__(self, item):
         # Gets called when the item is not found via __getattribute__
@@ -112,7 +90,6 @@ class DynamicParameters(DiffableObject, MutableMapping):
         except BaseException as err:
             print(f"Unexpected {err=}, {type(err)=}")
             raise
-
 
     def __setattr__(self, attr, value):
         if attr == '__setstate__':
@@ -175,3 +152,13 @@ class DynamicParameters(DiffableObject, MutableMapping):
         # test to see if the object is dict-backed:
         obj_dict_rep = an_object.__dict__
         return cls.init_from_dict(obj_dict_rep)
+    
+    
+    ## For serialization/pickling:
+    def __getstate__(self):
+        return self.to_dict()
+        # return self.father, self.var1
+
+    def __setstate__(self, state):
+        return self.init_from_dict(state)
+        # self.father, self.var1 = state

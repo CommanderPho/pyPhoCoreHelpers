@@ -6,48 +6,9 @@ import pandas as pd
 from dataclasses import dataclass
 
 
-@dataclass
-class BinningInfo(object):
-    """Docstring for BinningInfo."""
-    variable_extents: tuple
-    step: float
-    num_bins: int
-    bin_indicies: np.ndarray
-    
-
-def build_spanning_grid_matrix(x_values, y_values, debug_print=False):
-    """ builds a 2D matrix with entries spanning x_values across axis 0 and spanning y_values across axis 1.
-        
-        For example, used to build a grid of position points from xbins and ybins.
-    Usage:
-        all_positions_matrix, flat_all_positions_matrix, original_data_shape = build_all_positions_matrix(active_one_step_decoder.xbin_centers, active_one_step_decoder.ybin_centers)
-    """
-    num_rows = len(y_values)
-    num_cols = len(x_values)
-
-    original_data_shape = (num_cols, num_rows) # original_position_data_shape: (64, 29)
-    if debug_print:
-        print(f'original_position_data_shape: {original_data_shape}')
-    x_only_matrix = np.repeat(np.expand_dims(x_values, 1).T, num_rows, axis=0).T
-    # np.shape(x_only_matrix) # (29, 64)
-    flat_x_only_matrix = np.reshape(x_only_matrix, (-1, 1))
-    if debug_print:
-        print(f'np.shape(x_only_matrix): {np.shape(x_only_matrix)}, np.shape(flat_x_only_matrix): {np.shape(flat_x_only_matrix)}') # np.shape(x_only_matrix): (64, 29), np.shape(flat_x_only_matrix): (1856, 1)
-    y_only_matrix = np.repeat(np.expand_dims(y_values, 1), num_cols, axis=1).T
-    # np.shape(y_only_matrix) # (29, 64)
-    flat_y_only_matrix = np.reshape(y_only_matrix, (-1, 1))
-
-    # flat_all_positions_matrix = np.array([np.append(an_x, a_y) for (an_x, a_y) in zip(flat_x_only_matrix, flat_y_only_matrix)])
-    flat_all_entries_matrix = [tuple(np.append(an_x, a_y)) for (an_x, a_y) in zip(flat_x_only_matrix, flat_y_only_matrix)] # a list of position tuples (containing two elements)
-    # reconsitute its shape:
-    all_entries_matrix = np.reshape(flat_all_entries_matrix, (original_data_shape[0], original_data_shape[1], 2))
-    if debug_print:
-        print(f'np.shape(all_positions_matrix): {np.shape(all_entries_matrix)}') # np.shape(all_positions_matrix): (1856, 2) # np.shape(all_positions_matrix): (64, 29, 2)
-        print(f'flat_all_positions_matrix[0]: {flat_all_entries_matrix[0]}\nall_positions_matrix[0,0,:]: {all_entries_matrix[0,0,:]}')
-
-    return all_entries_matrix, flat_all_entries_matrix, original_data_shape
-
-
+# ==================================================================================================================== #
+# List-Like and Iterators                                                                                              #
+# ==================================================================================================================== #
 
 def safe_get(list, index, fallback_value):
     """Similar to dict's .get(key, fallback) function but for lists. Returns a fallback/default value if the index is not valid for the list, otherwise returns the value at that index.
@@ -65,162 +26,50 @@ def safe_get(list, index, fallback_value):
         return fallback_value
 
 
-def safe_pandas_get_group(dataframe_group, key):
-    """ returns an empty dataframe if the key isn't found in the group."""
-    if key in dataframe_group.groups.keys():
-        return dataframe_group.get_group(key)
+def is_consecutive_no_gaps(arr, enable_debug_print=False):
+    """ Checks whether a passed array/list is a series of ascending indicies without gaps
+    
+    arr: listlike: checks if the series is from [0, ... , len(arr)-1]
+    
+    Usage:
+        neuron_IDXs = extracted_neuron_IDXs
+        is_consecutive_no_gaps(cell_ids, neuron_IDXs)
+    """
+    if enable_debug_print:
+        print(f'is_consecutive_no_gaps(arr: {arr})')
+    comparison_correct_sequence = np.arange(len(arr)) # build a series from [0, ... , N-1]
+    differing_elements = np.setdiff1d(comparison_correct_sequence, arr)
+    if (len(differing_elements) > 0):
+        if enable_debug_print:
+            print(f'\t differing_elements: {differing_elements}')
+        return False
     else:
-        original_df = dataframe_group.obj
-        return original_df.drop(original_df.index)
+        return True
     
 
-# class MatrixFlattenTransformer(object):
-# """ Supposed to allow easy transformation of data from a flattened representation to the original.
-# Usage:
-#     trans = MatrixFlattenTransformer(original_data_shape)
-#     test_all_positions_matrix = trans.unflatten(flat_all_positions_matrix)
-#     print(f'np.shape(test_all_positions_matrix): {np.shape(test_all_positions_matrix)}')
-# """
-#     """ TODO: does not yet work. for MatrixFlattenTransformer."""
-#     def __init__(self, original_data_shape):
-#         super(MatrixFlattenTransformer, self).__init__()
-#         self.original_data_shape = original_data_shape
-
-#     def flatten(self, data):
-#         data_shape = np.shape(data)
-#         original_flat_shape = np.prod(self.original_data_shape)
-#         # assert np.shape(data) == self.original_data_shape, f"data passed in to flatten (with shape {np.shape(data)}) is not equal to the original data shape: {self.original_data_shape}"
-#         assert data_shape == original_flat_shape, f"data passed in to flatten (with shape {data_shape}) is not equal to the original shape's number of items (shape: {self.original_data_shape}, original_flat_shape: {original_flat_shape}"
-#         return np.reshape(data, (-1, 1))
-        
-#     def unflatten(self, flat_data):
-#         flat_data_shape = np.shape(flat_data)
-#         original_data_shape_ndim = len(self.original_data_shape)
-#         # assert (flat_data_shape[:original_data_shape_ndim] == self.original_data_shape), f"data passed in to unflatten (with shape {flat_data_shape}) must match the original data shape ({self.original_data_shape}), at least up to the number of dimensions in the original"
-#         additional_dimensions = flat_data_shape[original_data_shape_ndim:]        
-#         return np.reshape(flat_data, (self.original_data_shape[0], self.original_data_shape[1], *additional_dimensions))
-        
+def sorted_slice(a,l,r):
+    start = np.searchsorted(a, l, 'left')
+    end = np.searchsorted(a, r, 'right')
+    return np.arange(start, end)
 
 
-
-
-def build_spanning_bins(variable_values, max_bin_size:float, debug_print=False):
-    """ DEPRICATED! out_digitized_variable_bins include both endpoints (bin edges)
+def chunks(iterable, size=10):
+    """ Chunking
 
     Args:
-        variable_values ([type]): [description]
-        max_bin_size (float): [description]
-        debug_print (bool, optional): [description]. Defaults to False.
+        iterable ([type]): [description]
+        size (int, optional): [description]. Defaults to 10.
 
-    Returns:
-        out_digitized_variable_bins [type]: [description]
-        out_binning_info [BinningInfo]: contains info about how the binning was conducted
-    """
-    raise DeprecationWarning
-    # compute extents:
-    curr_variable_extents = (np.nanmin(variable_values), np.nanmax(variable_values))
-    num_subdivisions = int(np.ceil((curr_variable_extents[1] - curr_variable_extents[0])/max_bin_size)) # get the next integer size above float_bin_size
-    actual_subdivision_step_size = (curr_variable_extents[1] - curr_variable_extents[0]) / float(num_subdivisions) # the actual exact size of the bin
-    if debug_print:
-        print(f'for max_bin_size: {max_bin_size} -> num_subdivisions: {num_subdivisions}, actual_subdivision_step_size: {actual_subdivision_step_size}')
-    # out_bin_indicies = np.arange(num_subdivisions)
-    out_binning_info = BinningInfo(curr_variable_extents, actual_subdivision_step_size, num_subdivisions, np.arange(num_subdivisions))
-    out_digitized_variable_bins = np.linspace(curr_variable_extents[0], curr_variable_extents[1], num_subdivisions, dtype=float)#.astype(float)
-    
-    assert out_digitized_variable_bins[-1] == out_binning_info.variable_extents[1], "out_digitized_variable_bins[-1] should be the maximum variable extent!"
-    assert out_digitized_variable_bins[0] == out_binning_info.variable_extents[0], "out_digitized_variable_bins[0] should be the minimum variable extent!"
-
-    # All above arge the bin_edges
-    return out_digitized_variable_bins, out_binning_info
-
-
-
-
-def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=None):
-    """[summary]
-
-    Args:
-        variable_values ([type]): [description]
-        num_bins (int, optional): [description]. Defaults to None.
-        bin_size (float, optional): [description]. Defaults to None.
-        debug_print (bool, optional): [description]. Defaults to False.
-
-    Raises:
-        ValueError: [description]
-
-    Returns:
-        [type]: [description]
-        
     Usage:
-        ## Binning with Fixed Number of Bins:    
-        xbin, ybin, bin_info = compute_spanning_bins(pos_df.x.to_numpy(), bin_size=active_config.computation_config.grid_bin[0]) # bin_size mode
-        print(bin_info)
-        ## Binning with Fixed Bin Sizes:
-        xbin, ybin, bin_info = compute_spanning_bins(pos_df.x.to_numpy(), num_bins=num_bins) # num_bins mode
-        print(bin_info)
-        
+        laps_pages = [list(chunk) for chunk in _chunks(sess.laps.lap_id, curr_num_subplots)]
     """
-    assert (num_bins is None) or (bin_size is None), 'You cannot constrain both num_bins AND bin_size. Specify only one or the other.'
-    assert (num_bins is not None) or (bin_size is not None), 'You must specify either the num_bins XOR the bin_size.'
-    curr_variable_extents = (np.nanmin(variable_values), np.nanmax(variable_values))
-    
-    if num_bins is not None:
-        ## Binning with Fixed Number of Bins:
-        mode = 'num_bins'
-        xnum_bins = num_bins
-        xbin, xstep = np.linspace(curr_variable_extents[0], curr_variable_extents[1], num=num_bins, retstep=True)  # binning of x position
-        
-    elif bin_size is not None:
-        ## Binning with Fixed Bin Sizes:
-        mode = 'bin_size'
-        xstep = bin_size
-        xbin = np.arange(curr_variable_extents[0], (curr_variable_extents[1] + xstep), xstep, )  # binning of x position
-        # the interval does not include this value, except in some cases where step is not an integer and floating point round-off affects the length of out.
-        xnum_bins = len(xbin)
-        
-    else:
-        raise ValueError
-    
-    return xbin, BinningInfo(curr_variable_extents, xstep, xnum_bins, np.arange(xnum_bins))
-      
-      
-def compute_position_grid_size(*any_1d_series, num_bins:tuple):
-    """  Computes the required bin_sizes from the required num_bins (for each dimension independently)
-    Usage:
-    out_grid_bin_size, out_bins, out_bins_infos = compute_position_grid_size(curr_kdiba_pipeline.sess.position.x, curr_kdiba_pipeline.sess.position.y, num_bins=(64, 64))
-    active_grid_bin = tuple(out_grid_bin_size)
-    print(f'active_grid_bin: {active_grid_bin}') # (3.776841861770752, 1.043326930905373)
-    """
-    assert (len(any_1d_series)) == len(num_bins), f'(len(other_1d_series)) must be the same length as the num_bins tuple! But (len(other_1d_series)): {(len(any_1d_series))} and len(num_bins): {len(num_bins)}!'
-    num_series = len(num_bins)
-    out_bins = []
-    out_bins_info = []
-    out_bin_grid_step_size = np.zeros((num_series,))
-
-    for i in np.arange(num_series):
-        xbins, xbin_info = compute_spanning_bins(any_1d_series[i], num_bins=num_bins[i])
-        out_bins.append(xbins)
-        out_bins_info.append(xbin_info)
-        out_bin_grid_step_size[i] = xbin_info.step
-
-    return out_bin_grid_step_size, out_bins, out_bins_info
-
-
-
-
-def get_bin_centers(bin_edges):
-    """ For a series of 1D bin edges given by bin_edges, returns the center of the bins. Output will have one less element than bin_edges. """
-    return (bin_edges[:-1] + np.diff(bin_edges) / 2.0)
-    
-def get_bin_edges(bin_centers):
-    """ TODO: CHECK
-    For a series of 1D bin centers given by bin_centers, returns the edges of the bins.
-    Reciprocal of get_bin_centers(bin_edges)
-    """
-    half_bin_width = float((bin_centers[1] - bin_centers[0])) / 2.0 # TODO: assumes fixed bin width
-    bin_starts = bin_centers - half_bin_width
-    bin_ends = bin_centers + half_bin_width
-    return interleave_elements(bin_starts, bin_ends)
+    iterator = iter(iterable)
+    for first in iterator:    # stops when iterator is depleted
+        def chunk():          # construct generator for next chunk
+            yield first       # yield element from for loop
+            for more in islice(iterator, size - 1):
+                yield more    # yield more elements from the iterator
+        yield chunk()         # in outer generator, yield next chunk
 
 
 def build_pairwise_indicies(target_indicies, debug_print=False):
@@ -278,33 +127,6 @@ def interleave_elements(start_points, end_points):
     return all_points
 
 
-
-def get_dict_subset(a_dict, included_keys=None, require_all_keys=False):
-    """Gets a subset of a dictionary from a list of keys (included_keys)
-
-    Args:
-        a_dict ([type]): [description]
-        included_keys ([type], optional): [description]. Defaults to None.
-        require_all_keys: Bool, if True, requires all keys in included_keys to be in the dictionary (a_dict)
-
-    Returns:
-        [type]: [description]
-    """
-    if included_keys is not None:
-        if require_all_keys:
-            return {included_key:a_dict[included_key] for included_key in included_keys} # filter the dictionary for only the keys specified
-        else:
-            out_dict = {}
-            for included_key in included_keys:
-                if included_key in a_dict.keys():
-                    out_dict[included_key] = a_dict[included_key]
-            return out_dict
-    else:
-        return a_dict
-
-
-
-
 # def extract_windows_vectorized(array, clearing_time_index, max_time, sub_window_size):
 #     start = clearing_time_index + 1 - sub_window_size + 1
     
@@ -331,13 +153,223 @@ def get_dict_subset(a_dict, included_keys=None, require_all_keys=False):
 #     return array[sub_windows]
 
 
-def sorted_slice(a,l,r):
-    start = np.searchsorted(a, l, 'left')
-    end = np.searchsorted(a, r, 'right')
-    return np.arange(start, end)
+# ==================================================================================================================== #
+# Dictionary and Maps                                                                                                  #
+# ==================================================================================================================== #
+
+def get_dict_subset(a_dict, included_keys=None, require_all_keys=False):
+    """Gets a subset of a dictionary from a list of keys (included_keys)
+
+    Args:
+        a_dict ([type]): [description]
+        included_keys ([type], optional): [description]. Defaults to None.
+        require_all_keys: Bool, if True, requires all keys in included_keys to be in the dictionary (a_dict)
+
+    Returns:
+        [type]: [description]
+    """
+    if included_keys is not None:
+        if require_all_keys:
+            return {included_key:a_dict[included_key] for included_key in included_keys} # filter the dictionary for only the keys specified
+        else:
+            out_dict = {}
+            for included_key in included_keys:
+                if included_key in a_dict.keys():
+                    out_dict[included_key] = a_dict[included_key]
+            return out_dict
+    else:
+        return a_dict
+
+def validate_reverse_index_map(value_to_original_index_reverse_map, neuron_IDXs, cell_ids, debug_print=True):
+    """
+    Used to be called `validate_cell_IDs_to_CellIDXs_map`
+
+    value_to_original_index_reverse_map: is a dictioanry that has any thing for its keys, but each
+        Example:
+            # Allows reverse indexing into the linear imported array using the original cell ID indicies:
+            id_arr = [ 2  3  4  5  7  8  9 10 11 12 14 17 18 21 22 23 24 25 26 27 28 29 33 34 38 39 42 44 45 46 47 48 53 55 57 58 61 62 63 64]
+            linear_flitered_ids = np.arange(len(id_arr)) # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+            value_to_original_index_reverse_map = dict(zip(id_arr, linear_flitered_ids))    
+     
+    
+    Usage:
+        cell_ids = extracted_cell_ids
+        neuron_IDXs = extracted_neuron_IDXs
+        reverse_cellID_index_map = ipcDataExplorer.active_session.neurons.reverse_cellID_index_map
+        validate_reverse_index_map(reverse_cellID_index_map, cell_ids, neuron_IDXs)
+    """
+    if debug_print:
+        print(f'\t cell_ids: {cell_ids}')
+        print(f'\t neuron_IDXs: {neuron_IDXs}')
+    if not is_consecutive_no_gaps(neuron_IDXs, enable_debug_print=debug_print):
+        if debug_print:
+            print('neuron_IDXs has gaps!')
+        return False
+    else:
+        map_start_ids = list(value_to_original_index_reverse_map.keys()) # the cellIDs that can be mapped from
+        differing_elements_ids = np.setdiff1d(map_start_ids, cell_ids)
+        num_differing_ids = len(differing_elements_ids)
+        map_destination_IDXs = list(value_to_original_index_reverse_map.values()) # the cellIDXs that can be mapped to.
+        differing_elements_IDXs = np.setdiff1d(map_destination_IDXs, neuron_IDXs)
+        num_differing_IDXs = len(differing_elements_IDXs)
+        if (num_differing_IDXs > 0) or (num_differing_ids > 0):
+            if debug_print:
+                print(f'\t differing_elements_IDXs: {differing_elements_IDXs}')
+                print(f'\t differing_elements_ids: {differing_elements_ids}')
+            return False
+        else:
+            return True
+
+def nested_dict_set(dic, key_list, value, create_missing=True):
+    """ Allows setting the value of a nested dictionary hierarchy by drilling in with the keys in key_list, creating intermediate dictionaries if needed.
+    
+    Attribution and Credit:
+        https://stackoverflow.com/a/49290758/9732163
+    
+    Usage:
+        d = {}
+        nested_set(d, ['person', 'address', 'city'], 'New York')
+        d
+        >> {'person': {'address': {'city': 'New York'}}}
+    """
+    d = dic
+    for key in key_list[:-1]:
+        if key in d:
+            d = d[key]
+        elif create_missing:
+            d = d.setdefault(key, {})
+        else:
+            return dic
+    if key_list[-1] in d or create_missing:
+        d[key_list[-1]] = value
+    return dic
 
 
+def flatpaths_to_nested_dict_hierarchy(flat_paths_form_dict, default_value_override='Test Value', flat_path_delimiter='.', debug_print=False):
+    """_summary_
 
+    Args:
+        flat_paths_list (_type_): _description_
+        default_value_override (str, optional): _description_. Defaults to 'Test Value'.
+        debug_print (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        _type_: _description_
+        
+    Usage:
+        flatpaths_to_nested_dict_hierarchy(['SpikeAnalysisComputations._perform_spike_burst_detection_computation',
+        'ExtendedStatsComputations._perform_placefield_overlap_computation',
+        'ExtendedStatsComputations._perform_firing_rate_trends_computation',
+        'ExtendedStatsComputations._perform_extended_statistics_computation',
+        'DefaultComputationFunctions._perform_velocity_vs_pf_density_computation',
+        'DefaultComputationFunctions._perform_two_step_position_decoding_computation',
+        'DefaultComputationFunctions._perform_position_decoding_computation',
+        'PlacefieldComputations._perform_time_dependent_placefield_computation',
+        'PlacefieldComputations._perform_baseline_placefield_computation'])
+
+
+        flatpaths_to_nested_dict_hierarchy(_temp_compuitations_flat_functions_list)
+    
+    """
+    out_hierarchy_dict = {}
+    if isinstance(flat_paths_form_dict, list):
+        flat_paths_dict = {a_flat_path:default_value_override for a_flat_path in flat_paths_form_dict}
+    else:
+        flat_paths_dict = flat_paths_form_dict
+        # Otherwise should already have an .items() method:
+        
+    # for a_flat_path in flat_paths_list:
+    for a_flat_path, a_value in flat_paths_dict.items():
+        key_hierarchy_list = a_flat_path.split(flat_path_delimiter)
+        if debug_print:
+            print(f'for item {a_flat_path}:')
+        out_hierarchy_dict = nested_dict_set(out_hierarchy_dict, key_hierarchy_list, a_value, create_missing=True)
+        if debug_print:
+            print(f'\t out_hierarchy_dict: {out_hierarchy_dict}')
+    return out_hierarchy_dict
+
+
+_GLOBAL_MAX_DEPTH = 20
+def nested_dict_hierarchy_to_flatpaths(curr_key, curr_value, max_depth=20, depth=0, flat_path_delimiter='.', debug_print=False):
+    """
+    curr_key: None to start
+    curr_value: assumed to be nested_hierarchy_dict to start
+    """
+    if (depth >= _GLOBAL_MAX_DEPTH):
+        print(f'OVERFLOW AT DEPTH {_GLOBAL_MAX_DEPTH}!')
+        raise OverflowError
+        # return None # overflow detection
+    elif (depth > max_depth):
+        # print(f'finished at DEPTH {depth} with max_depth: {max_depth}!')
+        return None
+        
+    else:
+        curr_value_type = type(curr_value)
+        # print(f'curr_value_type: {curr_value_type}')
+        # print(f'curr_value: {curr_value}')
+        
+        # See if the curr_value has .items() or not.
+        try:
+            # print(f'try!')
+            # if curr_key == '':
+                # curr_key = []
+            # flat_path_delimiter
+                
+            child_out_dict = {}
+            for (curr_child_key, curr_child_value) in curr_value.items():
+                # prints the current value:
+                # print(f"\t {curr_child_key} - {type(curr_child_value)}")
+                # process children keys
+                # child_key_path = curr_key
+                # child_key_path.append(curr_child_key)
+                child_key_path = f'{curr_key}{flat_path_delimiter}{curr_child_key}'                
+                curr_out = nested_dict_hierarchy_to_flatpaths(child_key_path, curr_child_value, max_depth=max_depth, depth=(depth+1))
+                if curr_out is not None:
+                    # print(f'\t curr_out: {curr_out}')
+                    # out_terminal_key, out_terminal_value = curr_out
+                    child_out_dict = child_out_dict | curr_out # merge in the new dict value
+                    
+            return child_out_dict
+            # curr_value = child_out_dict
+            # is_terminal_item = False   
+            
+        except AttributeError as e:                
+#             # Try to get __dict__ from the item:
+#             try:
+#                 curr_value_dict_rep = vars(curr_value) # gets the .__dict__ property if curr_value has one, otherwise throws a TypeError
+#                 print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, max_depth=max_depth, depth=depth, omit_curr_item_print=True) # do not increase depth in this regard so it prints at the same level. Also tell it not to print again.
+
+#             except TypeError:
+#                 # print(f"{depth_string}- {curr_value_type}")
+#                 return None # terminal item
+
+            # print(f'AttributeError: {e}')
+            is_terminal_item = True
+    
+ 
+        if is_terminal_item:
+            # A concrete item:
+            # print(f'TERMINAL ITEM: curr_key: {curr_key}, curr_value: {curr_value}')
+            print(f'TERMINAL ITEM: ({curr_key}, {curr_value})')
+            # return (curr_key, curr_value)
+            return {curr_key: curr_value}
+        else:
+            print(f'NON-terminal item: ({curr_key}, {curr_value})')
+            return None
+
+# ==================================================================================================================== #
+# Pandas Dataframes                                                                                                    #
+# ==================================================================================================================== #
+
+
+def safe_pandas_get_group(dataframe_group, key):
+    """ returns an empty dataframe if the key isn't found in the group."""
+    if key in dataframe_group.groups.keys():
+        return dataframe_group.get_group(key)
+    else:
+        original_df = dataframe_group.obj
+        return original_df.drop(original_df.index)
+    
 
 ## Pandas DataFrame helpers:
 def partition(df: pd.DataFrame, partitionColumn: str):
@@ -405,30 +437,164 @@ def find_neighbours(value, df, colname):
 
 
 
-def chunks(iterable, size=10):
-    """ Chunking
+
+# class MatrixFlattenTransformer(object):
+# """ Supposed to allow easy transformation of data from a flattened representation to the original.
+# Usage:
+#     trans = MatrixFlattenTransformer(original_data_shape)
+#     test_all_positions_matrix = trans.unflatten(flat_all_positions_matrix)
+#     print(f'np.shape(test_all_positions_matrix): {np.shape(test_all_positions_matrix)}')
+# """
+#     """ TODO: does not yet work. for MatrixFlattenTransformer."""
+#     def __init__(self, original_data_shape):
+#         super(MatrixFlattenTransformer, self).__init__()
+#         self.original_data_shape = original_data_shape
+
+#     def flatten(self, data):
+#         data_shape = np.shape(data)
+#         original_flat_shape = np.prod(self.original_data_shape)
+#         # assert np.shape(data) == self.original_data_shape, f"data passed in to flatten (with shape {np.shape(data)}) is not equal to the original data shape: {self.original_data_shape}"
+#         assert data_shape == original_flat_shape, f"data passed in to flatten (with shape {data_shape}) is not equal to the original shape's number of items (shape: {self.original_data_shape}, original_flat_shape: {original_flat_shape}"
+#         return np.reshape(data, (-1, 1))
+        
+#     def unflatten(self, flat_data):
+#         flat_data_shape = np.shape(flat_data)
+#         original_data_shape_ndim = len(self.original_data_shape)
+#         # assert (flat_data_shape[:original_data_shape_ndim] == self.original_data_shape), f"data passed in to unflatten (with shape {flat_data_shape}) must match the original data shape ({self.original_data_shape}), at least up to the number of dimensions in the original"
+#         additional_dimensions = flat_data_shape[original_data_shape_ndim:]        
+#         return np.reshape(flat_data, (self.original_data_shape[0], self.original_data_shape[1], *additional_dimensions))
+        
+
+# ==================================================================================================================== #
+# Discrete Bins/Binning                                                                                                #
+# ==================================================================================================================== #
+
+@dataclass
+class BinningInfo(object):
+    """Docstring for BinningInfo."""
+    variable_extents: tuple
+    step: float
+    num_bins: int
+    bin_indicies: np.ndarray
+
+def build_spanning_bins(variable_values, max_bin_size:float, debug_print=False):
+    """ DEPRICATED! out_digitized_variable_bins include both endpoints (bin edges)
 
     Args:
-        iterable ([type]): [description]
-        size (int, optional): [description]. Defaults to 10.
+        variable_values ([type]): [description]
+        max_bin_size (float): [description]
+        debug_print (bool, optional): [description]. Defaults to False.
 
-    Usage:
-        laps_pages = [list(chunk) for chunk in _chunks(sess.laps.lap_id, curr_num_subplots)]
+    Returns:
+        out_digitized_variable_bins [type]: [description]
+        out_binning_info [BinningInfo]: contains info about how the binning was conducted
     """
-    iterator = iter(iterable)
-    for first in iterator:    # stops when iterator is depleted
-        def chunk():          # construct generator for next chunk
-            yield first       # yield element from for loop
-            for more in islice(iterator, size - 1):
-                yield more    # yield more elements from the iterator
-        yield chunk()         # in outer generator, yield next chunk
+    raise DeprecationWarning
+    # compute extents:
+    curr_variable_extents = (np.nanmin(variable_values), np.nanmax(variable_values))
+    num_subdivisions = int(np.ceil((curr_variable_extents[1] - curr_variable_extents[0])/max_bin_size)) # get the next integer size above float_bin_size
+    actual_subdivision_step_size = (curr_variable_extents[1] - curr_variable_extents[0]) / float(num_subdivisions) # the actual exact size of the bin
+    if debug_print:
+        print(f'for max_bin_size: {max_bin_size} -> num_subdivisions: {num_subdivisions}, actual_subdivision_step_size: {actual_subdivision_step_size}')
+    # out_bin_indicies = np.arange(num_subdivisions)
+    out_binning_info = BinningInfo(curr_variable_extents, actual_subdivision_step_size, num_subdivisions, np.arange(num_subdivisions))
+    out_digitized_variable_bins = np.linspace(curr_variable_extents[0], curr_variable_extents[1], num_subdivisions, dtype=float)#.astype(float)
+    
+    assert out_digitized_variable_bins[-1] == out_binning_info.variable_extents[1], "out_digitized_variable_bins[-1] should be the maximum variable extent!"
+    assert out_digitized_variable_bins[0] == out_binning_info.variable_extents[0], "out_digitized_variable_bins[0] should be the minimum variable extent!"
+
+    # All above arge the bin_edges
+    return out_digitized_variable_bins, out_binning_info
+
+def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=None):
+    """[summary]
+
+    Args:
+        variable_values ([type]): [description]
+        num_bins (int, optional): [description]. Defaults to None.
+        bin_size (float, optional): [description]. Defaults to None.
+        debug_print (bool, optional): [description]. Defaults to False.
+
+    Raises:
+        ValueError: [description]
+
+    Returns:
+        [type]: [description]
+        
+    Usage:
+        ## Binning with Fixed Number of Bins:    
+        xbin, ybin, bin_info = compute_spanning_bins(pos_df.x.to_numpy(), bin_size=active_config.computation_config.grid_bin[0]) # bin_size mode
+        print(bin_info)
+        ## Binning with Fixed Bin Sizes:
+        xbin, ybin, bin_info = compute_spanning_bins(pos_df.x.to_numpy(), num_bins=num_bins) # num_bins mode
+        print(bin_info)
+        
+    """
+    assert (num_bins is None) or (bin_size is None), 'You cannot constrain both num_bins AND bin_size. Specify only one or the other.'
+    assert (num_bins is not None) or (bin_size is not None), 'You must specify either the num_bins XOR the bin_size.'
+    curr_variable_extents = (np.nanmin(variable_values), np.nanmax(variable_values))
+    
+    if num_bins is not None:
+        ## Binning with Fixed Number of Bins:
+        mode = 'num_bins'
+        xnum_bins = num_bins
+        xbin, xstep = np.linspace(curr_variable_extents[0], curr_variable_extents[1], num=num_bins, retstep=True)  # binning of x position
+        
+    elif bin_size is not None:
+        ## Binning with Fixed Bin Sizes:
+        mode = 'bin_size'
+        xstep = bin_size
+        xbin = np.arange(curr_variable_extents[0], (curr_variable_extents[1] + xstep), xstep, )  # binning of x position
+        # the interval does not include this value, except in some cases where step is not an integer and floating point round-off affects the length of out.
+        xnum_bins = len(xbin)
+        
+    else:
+        raise ValueError
+    
+    return xbin, BinningInfo(curr_variable_extents, xstep, xnum_bins, np.arange(xnum_bins))
+            
+def compute_position_grid_size(*any_1d_series, num_bins:tuple):
+    """  Computes the required bin_sizes from the required num_bins (for each dimension independently)
+    Usage:
+    out_grid_bin_size, out_bins, out_bins_infos = compute_position_grid_size(curr_kdiba_pipeline.sess.position.x, curr_kdiba_pipeline.sess.position.y, num_bins=(64, 64))
+    active_grid_bin = tuple(out_grid_bin_size)
+    print(f'active_grid_bin: {active_grid_bin}') # (3.776841861770752, 1.043326930905373)
+    """
+    assert (len(any_1d_series)) == len(num_bins), f'(len(other_1d_series)) must be the same length as the num_bins tuple! But (len(other_1d_series)): {(len(any_1d_series))} and len(num_bins): {len(num_bins)}!'
+    num_series = len(num_bins)
+    out_bins = []
+    out_bins_info = []
+    out_bin_grid_step_size = np.zeros((num_series,))
+
+    for i in np.arange(num_series):
+        xbins, xbin_info = compute_spanning_bins(any_1d_series[i], num_bins=num_bins[i])
+        out_bins.append(xbins)
+        out_bins_info.append(xbin_info)
+        out_bin_grid_step_size[i] = xbin_info.step
+
+    return out_bin_grid_step_size, out_bins, out_bins_info
+
+def get_bin_centers(bin_edges):
+    """ For a series of 1D bin edges given by bin_edges, returns the center of the bins. Output will have one less element than bin_edges. """
+    return (bin_edges[:-1] + np.diff(bin_edges) / 2.0)
+    
+def get_bin_edges(bin_centers):
+    """ TODO: CHECK
+    For a series of 1D bin centers given by bin_centers, returns the edges of the bins.
+    Reciprocal of get_bin_centers(bin_edges)
+    """
+    half_bin_width = float((bin_centers[1] - bin_centers[0])) / 2.0 # TODO: assumes fixed bin width
+    bin_starts = bin_centers - half_bin_width
+    bin_ends = bin_centers + half_bin_width
+    return interleave_elements(bin_starts, bin_ends)
 
 
+# ==================================================================================================================== #
+# 2D Grids/Gridding                                                                                                          #
+# ==================================================================================================================== #
 RowColTuple = namedtuple('RowColTuple', 'num_rows num_columns')
 PaginatedGridIndexSpecifierTuple = namedtuple('PaginatedGridIndexSpecifierTuple', 'linear_idx row_idx col_idx data_idx')
 RequiredSubplotsTuple = namedtuple('RequiredSubplotsTuple', 'num_required_subplots num_columns num_rows combined_indicies')
-
-
 
 def compute_paginated_grid_config(num_required_subplots, max_num_columns, max_subplots_per_page=None, data_indicies=None, last_figure_subplots_same_layout=True, debug_print=False):
     """ Fills row-wise first, and constrains the subplots values to just those that you need
@@ -480,66 +646,36 @@ def compute_paginated_grid_config(num_required_subplots, max_num_columns, max_su
         print(f'page_grid_sizes: {page_grid_sizes}')
     return subplot_no_pagination_configuration, included_combined_indicies_pages, page_grid_sizes
 
-
-def is_consecutive_no_gaps(arr, enable_debug_print=False):
-    """ Checks whether a passed array/list is a series of ascending indicies without gaps
-    
-    arr: listlike: checks if the series is from [0, ... , len(arr)-1]
-    
+def build_spanning_grid_matrix(x_values, y_values, debug_print=False):
+    """ builds a 2D matrix with entries spanning x_values across axis 0 and spanning y_values across axis 1.
+        
+        For example, used to build a grid of position points from xbins and ybins.
     Usage:
-        neuron_IDXs = extracted_neuron_IDXs
-        is_consecutive_no_gaps(cell_ids, neuron_IDXs)
+        all_positions_matrix, flat_all_positions_matrix, original_data_shape = build_all_positions_matrix(active_one_step_decoder.xbin_centers, active_one_step_decoder.ybin_centers)
     """
-    if enable_debug_print:
-        print(f'is_consecutive_no_gaps(arr: {arr})')
-    comparison_correct_sequence = np.arange(len(arr)) # build a series from [0, ... , N-1]
-    differing_elements = np.setdiff1d(comparison_correct_sequence, arr)
-    if (len(differing_elements) > 0):
-        if enable_debug_print:
-            print(f'\t differing_elements: {differing_elements}')
-        return False
-    else:
-        return True
-    
+    num_rows = len(y_values)
+    num_cols = len(x_values)
 
-
-
-def validate_reverse_index_map(value_to_original_index_reverse_map, neuron_IDXs, cell_ids, debug_print=True):
-    """
-    Used to be called `validate_cell_IDs_to_CellIDXs_map`
-
-    value_to_original_index_reverse_map: is a dictioanry that has any thing for its keys, but each
-        Example:
-            # Allows reverse indexing into the linear imported array using the original cell ID indicies:
-            id_arr = [ 2  3  4  5  7  8  9 10 11 12 14 17 18 21 22 23 24 25 26 27 28 29 33 34 38 39 42 44 45 46 47 48 53 55 57 58 61 62 63 64]
-            linear_flitered_ids = np.arange(len(id_arr)) # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
-            value_to_original_index_reverse_map = dict(zip(id_arr, linear_flitered_ids))    
-     
-    
-    Usage:
-        cell_ids = extracted_cell_ids
-        neuron_IDXs = extracted_neuron_IDXs
-        reverse_cellID_index_map = ipcDataExplorer.active_session.neurons.reverse_cellID_index_map
-        validate_reverse_index_map(reverse_cellID_index_map, cell_ids, neuron_IDXs)
-    """
+    original_data_shape = (num_cols, num_rows) # original_position_data_shape: (64, 29)
     if debug_print:
-        print(f'\t cell_ids: {cell_ids}')
-        print(f'\t neuron_IDXs: {neuron_IDXs}')
-    if not is_consecutive_no_gaps(neuron_IDXs, enable_debug_print=debug_print):
-        if debug_print:
-            print('neuron_IDXs has gaps!')
-        return False
-    else:
-        map_start_ids = list(value_to_original_index_reverse_map.keys()) # the cellIDs that can be mapped from
-        differing_elements_ids = np.setdiff1d(map_start_ids, cell_ids)
-        num_differing_ids = len(differing_elements_ids)
-        map_destination_IDXs = list(value_to_original_index_reverse_map.values()) # the cellIDXs that can be mapped to.
-        differing_elements_IDXs = np.setdiff1d(map_destination_IDXs, neuron_IDXs)
-        num_differing_IDXs = len(differing_elements_IDXs)
-        if (num_differing_IDXs > 0) or (num_differing_ids > 0):
-            if debug_print:
-                print(f'\t differing_elements_IDXs: {differing_elements_IDXs}')
-                print(f'\t differing_elements_ids: {differing_elements_ids}')
-            return False
-        else:
-            return True
+        print(f'original_position_data_shape: {original_data_shape}')
+    x_only_matrix = np.repeat(np.expand_dims(x_values, 1).T, num_rows, axis=0).T
+    # np.shape(x_only_matrix) # (29, 64)
+    flat_x_only_matrix = np.reshape(x_only_matrix, (-1, 1))
+    if debug_print:
+        print(f'np.shape(x_only_matrix): {np.shape(x_only_matrix)}, np.shape(flat_x_only_matrix): {np.shape(flat_x_only_matrix)}') # np.shape(x_only_matrix): (64, 29), np.shape(flat_x_only_matrix): (1856, 1)
+    y_only_matrix = np.repeat(np.expand_dims(y_values, 1), num_cols, axis=1).T
+    # np.shape(y_only_matrix) # (29, 64)
+    flat_y_only_matrix = np.reshape(y_only_matrix, (-1, 1))
+
+    # flat_all_positions_matrix = np.array([np.append(an_x, a_y) for (an_x, a_y) in zip(flat_x_only_matrix, flat_y_only_matrix)])
+    flat_all_entries_matrix = [tuple(np.append(an_x, a_y)) for (an_x, a_y) in zip(flat_x_only_matrix, flat_y_only_matrix)] # a list of position tuples (containing two elements)
+    # reconsitute its shape:
+    all_entries_matrix = np.reshape(flat_all_entries_matrix, (original_data_shape[0], original_data_shape[1], 2))
+    if debug_print:
+        print(f'np.shape(all_positions_matrix): {np.shape(all_entries_matrix)}') # np.shape(all_positions_matrix): (1856, 2) # np.shape(all_positions_matrix): (64, 29, 2)
+        print(f'flat_all_positions_matrix[0]: {flat_all_entries_matrix[0]}\nall_positions_matrix[0,0,:]: {all_entries_matrix[0,0,:]}')
+
+    return all_entries_matrix, flat_all_entries_matrix, original_data_shape
+
+

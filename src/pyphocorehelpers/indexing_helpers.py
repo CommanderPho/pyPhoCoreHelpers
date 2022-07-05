@@ -245,8 +245,8 @@ def nested_dict_set(dic, key_list, value, create_missing=True):
     return dic
 
 
-def flatpaths_to_nested_dict_hierarchy(flat_paths_form_dict, default_value_override='Test Value', flat_path_delimiter='.', debug_print=False):
-    """ Reciprocal of nested_dict_hierarchy_to_flatpaths(...)
+def flatpaths_to_nested_dicts(flat_paths_form_dict, default_value_override='Test Value', flat_path_delimiter='.', debug_print=False):
+    """ Reciprocal of nested_dicts_to_flatpaths(...)
 
     Args:
         flat_paths_list (_type_): _description_
@@ -257,7 +257,8 @@ def flatpaths_to_nested_dict_hierarchy(flat_paths_form_dict, default_value_overr
         _type_: _description_
         
     Usage:
-        flatpaths_to_nested_dict_hierarchy(['SpikeAnalysisComputations._perform_spike_burst_detection_computation',
+        from pyphocorehelpers.indexing_helpers import nested_dicts_to_flatpaths, flatpaths_to_nested_dicts
+        flatpaths_to_nested_dicts(['SpikeAnalysisComputations._perform_spike_burst_detection_computation',
         'ExtendedStatsComputations._perform_placefield_overlap_computation',
         'ExtendedStatsComputations._perform_firing_rate_trends_computation',
         'ExtendedStatsComputations._perform_extended_statistics_computation',
@@ -268,7 +269,7 @@ def flatpaths_to_nested_dict_hierarchy(flat_paths_form_dict, default_value_overr
         'PlacefieldComputations._perform_baseline_placefield_computation'])
 
 
-        flatpaths_to_nested_dict_hierarchy(_temp_compuitations_flat_functions_list)
+        flatpaths_to_nested_dicts(_temp_compuitations_flat_functions_list)
     
     """
     out_hierarchy_dict = {}
@@ -290,12 +291,35 @@ def flatpaths_to_nested_dict_hierarchy(flat_paths_form_dict, default_value_overr
 
 
 _GLOBAL_MAX_DEPTH = 20
-def nested_dict_hierarchy_to_flatpaths(curr_key, curr_value, max_depth=20, depth=0, flat_path_delimiter='.', debug_print=False):
-    """ Reciprocal of flatpaths_to_nested_dict_hierarchy(...)
+def nested_dicts_to_flatpaths(curr_key, curr_value, max_depth=20, depth=0, flat_path_delimiter='.', debug_print=False):
+    """ Reciprocal of flatpaths_to_nested_dicts(...)
 
         curr_key: None to start
         curr_value: assumed to be nested_hierarchy_dict to start
 
+
+    Usage:
+        from pyphocorehelpers.indexing_helpers import nested_dicts_to_flatpaths, flatpaths_to_nested_dicts
+        _out_flatpaths_dict = nested_dicts_to_flatpaths('', _temp_compuitations_functions_list)
+        _out_flatpaths_dict
+
+        {'SpikeAnalysisComputations._perform_spike_burst_detection_computation': <function pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.SpikeAnalysis.SpikeAnalysisComputations._perform_spike_burst_detection_computation(computation_result: pyphoplacecellanalysis.General.Model.ComputationResults.ComputationResult, debug_print=False)>,
+ 'ExtendedStatsComputations._perform_placefield_overlap_computation': <function pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.ExtendedStats.ExtendedStatsComputations._perform_placefield_overlap_computation(computation_result: pyphoplacecellanalysis.General.Model.ComputationResults.ComputationResult, debug_print=False)>,
+ 'ExtendedStatsComputations._perform_firing_rate_trends_computation': <function pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.ExtendedStats.ExtendedStatsComputations._perform_firing_rate_trends_computation(computation_result: pyphoplacecellanalysis.General.Model.ComputationResults.ComputationResult, debug_print=False)>,
+ 'ExtendedStatsComputations._perform_extended_statistics_computation': <function pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.ExtendedStats.ExtendedStatsComputations._perform_extended_statistics_computation(computation_result: pyphoplacecellanalysis.General.Model.ComputationResults.ComputationResult, debug_print=False)>,
+ 'DefaultComputationFunctions._perform_velocity_vs_pf_density_computation': <function pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.DefaultComputationFunctions.DefaultComputationFunctions._perform_velocity_vs_pf_density_computation(computation_result: pyphoplacecellanalysis.General.Model.ComputationResults.ComputationResult, debug_print=False)>,
+ 'DefaultComputationFunctions._perform_two_step_position_decoding_computation': <function pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.DefaultComputationFunctions.DefaultComputationFunctions._perform_two_step_position_decoding_computation(computation_result: pyphoplacecellanalysis.General.Model.ComputationResults.ComputationResult, debug_print=False)>,
+ 'DefaultComputationFunctions._perform_position_decoding_computation': <function pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.DefaultComputationFunctions.DefaultComputationFunctions._perform_position_decoding_computation(computation_result: pyphoplacecellanalysis.General.Model.ComputationResults.ComputationResult)>,
+ 'PlacefieldComputations._perform_time_dependent_placefield_computation': <function pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.PlacefieldComputations.PlacefieldComputations._perform_time_dependent_placefield_computation(computation_result: pyphoplacecellanalysis.General.Model.ComputationResults.ComputationResult, debug_print=False)>,
+ 'PlacefieldComputations._perform_baseline_placefield_computation': <function pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.PlacefieldComputations.PlacefieldComputations._perform_baseline_placefield_computation(computation_result: pyphoplacecellanalysis.General.Model.ComputationResults.ComputationResult, debug_print=False)>}
+ 
+ 
+        _input_test_functions_list = _temp_compuitations_functions_list
+        _out_flatpaths_dict = nested_dicts_to_flatpaths('', _input_test_functions_list)
+        _original_hierarchical_test_dict = flatpaths_to_nested_dicts(_out_flatpaths_dict)
+        assert _original_hierarchical_test_dict == _input_test_functions_list, "ERROR, flatpaths_to_nested_dicts(nested_dicts_to_flatpaths(INPUT)) should be identity transforms (should == INPUT), but they do not!"
+
+        
     """
     if (depth >= _GLOBAL_MAX_DEPTH):
         print(f'OVERFLOW AT DEPTH {_GLOBAL_MAX_DEPTH}!')
@@ -319,8 +343,11 @@ def nested_dict_hierarchy_to_flatpaths(curr_key, curr_value, max_depth=20, depth
                 if debug_print:
                     print(f"\t {curr_child_key} - {type(curr_child_value)}")
                 # process children keys
-                child_key_path = f'{curr_key}{flat_path_delimiter}{curr_child_key}'                
-                curr_out = nested_dict_hierarchy_to_flatpaths(child_key_path, curr_child_value, max_depth=max_depth, depth=(depth+1))
+                if curr_key is None or curr_key == '':
+                    child_key_path = f'{curr_child_key}' # the curr_child_key is the top-level item
+                else:
+                    child_key_path = f'{curr_key}{flat_path_delimiter}{curr_child_key}'    
+                curr_out = nested_dicts_to_flatpaths(child_key_path, curr_child_value, max_depth=max_depth, depth=(depth+1))
                 if curr_out is not None:
                     if debug_print:
                         print(f'\t curr_out: {curr_out}')

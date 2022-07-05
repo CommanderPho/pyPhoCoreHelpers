@@ -246,7 +246,7 @@ def nested_dict_set(dic, key_list, value, create_missing=True):
 
 
 def flatpaths_to_nested_dict_hierarchy(flat_paths_form_dict, default_value_override='Test Value', flat_path_delimiter='.', debug_print=False):
-    """_summary_
+    """ Reciprocal of nested_dict_hierarchy_to_flatpaths(...)
 
     Args:
         flat_paths_list (_type_): _description_
@@ -291,42 +291,39 @@ def flatpaths_to_nested_dict_hierarchy(flat_paths_form_dict, default_value_overr
 
 _GLOBAL_MAX_DEPTH = 20
 def nested_dict_hierarchy_to_flatpaths(curr_key, curr_value, max_depth=20, depth=0, flat_path_delimiter='.', debug_print=False):
-    """
-    curr_key: None to start
-    curr_value: assumed to be nested_hierarchy_dict to start
+    """ Reciprocal of flatpaths_to_nested_dict_hierarchy(...)
+
+        curr_key: None to start
+        curr_value: assumed to be nested_hierarchy_dict to start
+
     """
     if (depth >= _GLOBAL_MAX_DEPTH):
         print(f'OVERFLOW AT DEPTH {_GLOBAL_MAX_DEPTH}!')
         raise OverflowError
-        # return None # overflow detection
     elif (depth > max_depth):
-        # print(f'finished at DEPTH {depth} with max_depth: {max_depth}!')
+        if debug_print:
+            print(f'finished at DEPTH {depth} with max_depth: {max_depth}!')
         return None
         
     else:
-        curr_value_type = type(curr_value)
-        # print(f'curr_value_type: {curr_value_type}')
-        # print(f'curr_value: {curr_value}')
+        if debug_print:
+            curr_value_type = type(curr_value)
+            print(f'curr_value_type: {curr_value_type}')
+            print(f'curr_value: {curr_value}')
         
         # See if the curr_value has .items() or not.
-        try:
-            # print(f'try!')
-            # if curr_key == '':
-                # curr_key = []
-            # flat_path_delimiter
-                
+        try:    
             child_out_dict = {}
             for (curr_child_key, curr_child_value) in curr_value.items():
                 # prints the current value:
-                # print(f"\t {curr_child_key} - {type(curr_child_value)}")
+                if debug_print:
+                    print(f"\t {curr_child_key} - {type(curr_child_value)}")
                 # process children keys
-                # child_key_path = curr_key
-                # child_key_path.append(curr_child_key)
                 child_key_path = f'{curr_key}{flat_path_delimiter}{curr_child_key}'                
                 curr_out = nested_dict_hierarchy_to_flatpaths(child_key_path, curr_child_value, max_depth=max_depth, depth=(depth+1))
                 if curr_out is not None:
-                    # print(f'\t curr_out: {curr_out}')
-                    # out_terminal_key, out_terminal_value = curr_out
+                    if debug_print:
+                        print(f'\t curr_out: {curr_out}')
                     child_out_dict = child_out_dict | curr_out # merge in the new dict value
                     
             return child_out_dict
@@ -349,12 +346,12 @@ def nested_dict_hierarchy_to_flatpaths(curr_key, curr_value, max_depth=20, depth
  
         if is_terminal_item:
             # A concrete item:
-            # print(f'TERMINAL ITEM: curr_key: {curr_key}, curr_value: {curr_value}')
-            print(f'TERMINAL ITEM: ({curr_key}, {curr_value})')
-            # return (curr_key, curr_value)
+            if debug_print:
+                print(f'TERMINAL ITEM: ({curr_key}, {curr_value})')
             return {curr_key: curr_value}
         else:
-            print(f'NON-terminal item: ({curr_key}, {curr_value})')
+            if debug_print:
+                print(f'NON-terminal item: ({curr_key}, {curr_value})')
             return None
 
 # ==================================================================================================================== #

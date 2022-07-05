@@ -283,7 +283,7 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
         return sync_connection
 
     @classmethod
-    def connect_controlled_time_synchornized_plotter(cls, source_spike_raster_plt, controlled_plt):
+    def connect_controlled_time_synchronized_plotter(cls, source_spike_raster_plt, controlled_plt):
         """ 
         source_spike_raster_plt: TimeSynchronizedPlotterBase
         

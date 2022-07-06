@@ -614,7 +614,7 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
                     # print(f"{depth_string}- {curr_child_key} - {type(curr_child_value)}")
                     # print children keys
                     print_keys_if_possible(curr_child_key, curr_child_value, max_depth=max_depth, depth=(depth+1), omit_curr_item_print=False)
-            except AttributeError:
+            except AttributeError as e:
                 # AttributeError: 'PfND' object has no attribute 'items'
                 
                 # Try to get __dict__ from the item:

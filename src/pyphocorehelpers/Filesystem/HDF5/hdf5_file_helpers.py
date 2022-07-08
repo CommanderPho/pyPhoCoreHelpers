@@ -26,6 +26,8 @@ class HDF5_Helper(object):
         """
         children_subtree_dict = {}
         if type(obj) in [h5py._hl.group.Group, h5py._hl.files.File]:
+            obj_description = obj.name # full path to the group
+            
             obj_keys = [a_key for a_key in obj.keys() if '#' not in a_key]
             for key in obj_keys:
                 if debug_print:
@@ -34,12 +36,15 @@ class HDF5_Helper(object):
                 # child_output: should either be a dict or None depending on whether the child is a leaf
                 if child_output is None:
                     print(f'leaf encountered for child: {key} of {obj}')
+                    # children_subtree_dict[key] = obj[key] # set the child directly
+                    children_subtree_dict[key] = obj_description # set the child directly
                 else:
+                    print(f'non-leaf encountered for child: {key} of {obj}')
                     children_subtree_dict[key] = child_output
-
             return children_subtree_dict # return the dictionary containing the children's subtree
                 
         elif type(obj)==h5py._hl.dataset.Dataset:
+            obj_description = f'{obj.name} - Dataset'
             if enable_print_attributes:
                 obj_keys = [a_key for a_key in obj.attrs.keys() if '#' not in a_key]
                 for key in obj_keys:

@@ -24,24 +24,35 @@ class HDF5_Helper(object):
     def perform_descend_obj(self, obj, sep='\t', enable_print_attributes=False, debug_print=False):
         """ Iterate through groups in a HDF5 file and prints the groups and datasets names and datasets attributes
         """
+        children_subtree_dict = {}
         if type(obj) in [h5py._hl.group.Group, h5py._hl.files.File]:
             obj_keys = [a_key for a_key in obj.keys() if '#' not in a_key]
             for key in obj_keys:
-                print(sep, '-', key, ':', obj[key])
-                self.perform_descend_obj(obj[key], sep=sep+'\t', enable_print_attributes=enable_print_attributes, debug_print=debug_print)
+                if debug_print:
+                    print(sep, '-', key, ':', obj[key])
+                child_output = self.perform_descend_obj(obj[key], sep=sep+'\t', enable_print_attributes=enable_print_attributes, debug_print=debug_print)
+                # child_output: should either be a dict or None depending on whether the child is a leaf
+                if child_output is None:
+                    print(f'leaf encountered for child: {key} of {obj}')
+                else:
+                    children_subtree_dict[key] = child_output
+
+            return children_subtree_dict # return the dictionary containing the children's subtree
+                
         elif type(obj)==h5py._hl.dataset.Dataset:
             if enable_print_attributes:
                 obj_keys = [a_key for a_key in obj.attrs.keys() if '#' not in a_key]
                 for key in obj_keys:
                     # Do not descend any further, just print the attributes
                     print(sep+'\t', '-', key, ':', obj.attrs[key])
+            # Base case for Recurrsion:
+            return None
                     
     def perform_enumerate(self, debug_print=False):
         self.output_tree = {}
         with h5py.File(self.path,'r') as f:
-            self.perform_descend_obj(f[group], enable_print_attributes=enable_print_attributes, debug_print=debug_print)
-
-        
+            self.output_tree = self.perform_descend_obj(f[self.group], enable_print_attributes=False, debug_print=debug_print)
+        return self.output_tree
         
     @classmethod
     def descend_obj(cls, obj, sep='\t', enable_print_attributes=False):

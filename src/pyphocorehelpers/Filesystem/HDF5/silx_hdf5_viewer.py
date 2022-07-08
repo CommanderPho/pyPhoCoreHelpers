@@ -494,7 +494,7 @@ def get_edf_with_100000_frames():
     return tmp.name
 
 
-class Hdf5TreeViewExample(qt.QMainWindow):
+class Hdf5TreeViewWindow(qt.QMainWindow):
     """
     This window show an example of use of a Hdf5TreeView.
 
@@ -782,19 +782,37 @@ class Hdf5TreeViewExample(qt.QMainWindow):
         return panel
 
 
-def main(filenames):
-    """
-    :param filenames: list of file paths
-    """
-    app = qt.QApplication([])
-    sys.excepthook = qt.exceptionHandler
-    window = Hdf5TreeViewExample(filenames)
+def hdf5_tree_view_window(filenames_list):
+    ## Need to convert filenames to strings
+    if not isinstance(filenames_list, (list, tuple)):
+        filenames_list = [filenames_list] # wrap single element in list
+    filenames_list = [str(a_file_path) for a_file_path in filenames_list]
+    
+    # app = qt.QApplication([])
+    # sys.excepthook = qt.exceptionHandler
+    window = Hdf5TreeViewWindow(filenames_list)
     window.show()
-    result = app.exec()
-    # remove ending warnings relative to QTimer
-    app.deleteLater()
-    sys.exit(result)
+    # result = app.exec()
+    # # remove ending warnings relative to QTimer
+    # app.deleteLater()
+    # sys.exit(result)
+    return window
+
+
+
+# def main(filenames):
+#     """
+#     :param filenames: list of file paths
+#     """
+#     app = qt.QApplication([])
+#     sys.excepthook = qt.exceptionHandler
+#     window = Hdf5TreeViewWindow(filenames)
+#     window.show()
+#     result = app.exec()
+#     # remove ending warnings relative to QTimer
+#     app.deleteLater()
+#     sys.exit(result)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    hdf5_tree_view_window(sys.argv[1:])

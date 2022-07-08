@@ -155,16 +155,3 @@ class HDF5_Helper(object):
         with h5py.File(path,'r') as f:
             cls.descend_obj(f[group], enable_print_attributes=enable_print_attributes)
             
-# def descend_obj(obj, sep='\t'):
-#     """
-#     Iterate through groups in a HDF5 file and prints the groups and datasets names and datasets attributes
-#     """
-#     if type(obj) in [h5py._hl.group.Group, h5py._hl.files.File]:
-#         for key in obj.keys():
-#             print(sep,'-',key,':',obj[key])
-#             descend_obj(obj[key],sep=sep+'\t')
-#     elif type(obj)==h5py._hl.dataset.Dataset:
-#         for key in obj.attrs.keys():
-#             print(sep+'\t','-',key,':',obj.attrs[key])
-
-         

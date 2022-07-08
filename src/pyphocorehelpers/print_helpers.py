@@ -1,6 +1,7 @@
 from typing import List, Optional, OrderedDict  # for OrderedMeta
 import numpy as np
 import pandas as pd
+from pandas.core.resample import TimedeltaIndexResampler
 
 # Required for dbg_dump:
 import sys
@@ -593,7 +594,7 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         depth_string = '\t' * depth
         curr_value_type = type(curr_value)
     
-        if isinstance(curr_value, (pd.DataFrame, pd.TimedeltaIndex, pd.core.resample.TimedeltaIndexResampler)):
+        if isinstance(curr_value, (pd.DataFrame, pd.TimedeltaIndex, TimedeltaIndexResampler)):
             # DataFrame has .items() property, but we don't want it
             if not omit_curr_item_print:
                 print(f"{depth_string}- {curr_key}: {curr_value_type} - {curr_value.shape}")

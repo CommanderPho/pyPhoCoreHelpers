@@ -39,7 +39,7 @@ def compose_functions_with_error_handling(*args):
         for f in reversed(args):
             try:
                 temp_result = f(result) # evaluate the function 'f' using the result provided from the previous output or the initial input
-            except (TypeError, ValueError, NameError, AttributeError, KeyError) as e:
+            except (TypeError, ValueError, NameError, AttributeError, KeyError, NotImplementedError) as e:
                 accumulated_errors[f] = (e, result)
                 # accumulated_errors.append(e) # add the error to the accumulated error array
                 temp_result = result # restore the result from prior to the calculations?

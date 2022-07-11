@@ -15,6 +15,10 @@ class DynamicParameters(DiffableObject, MutableMapping):
 
         The abstract base classes in collections.abc are useful when you want something that’s a sequence or a mapping but is different enough from a list or a dictionary that you really should be making your own custom class.
 
+
+    TODO: Observed Issues:
+    1. calling .copy() on this object doesn't work, KeyError: 'copy'
+    
     """
     debug_enabled = False
     outcome_on_item_not_found = None

@@ -1,8 +1,11 @@
+import sys
+import traceback
 from functools import reduce
 from itertools import accumulate
 from functools import wraps # This convenience func preserves name and docstring
 from typing import List, Callable # for function composition
 
+from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters
 
 def compose_functions(*args):
     """ Composes n functions passed as input arguments into a single lambda function efficienctly.
@@ -22,6 +25,25 @@ def compose_functions(*args):
     return _
 
 
+
+
+class CapturedException(DynamicParameters):
+    """ An exception and its related info/context during the process of executing composed functions with error handling."""
+    
+    def __repr__(self):
+        # Don't print out captured_result_state (as it's huge and clogs the console)
+        return f'!! {self.exc} ::::: {self.exc_info}'
+        # return super().__repr__()
+
+    
+    def __init__(self, exc, exc_info, captured_result_state):
+        super(CapturedException, self).__init__()
+        self.exc = exc
+        self.exc_info = exc_info
+        self.captured_result_state = captured_result_state
+
+    
+
 def compose_functions_with_error_handling(*args):
     """ Composes n functions passed as input arguments into a single lambda function efficienctly.
     right-to-left ordering (default): compose(f1, f2, ..., fn) == lambda x: f1(...(f2(fn(x))...)
@@ -34,13 +56,13 @@ def compose_functions_with_error_handling(*args):
     """
     def _(x):
         result = x # initially set the result to the input
-        # accumulated_errors = [] # empty list for keeping track of exceptions
         accumulated_errors = dict() # empty list for keeping track of exceptions
         for f in reversed(args):
             try:
                 temp_result = f(result) # evaluate the function 'f' using the result provided from the previous output or the initial input
             except (TypeError, ValueError, NameError, AttributeError, KeyError, NotImplementedError) as e:
-                accumulated_errors[f] = (e, result)
+                exception_info = sys.exc_info()
+                accumulated_errors[f] = CapturedException(e, exception_info, result)
                 # accumulated_errors.append(e) # add the error to the accumulated error array
                 temp_result = result # restore the result from prior to the calculations?
                 # result shouldn't be updated unless there wasn't an error, so it should be fine to move on to the next function

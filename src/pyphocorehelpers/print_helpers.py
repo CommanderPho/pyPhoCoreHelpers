@@ -525,8 +525,12 @@ def dbg_dump(*args, dumpopt_stream=sys.stderr, dumpopt_forcename=True, dumpopt_p
         return output.rstrip()
     
 ## Category: Structural Overview/Outline:
+
+
+_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES = [pd.DataFrame, pd.TimedeltaIndex, TimedeltaIndexResampler]
+_GLOBAL_DO_NOT_EXPAND_CLASSNAMES = ["<class 'pyvista.core.pointset.StructuredGrid'>", "<class 'pyvista.core.pointset.UnstructuredGrid'>"]
 _GLOBAL_MAX_DEPTH = 20
-def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_curr_item_print=False):
+def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_curr_item_print=False, additional_excluded_item_classes=None):
     """Prints the keys of an object if possible, in a recurrsive manner.
 
     Args:
@@ -593,11 +597,15 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
     else:
         depth_string = '\t' * depth
         curr_value_type = type(curr_value)
-    
-        if isinstance(curr_value, (pd.DataFrame, pd.TimedeltaIndex, TimedeltaIndexResampler)):
+        if isinstance(curr_value, tuple(_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES)) or (str(curr_value_type) in _GLOBAL_DO_NOT_EXPAND_CLASSNAMES) or (str(curr_value_type) in (additional_excluded_item_classes or [])):
+            # if isinstance(curr_value, (pd.DataFrame, pd.TimedeltaIndex, TimedeltaIndexResampler)):
             # DataFrame has .items() property, but we don't want it
+            # print(f'RAISE: found item of type: {str(curr_value_type)}! omit_curr_item_print: {omit_curr_item_print} - {curr_key}: {curr_value_type}')
             if not omit_curr_item_print:
-                print(f"{depth_string}- {curr_key}: {curr_value_type} - {curr_value.shape}")
+                if hasattr(curr_value, 'shape'):
+                    print(f"{depth_string}- {curr_key}: {curr_value_type} - {curr_value.shape}")
+                else:
+                    print(f"{depth_string}- {curr_key}: {curr_value_type} - OMITTED TYPE WITH NO SHAPE")
         elif isinstance(curr_value, (np.ndarray, list, tuple)): 
             # elif pd.api.types.is_list_like(curr_value):
             # Objects that are considered list-like are for example Python lists, tuples, sets, NumPy arrays, and Pandas Series.
@@ -614,18 +622,26 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
                     # prints the current value:
                     # print(f"{depth_string}- {curr_child_key} - {type(curr_child_value)}")
                     # print children keys
-                    print_keys_if_possible(curr_child_key, curr_child_value, max_depth=max_depth, depth=(depth+1), omit_curr_item_print=False)
+                    print_keys_if_possible(curr_child_key, curr_child_value, max_depth=max_depth, depth=(depth+1), omit_curr_item_print=False, additional_excluded_item_classes=additional_excluded_item_classes)
             except AttributeError as e:
                 # AttributeError: 'PfND' object has no attribute 'items'
                 
                 # Try to get __dict__ from the item:
                 try:
                     curr_value_dict_rep = vars(curr_value) # gets the .__dict__ property if curr_value has one, otherwise throws a TypeError
-                    print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, max_depth=max_depth, depth=depth, omit_curr_item_print=True) # do not increase depth in this regard so it prints at the same level. Also tell it not to print again.
+                    print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, max_depth=max_depth, depth=depth, omit_curr_item_print=True, additional_excluded_item_classes=additional_excluded_item_classes) # do not increase depth in this regard so it prints at the same level. Also tell it not to print again.
                     
                 except TypeError:
                     # print(f"{depth_string}- {curr_value_type}")
                     return None # terminal item
+                
+                except Exception as e:
+                    print(f'Unhandled exception for innser block: {e}')
+                    raise
+            
+            except Exception as e:
+                print(f'Unhandled exception for outer block: {e}')
+                raise
     
 
 

@@ -37,10 +37,10 @@ class CapturedException(DynamicParameters):
 
     
     def __init__(self, exc, exc_info, captured_result_state):
-        super(CapturedException, self).__init__()
-        self.exc = exc
-        self.exc_info = exc_info
-        self.captured_result_state = captured_result_state
+        super(CapturedException, self).__init__(exc=exc, exc_info=exc_info, captured_result_state=captured_result_state)
+        # self.exc = exc
+        # self.exc_info = exc_info
+        # self.captured_result_state = captured_result_state
 
     
 

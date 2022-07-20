@@ -733,7 +733,21 @@ def print_value_overview_only(a_value, should_return_string=False):
         print(output_string)
         return None
     
-    
+def min_mean_max_sum(M, print_result=True):
+    """Computes the min, mean, max, and sum of a matrix M (ignoring NaN values) and returns a tuple containing the results. Optionally can print the values.
+    Useful for getting a simple summary/overview of a matrix.
+
+    Args:
+        M (_type_): _description_
+        print_result (bool, optional): _description_. Defaults to True.
+
+    Returns:
+        _type_: _description_
+    """
+    out = (np.nanmin(M), np.nanmean(M), np.nanmax(M), np.nansum(M))
+    if print_result:
+        print(f'min: {out[0]}, mean: {out[1]}, max: {out[2]}, sum: {out[3]}')
+    return out
     
 
 def document_active_variables(params, include_explicit_values=False, enable_print=True):

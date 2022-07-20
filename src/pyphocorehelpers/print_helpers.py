@@ -753,6 +753,8 @@ def min_mean_max_sum(M, print_result=True):
 def document_active_variables(params, include_explicit_values=False, enable_print=True):
     """ Builds a skeleton for documenting variables and parameters by using the values set for a passed in instance.
     
+    TODO: UNFINISHED!! UNTESTED.
+    
     Usage:
         document_active_variables(active_curve_plotter_3d.params, enable_print=True)
     """

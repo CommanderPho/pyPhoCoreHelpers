@@ -541,6 +541,12 @@ def strip_type_str_to_classname(a_type_str):
         
         >> ['tuple', 'int', 'float', 'numpy.ndarray', 'pandas.core.series.Series', 'pandas.core.frame.DataFrame', 'pyphocorehelpers.indexing_helpers.BinningInfo', 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters']
 
+    TESTING: TODO:
+    test_input_class_strings = ["<class 'tuple'>", "<class 'int'>", "<class 'float'>", "<class 'numpy.ndarray'>", "<class 'pandas.core.series.Series'>", "<class 'pandas.core.frame.DataFrame'>", "<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>", "<class 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters'>"]
+    desired_output_class_strings = ['tuple','int','float','numpy.ndarray', 'pandas.core.series.Series', 'pandas.core.frame.DataFrame', 'pyphocorehelpers.indexing_helpers.BinningInfo', 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters']
+    m = [strip_type_str_to_classname(a_test_str) for a_test_str in test_input_class_strings]
+    ## TODO: compare m element-wise to desired_output_class_strings
+
     """
     return re.search(r"<class '([^']+)'>", a_type_str).group(1)
 
@@ -548,7 +554,7 @@ def strip_type_str_to_classname(a_type_str):
 _GLOBAL_DO_NOT_EXPAND_CLASS_TYPES = [pd.DataFrame, pd.TimedeltaIndex, TimedeltaIndexResampler]
 _GLOBAL_DO_NOT_EXPAND_CLASSNAMES = ["<class 'pyvista.core.pointset.StructuredGrid'>", "<class 'pyvista.core.pointset.UnstructuredGrid'>", "<class 'pandas.core.series.Series'>"]
 _GLOBAL_MAX_DEPTH = 20
-def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_curr_item_print=False, additional_excluded_item_classes=None):
+def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_curr_item_print=False, additional_excluded_item_classes=None, custom_item_formatter=None):
     """Prints the keys of an object if possible, in a recurrsive manner.
 
     Args:
@@ -602,6 +608,36 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
                 - total_pairwise_overlaps: <class 'numpy.ndarray'> - (741,)
                 - all_pairwise_overlaps: <class 'numpy.ndarray'> - (741, 59, 21)
         
+        ## Defining custom formatting functions:
+        def _format_curr_value(depth_string, curr_key, type_string, type_name):
+            return f"{depth_string}['{curr_key}']: {type_name}"                
+        print_keys_if_possible('active_firing_rate_trends', active_firing_rate_trends, custom_item_formatter=_format_curr_value)
+        
+            ['active_firing_rate_trends']: pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters
+                ['time_bin_size_seconds']: float
+                ['all_session_spikes']: pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters
+                    ['time_window_edges']: numpy.ndarray - (5784,)
+                    ['time_window_edges_binning_info']: pyphocorehelpers.indexing_helpers.BinningInfo
+                        ['variable_extents']: tuple - (2,)
+                        ['step']: float
+                        ['num_bins']: int
+                        ['bin_indicies']: numpy.ndarray - (5784,)
+                    ['time_binned_unit_specific_binned_spike_rate']: pandas.core.frame.DataFrame - (5783, 52)
+                    ['min_spike_rates']: pandas.core.series.Series - (52,)
+                    ['median_spike_rates']: pandas.core.series.Series - (52,)
+                    ['max_spike_rates']: pandas.core.series.Series - (52,)
+                ['pf_included_spikes_only']: pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters
+                    ['time_window_edges']: numpy.ndarray - (5779,)
+                    ['time_window_edges_binning_info']: pyphocorehelpers.indexing_helpers.BinningInfo
+                        ['variable_extents']: tuple - (2,)
+                        ['step']: float
+                        ['num_bins']: int
+                        ['bin_indicies']: numpy.ndarray - (5779,)
+                    ['time_binned_unit_specific_binned_spike_rate']: pandas.core.frame.DataFrame - (5778, 52)
+                    ['min_spike_rates']: pandas.core.series.Series - (52,)
+                    ['median_spike_rates']: pandas.core.series.Series - (52,)
+                    ['max_spike_rates']: pandas.core.series.Series - (52,)
+
     
     """
     if (depth >= _GLOBAL_MAX_DEPTH):
@@ -615,38 +651,47 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
     else:
         depth_string = '\t' * depth
         curr_value_type = type(curr_value)
-        formatted_current_value_type = strip_type_str_to_classname(str(curr_value_type))
+        curr_value_type_string = str(curr_value_type) # string like "<class 'numpy.ndarray'>"
+        curr_value_type_name = strip_type_str_to_classname(curr_value_type_string) # string like "numpy.ndarray"
         
-        if isinstance(curr_value, tuple(_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES)) or (str(curr_value_type) in _GLOBAL_DO_NOT_EXPAND_CLASSNAMES) or (str(curr_value_type) in (additional_excluded_item_classes or [])):
+        if custom_item_formatter is None:
+            def _format_curr_value(depth_string, curr_key, type_string, type_name):
+                return f"{depth_string}- {curr_key}: {type_name}"
+            custom_item_formatter = _format_curr_value
+
+        
+        if isinstance(curr_value, tuple(_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES)) or (curr_value_type_string in _GLOBAL_DO_NOT_EXPAND_CLASSNAMES) or (curr_value_type_string in (additional_excluded_item_classes or [])):
             # DataFrame has .items() property, but we don't want it
             # print(f'RAISE: found item of type: {str(curr_value_type)}! omit_curr_item_print: {omit_curr_item_print} - {curr_key}: {curr_value_type}')
             if not omit_curr_item_print:
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=curr_value_type_name)
                 if hasattr(curr_value, 'shape'):
-                    print(f"{depth_string}- {curr_key}: {formatted_current_value_type} - {curr_value.shape}")
+                    # curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=curr_value_type_name, suffix=f" - {curr_value.shape}")
+                    print(f"{curr_item_str} - {curr_value.shape}")
                 else:
-                    print(f"{depth_string}- {curr_key}: {formatted_current_value_type} - OMITTED TYPE WITH NO SHAPE")
+                    print(f"{curr_item_str} - OMITTED TYPE WITH NO SHAPE")
         elif isinstance(curr_value, (np.ndarray, list, tuple)): 
             # Objects that are considered list-like are for example Python lists, tuples, sets, NumPy arrays, and Pandas Series.
             if not omit_curr_item_print:
-                print(f"{depth_string}- {curr_key}: {formatted_current_value_type} - {np.shape(curr_value)}")
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=curr_value_type_name)
+                print(f"{curr_item_str} - {np.shape(curr_value)}")
         else:
             # See if the curr_value has .items() or not.
             if not omit_curr_item_print:
-                print(f"{depth_string}- {curr_key}: {formatted_current_value_type}")
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=curr_value_type_name)
+                print(curr_item_str)
                 
             try:
                 for (curr_child_key, curr_child_value) in curr_value.items():
-                    # prints the current value:
-                    # print(f"{depth_string}- {curr_child_key} - {type(curr_child_value)}")
                     # print children keys
-                    print_keys_if_possible(curr_child_key, curr_child_value, max_depth=max_depth, depth=(depth+1), omit_curr_item_print=False, additional_excluded_item_classes=additional_excluded_item_classes)
+                    print_keys_if_possible(curr_child_key, curr_child_value, max_depth=max_depth, depth=(depth+1), omit_curr_item_print=False, additional_excluded_item_classes=additional_excluded_item_classes, custom_item_formatter=custom_item_formatter)
             except AttributeError as e:
                 # AttributeError: 'PfND' object has no attribute 'items'
                 
                 # Try to get __dict__ from the item:
                 try:
                     curr_value_dict_rep = vars(curr_value) # gets the .__dict__ property if curr_value has one, otherwise throws a TypeError
-                    print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, max_depth=max_depth, depth=depth, omit_curr_item_print=True, additional_excluded_item_classes=additional_excluded_item_classes) # do not increase depth in this regard so it prints at the same level. Also tell it not to print again.
+                    print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, max_depth=max_depth, depth=depth, omit_curr_item_print=True, additional_excluded_item_classes=additional_excluded_item_classes, custom_item_formatter=custom_item_formatter) # do not increase depth in this regard so it prints at the same level. Also tell it not to print again.
                     
                 except TypeError:
                     # print(f"{depth_string}- {curr_value_type}")

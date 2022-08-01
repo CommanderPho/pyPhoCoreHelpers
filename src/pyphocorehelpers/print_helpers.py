@@ -9,6 +9,9 @@ import pprint
 import inspect
 import ast
 
+
+import re ## required for strip_type_str_to_classname(...)
+
 class SimplePrintable:
     """Adds the default print method for classes that displays the class name and its dictionary."""
     def __repr__(self) -> str:
@@ -526,9 +529,24 @@ def dbg_dump(*args, dumpopt_stream=sys.stderr, dumpopt_forcename=True, dumpopt_p
     
 ## Category: Structural Overview/Outline:
 
+def strip_type_str_to_classname(a_type_str):
+    """ Extracts the class string out of the string returned by type(an_obj) 
+    a_type_str: a string returned by type(an_obj) in the form of ["<class 'tuple'>", "<class 'int'>", "<class 'float'>", "<class 'numpy.ndarray'>", "<class 'pandas.core.series.Series'>", "<class 'pandas.core.frame.DataFrame'>", "<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>", "<class 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters'>"]
+    return: str
+    
+    Example:
+        test_input_class_strings = ["<class 'tuple'>", "<class 'int'>", "<class 'float'>", "<class 'numpy.ndarray'>", "<class 'pandas.core.series.Series'>", "<class 'pandas.core.frame.DataFrame'>", "<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>", "<class 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters'>"]
+        m = [strip_type_str_to_classname(a_test_str) for a_test_str in test_input_class_strings]
+        print(m)
+        
+        >> ['tuple', 'int', 'float', 'numpy.ndarray', 'pandas.core.series.Series', 'pandas.core.frame.DataFrame', 'pyphocorehelpers.indexing_helpers.BinningInfo', 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters']
+
+    """
+    return re.search(r"<class '([^']+)'>", a_type_str).group(1)
+
 
 _GLOBAL_DO_NOT_EXPAND_CLASS_TYPES = [pd.DataFrame, pd.TimedeltaIndex, TimedeltaIndexResampler]
-_GLOBAL_DO_NOT_EXPAND_CLASSNAMES = ["<class 'pyvista.core.pointset.StructuredGrid'>", "<class 'pyvista.core.pointset.UnstructuredGrid'>"]
+_GLOBAL_DO_NOT_EXPAND_CLASSNAMES = ["<class 'pyvista.core.pointset.StructuredGrid'>", "<class 'pyvista.core.pointset.UnstructuredGrid'>", "<class 'pandas.core.series.Series'>"]
 _GLOBAL_MAX_DEPTH = 20
 def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_curr_item_print=False, additional_excluded_item_classes=None):
     """Prints the keys of an object if possible, in a recurrsive manner.
@@ -597,25 +615,24 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
     else:
         depth_string = '\t' * depth
         curr_value_type = type(curr_value)
+        formatted_current_value_type = strip_type_str_to_classname(str(curr_value_type))
+        
         if isinstance(curr_value, tuple(_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES)) or (str(curr_value_type) in _GLOBAL_DO_NOT_EXPAND_CLASSNAMES) or (str(curr_value_type) in (additional_excluded_item_classes or [])):
-            # if isinstance(curr_value, (pd.DataFrame, pd.TimedeltaIndex, TimedeltaIndexResampler)):
             # DataFrame has .items() property, but we don't want it
             # print(f'RAISE: found item of type: {str(curr_value_type)}! omit_curr_item_print: {omit_curr_item_print} - {curr_key}: {curr_value_type}')
             if not omit_curr_item_print:
                 if hasattr(curr_value, 'shape'):
-                    print(f"{depth_string}- {curr_key}: {curr_value_type} - {curr_value.shape}")
+                    print(f"{depth_string}- {curr_key}: {formatted_current_value_type} - {curr_value.shape}")
                 else:
-                    print(f"{depth_string}- {curr_key}: {curr_value_type} - OMITTED TYPE WITH NO SHAPE")
+                    print(f"{depth_string}- {curr_key}: {formatted_current_value_type} - OMITTED TYPE WITH NO SHAPE")
         elif isinstance(curr_value, (np.ndarray, list, tuple)): 
-            # elif pd.api.types.is_list_like(curr_value):
             # Objects that are considered list-like are for example Python lists, tuples, sets, NumPy arrays, and Pandas Series.
-            # elif isinstance(curr_value, np.ndarray):            
             if not omit_curr_item_print:
-                print(f"{depth_string}- {curr_key}: {curr_value_type} - {np.shape(curr_value)}")
+                print(f"{depth_string}- {curr_key}: {formatted_current_value_type} - {np.shape(curr_value)}")
         else:
             # See if the curr_value has .items() or not.
             if not omit_curr_item_print:
-                print(f"{depth_string}- {curr_key}: {curr_value_type}")
+                print(f"{depth_string}- {curr_key}: {formatted_current_value_type}")
                 
             try:
                 for (curr_child_key, curr_child_value) in curr_value.items():
@@ -762,7 +779,12 @@ def document_active_variables(params, include_explicit_values=False, enable_prin
     output_entries = dict()
     # for a_key, a_value in params.items():
     for a_key in params.keys():
-        a_value = params.__dict__[a_key]
+        try:
+            a_value = params.__dict__[a_key]
+        except KeyError as e:
+            # Fixes for DynamicParameters type objects
+            a_value = params[a_key]
+            
         curr_key_type = type(a_key)
         curr_key_str_rep = str(a_key)
         if curr_key_type == str:
@@ -791,6 +813,5 @@ def document_active_variables(params, include_explicit_values=False, enable_prin
     if enable_print:
         print('\n'.join(list(output_entries.values())))
     return output_entries
-    
     
     

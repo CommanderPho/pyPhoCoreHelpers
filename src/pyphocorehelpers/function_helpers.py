@@ -7,6 +7,10 @@ from typing import List, Callable # for function composition
 
 from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters
 
+""" 
+TODO: add a version of compose_functions that's capable of reporting progress of executing the composed functions, and perhaps that is capable of timing them. 
+"""
+
 def compose_functions(*args):
     """ Composes n functions passed as input arguments into a single lambda function efficienctly.
     right-to-left ordering (default): compose(f1, f2, ..., fn) == lambda x: f1(...(f2(fn(x))...)

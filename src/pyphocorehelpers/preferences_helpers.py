@@ -1,7 +1,6 @@
 
 
 
-from operator import is_
 
 
 def set_pho_preferences(is_concise=False):

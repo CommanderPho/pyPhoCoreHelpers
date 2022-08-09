@@ -13,9 +13,14 @@ import ast
 import re ## required for strip_type_str_to_classname(...)
 
 class SimplePrintable:
-    """Adds the default print method for classes that displays the class name and its dictionary."""
+    """Adds the default print method for classes that displays the class name and its dictionary.
+    
+    Shouldn't it define __str__(self) instead of __repr__(self)?
+    """
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: {self.__dict__};>"
+    
+    
 
 
 class iPythonKeyCompletingMixin:

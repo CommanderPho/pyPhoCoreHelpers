@@ -15,7 +15,10 @@ class CallbackSequence:
  
 
 class CallbackWrapper(object):
-    """docstring for CallbackWrapper.
+    """ A simple wrapper class to handle defining separate user-provided setup(...), update(...) functions
+    
+    The conceptual idea is that many plots require separate setup code that is executed only once, and then once this is complete can be updated much more cheaply by calling an update(...) method. 
+    
     Usage:
         def perform_draw_predicted_position_difference(frame, ax=None):
             return _temp_debug_draw_predicted_position_difference(active_one_step_decoder.most_likely_positions, active_resampled_measured_positions, frame, ax=ax)

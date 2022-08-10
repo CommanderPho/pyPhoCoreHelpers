@@ -39,6 +39,17 @@ class PhoActiveFigureManager2D(object):
     def __init__(self, name=''):
         super(PhoActiveFigureManager2D, self).__init__()
         self.name = name
+ 
+ 
+    ## Convinence methods:
+    def close_all(self, debug_print=False):
+        """ closes all open figures """
+        for a_fig_id, a_fig in self.figures_dict.items():
+            if debug_print:
+                print(f'closing {a_fig_id}...')
+            plt.close(a_fig_id) # this works to actually close the figure
+            # a_fig.canvas.close() # this does not work to close the figure, the fig_man.figure_nums are still the same after calling
+            # NOTE: there's also plt.close('all')
     
     
     @classmethod
@@ -71,6 +82,17 @@ class PhoActiveFigureManager2D(object):
         newX, newY, newWidth, newHeight = updated_extent
         # and then set the new extents:
         active_figure_man.window.setGeometry(newX, newY, newWidth, newHeight)
+
+
+    @classmethod
+    def reshow_figure(cls, a_closed_figure):
+        """ re-opens the window for a figure with a valid handle in memory (hasn't been garbage collected) but no active window (perhaps because it was previously closed with plt.close(the_fig) """
+        # create a dummy figure and use its manager to display "a_closed_figure"
+        dummy = plt.figure()
+        new_manager = dummy.canvas.manager
+        new_manager.canvas.figure = a_closed_figure
+        a_closed_figure.set_canvas(new_manager.canvas)
+        return a_closed_figure
 
 
     """ Older Functions """

@@ -14,8 +14,13 @@ class PhoActiveFigureManager2D(object):
  
     @property
     def figure_nums(self):
-        """The figure_nums property."""
+        """The matplotlib figure numbers for active figures."""
         return plt.get_fignums()
+    
+    @property
+    def figure_labels(self):
+        """The matplotlib figure labels for active figures."""
+        return plt.get_figlabels()
   
     @property
     def window_extent(self):

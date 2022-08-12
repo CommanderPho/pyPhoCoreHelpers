@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import QFrame, QGridLayout, QSlider, QStyle, QStyleOptionSl
 
 # from PyQt5 import QtGui
 from PyQt5.QtGui import QPalette, QColor, QWheelEvent, QKeyEvent, QPainter, QPen
-# from PyQt5.QtGui import QPalette, QColor, QWheelEvent, QKeyEvent, QPainter, QPen, QGridLayout
 from PyQt5.QtCore import pyqtSignal, QRect
 
 

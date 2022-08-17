@@ -48,7 +48,7 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QLineEdit" name="txtFilePath">
+      <widget class="FilesystemPathLineEdit" name="txtFilePath">
        <property name="placeholderText">
         <string>No file selected</string>
        </property>
@@ -69,7 +69,8 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset theme="folder"/>
+        <iconset theme="folder">
+         <normaloff>.</normaloff>.</iconset>
        </property>
       </widget>
      </item>
@@ -93,6 +94,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>FilesystemPathLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header location="global">pyphocorehelpers.gui.Qt.InlineFilesystemPathSelectWidget.FilesystemPathLineEdit</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

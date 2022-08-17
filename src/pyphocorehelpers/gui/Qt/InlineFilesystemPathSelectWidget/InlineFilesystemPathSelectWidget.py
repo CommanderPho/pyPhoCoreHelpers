@@ -198,20 +198,23 @@ class InlineFilesystemPathSelectWidget(QWidget):
         """ called when the path string changes (even during edits) """   
         ## validate the path
         is_path_valid = self._visually_validate_path(self.path)
-        
         # re-emit the file changed signal
         self.sigFileSelectionChanged.emit(str(self.path))
 
 
     def _visually_validate_path(self, path_str):
         """ visually updates the validation by checking the validity of the user-entered path """
-        is_path_valid = self._validate_path(path_str)
-        # is_path_valid = self.ui.txtFilePath.hasAcceptableInput() # future
-        self.ui.txtFilePath.setStyleSheet(
-            "border: 3px solid {color}".format(
-                color="green" if is_path_valid else "red"
+        if not self.is_save_mode:
+            is_path_valid = self._validate_path(path_str)
+            # is_path_valid = self.ui.txtFilePath.hasAcceptableInput() # future
+            self.ui.txtFilePath.setStyleSheet(
+                "border: 3px solid {color}".format(
+                    color="green" if is_path_valid else "red"
+                )
             )
-        )
+        else:
+            """ in save_mode we don't want to indicate that potentially valid paths don't exist (because that's often the whole point). Always return valid """
+            is_path_valid = True
         return is_path_valid
         
     @classmethod

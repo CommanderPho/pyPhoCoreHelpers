@@ -29,12 +29,11 @@ class InlineFilesystemPathSelectWidget(QWidget):
         from pyphocorehelpers.gui.Qt.InlineFilesystemPathSelectWidget.InlineFilesystemPathSelectWidget import InlineFilesystemPathSelectWidget
         InlineFilesystemPathSelectWidget('Root')
     """
-    label: str = 'Path Test'
+    _label: str = 'Path Test'
     is_save_mode: bool = False # if true, the dialog created by the widget is that produced when saving. Allows specifying default file extensions and file names
     path_type: str = 'folder' # {'file', 'folder'}
     allows_multiple: bool = False # If True, allows multiple selections to be made. Only relevant for 
     sigFileSelectionChanged = QtCore.Signal(str)
-    
     
     @property
     def path(self):
@@ -48,6 +47,17 @@ class InlineFilesystemPathSelectWidget(QWidget):
         self.ui.txtFilePath.setText(str(value))
         
         
+    @property
+    def label(self):
+        """The label property."""
+        return self._label
+    @label.setter
+    def label(self, value):
+        self._label = value
+        self.ui.lblMain.setText(self._label)
+        self.ui.lblMain.adjustSize()
+        
+
     # @property
     # def is_save_mode(self):
     #     """The is_save_mode property."""
@@ -56,22 +66,22 @@ class InlineFilesystemPathSelectWidget(QWidget):
     # def is_save_mode(self, value):
     #     self._is_save_mode = value
         
-    def __init__(self, label=None, is_save_mode=False, path_type='folder', allows_multiple=False, parent=None):
+    def __init__(self, parent=None, label=None, is_save_mode=False, path_type='folder', allows_multiple=False):
         super().__init__(parent=parent) # Call the inherited classes __init__ method
         self.ui = Ui_Form()
         self.ui.setupUi(self) # builds the design from the .ui onto this widget.
         
         # self._is_save_mode = is_save_mode
-        self.label = label
+        self._label = label
         self.is_save_mode = is_save_mode
         self.path_type = path_type
         self.allows_multiple = allows_multiple
         
         self.initUI()
         self.show() # Show the GUI
-
+        
     def initUI(self):
-        self.ui.lblMain.setText(self.label)
+        self.ui.lblMain.setText(self._label)
         self.ui.lblMain.adjustSize()
         
         pixmapi = getattr(QStyle, 'SP_DirIcon')
@@ -79,7 +89,7 @@ class InlineFilesystemPathSelectWidget(QWidget):
         self.ui.btnSelectFile.setIcon(icon)
         self.ui.btnAlternate.setVisible(False)
         
-        self.ui.txtFilePath.textChanged.connect(self.sigFileSelectionChanged) # Re-emit when the text changes
+        self.ui.txtFilePath.textChanged.connect(self.on_textChanged) # Re-emit when the text changes
         
         # Dialogs:
         self.ui.fileDialog = None
@@ -89,6 +99,18 @@ class InlineFilesystemPathSelectWidget(QWidget):
     def __str__(self):
          return 
      
+             
+    def reconfigure(self, label=None, is_save_mode=None, path_type=None, allows_multiple=None):
+        """ Sets the properties IFF they aren't none, meaning no properties are changed if no inputs are provided. """
+        if label is not None:
+            self.label = label
+        if is_save_mode is not None:
+            self.is_save_mode = is_save_mode
+        if path_type is not None:
+            self.path_type = path_type
+        if allows_multiple is not None:
+            self.allows_multiple = allows_multiple
+        
     @QtCore.Slot()
     def selectPathDialog(self, startDir=None):
         if startDir is None:
@@ -171,8 +193,33 @@ class InlineFilesystemPathSelectWidget(QWidget):
         # Emit changed signal:
         self.sigFileSelectionChanged.emit(str(fileName))
         
+    @QtCore.Slot()
+    def on_textChanged(self):
+        """ called when the path string changes (even during edits) """   
+        ## validate the path
+        is_path_valid = self._visually_validate_path(self.path)
         
-     
+        # re-emit the file changed signal
+        self.sigFileSelectionChanged.emit(str(self.path))
+
+
+    def _visually_validate_path(self, path_str):
+        """ visually updates the validation by checking the validity of the user-entered path """
+        is_path_valid = self._validate_path(path_str)
+        # is_path_valid = self.ui.txtFilePath.hasAcceptableInput() # future
+        self.ui.txtFilePath.setStyleSheet(
+            "border: 3px solid {color}".format(
+                color="green" if is_path_valid else "red"
+            )
+        )
+        return is_path_valid
+        
+    @classmethod
+    def _validate_path(cls, path_str):
+        path = Path(path_str)
+        return path.exists() # return whether the path exists
+
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)

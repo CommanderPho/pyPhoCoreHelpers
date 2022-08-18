@@ -12,7 +12,7 @@ class FilesystemPathLineEdit(QLineEdit):
 
     def __initUi(self):
         self.setMouseTracking(True)
-        self.setReadOnly(True)
+        self.setReadOnly(False)
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.__prepareMenu)
 

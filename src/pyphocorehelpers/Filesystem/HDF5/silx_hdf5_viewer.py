@@ -49,6 +49,7 @@ Usage:
 
 import html
 import logging
+from pathlib import Path
 import sys
 import tempfile
 
@@ -72,6 +73,7 @@ from silx.gui import qt
 from silx.gui.data.DataViewerFrame import DataViewerFrame
 from silx.gui.widgets.ThreadPoolPushButton import ThreadPoolPushButton
 
+from qtpy import QtCore, QtWidgets
 import fabio
 
 
@@ -848,6 +850,37 @@ def hdf5_tree_view_window(filenames_list):
     return window
 
 
+def discover_data_files(basedir: Path, file_extension='.mat', recursive=True):
+    """ By default it attempts to find the all *.mat files in the root of this basedir
+    Example:
+        basedir: Path(r'~/data/Bapun/Day5TwoNovel')
+        session_name: 'RatS-Day5TwoNovel-2020-12-04_07-55-09'
+    """
+    if isinstance(basedir, str):
+        basedir = Path(basedir) # convert to Path object if not already one.
+    if recursive:
+        glob_pattern = f"**/*{file_extension}"
+    else:
+        glob_pattern = f"*{file_extension}"
+    found_files = sorted(basedir.glob(glob_pattern))
+    return found_files # 'RatS-Day5TwoNovel-2020-12-04_07-55-09'
+
+def print_data_files_list_as_array(filenames_list):
+    # print(f'filenames_list: {filenames_list}')
+    # filenames_list_str = ',\n'.join([str(a_path) for a_path in filenames_list])
+    filenames_list_str = ',\n'.join([f'r"{str(a_path)}"' for a_path in filenames_list])
+    print(f'filenames_list_str: [{filenames_list_str}]')
+    # for a_path in filenames_list:
+    #     print(f'{str(a_path)}')
+
+def plot_hdf5_tree_view_window(data, title='PhoOutputDataTreeApp'):
+    app = pg.mkQApp(title)
+    tree = CustomFormattingDataTreeWidget(data=data)
+    tree.show()
+    tree.setWindowTitle(f'PhoOutputDataTreeApp: pyqtgraph DataTreeWidget: {title}')
+    tree.resize(800,600)
+    return tree, app
+
 
 # def main(filenames):
 #     """
@@ -862,6 +895,43 @@ def hdf5_tree_view_window(filenames_list):
 #     app.deleteLater()
 #     sys.exit(result)
 
+def main():
+    wants_recurrsive_data_file_search = False
+    # files_search_parent_path = Path(r'R:\data\RoyMaze1')
+    # files_search_parent_path = Path(r'W:\Data\KDIBA\gor01\one\2006-6-08_14-26-15')
+    # files_search_parent_path = Path(r'C:\Users\pho\repos\PhoPy3DPositionAnalysis2021')
+    files_search_parent_path = Path(r'W:\Data\KDIBA\gor01\one\2006-6-08_14-26-15')
+    
+    # file_extension = '.h5'
+    file_extension = '.mat'
+    
+    filenames_list = sys.argv[1:]
+    no_args_specified = (len(filenames_list) == 0)
+    if no_args_specified:
+        print(f'no path specified as args, using default {files_search_parent_path}')
+        filenames_list = [files_search_parent_path]
+        
+    filenames_list = [Path(filename) for filename in filenames_list]
+    filenames_list
+    
+    if no_args_specified:
+        filenames_list = discover_data_files(files_search_parent_path, file_extension=file_extension, recursive=wants_recurrsive_data_file_search)
+        # print(f'filenames_list: {filenames_list}')
+        print_data_files_list_as_array(filenames_list=filenames_list)
 
+    app = QtWidgets.QApplication([])
+    window = hdf5_tree_view_window(filenames_list)
+        
+    # pg.exec()
+
+    result = app.exec()
+    # remove ending warnings relative to QTimer
+    app.deleteLater()
+    sys.exit(result)
+    
+    
 if __name__ == "__main__":
-    hdf5_tree_view_window(sys.argv[1:])
+    main()
+    
+# if __name__ == "__main__":
+#     hdf5_tree_view_window(sys.argv[1:])

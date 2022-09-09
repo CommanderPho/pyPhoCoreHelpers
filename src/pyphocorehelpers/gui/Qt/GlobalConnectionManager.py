@@ -2,6 +2,14 @@
 
 from indexed import IndexedOrderedDict
 from qtpy import QtCore, QtWidgets, QtGui
+from dataclasses import dataclass
+
+@dataclass
+class ConnectionReference:
+    connection: object
+    description: str
+
+
 
 """ 
 Requires 
@@ -78,6 +86,7 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
             if found_connection is not None:
                 if debug_print:
                     print(f'found connection corresponding to object to be removed. Removing connection...')
+                found_connection.connection = None
                 found_connection = None
                 if debug_print:
                     print('\tdone.')
@@ -118,10 +127,13 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
                 # Otherwise perform the default:
                 new_connection_obj = GlobalConnectionManager.connect_additional_controlled_plotter(driver, controlled_plt=drivable)
                 
-            self.active_connections[drivable] = new_connection_obj # add the connection object to the self.active_connections array
+            # Build a textual description of the connection:
+            connection_description = f'{drivable_key}<={driver_key}'
+            # self.active_connections[drivable] = new_connection_obj # add the connection object to the self.active_connections array
+            self.active_connections[drivable] = ConnectionReference(new_connection_obj, connection_description) # add the connection object to the self.active_connections array
             return self.active_connections[drivable]
         else:
-            print(f'connection already existed!')
+            print(f'connection "{extant_connection.description}" already existed!')
             return extant_connection
                 
         ## Make the connection:
@@ -133,6 +145,8 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
         """ disconnects the drivable from any drivers. """
         self.unregister_object(drivable)
         
+        
+    
     
         #### ================ Access Methods:
     def get_available_drivers(self):

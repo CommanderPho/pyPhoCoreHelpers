@@ -9,8 +9,14 @@ import pprint
 import inspect
 import ast
 
-
 import re ## required for strip_type_str_to_classname(...)
+
+# Required for build_module_logger
+from pathlib import Path
+import logging
+
+
+
 
 class SimplePrintable:
     """Adds the default print method for classes that displays the class name and its dictionary.
@@ -865,3 +871,61 @@ def document_active_variables(params, include_explicit_values=False, enable_prin
     return output_entries
     
     
+    
+# ==================================================================================================================== #
+# LOGGING                                                                                                              #
+# ==================================================================================================================== #
+
+# logging.basicConfig()
+# logging.root.setLevel(logging.DEBUG)
+
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format="%(asctime)s [%(levelname)s] %(message)s",
+#     handlers=[
+#         logging.FileHandler("debug.log"),
+#         logging.StreamHandler()
+#     ]
+# )
+
+# logging.basicConfig(
+#     level=logging.DEBUG,
+#     format="%(asctime)s [%(levelname)s] %(message)s",
+#     handlers=[
+#         fileHandler,
+#         consoleHandler
+#     ]
+# )
+
+
+
+def build_module_logger(module_name='Spike3D.notebook', debug_print=False):
+    """ Builds a logger for a specific module that logs to console output and a file. 
+    
+    """
+    logging_dir = Path('EXTERNAL/TESTING/Logging') # 'C:\Users\pho\repos\PhoPy3DPositionAnalysis2021\EXTERNAL\TESTING\Logging'
+    # logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] %(name)s [%(levelname)-5.5s]  %(message)s")
+    logFormatter = logging.Formatter("%(relativeCreated)d %(name)s]  [%(levelname)-5.5s]  %(message)s")
+
+    module_logger = logging.getLogger(f'com.PhoHale.{module_name}') # create logger
+    module_logging_path = logging_dir.joinpath(f'debug_{module_logger.name}.log') # module_logger.name # 'com.PhoHale.Spike3D.notebook'
+
+
+    print(f'build_module_logger(module_name="{module_name}"):')
+    if debug_print:
+        print(f'\t module_logger.handlers: {module_logger.handlers}')
+    module_logger.handlers = []
+    # module_logger.removeHandler()
+
+    print(f'\t Module logger {module_logger.name} will log to {str(module_logging_path)}')
+    fileHandler = logging.FileHandler(module_logging_path)
+    fileHandler.setFormatter(logFormatter)
+    module_logger.addHandler(fileHandler)
+
+    # consoleHandler = logging.StreamHandler(sys.stdout)
+    # consoleHandler.setFormatter(logFormatter)
+    # # module_logger.addHandler(consoleHandler)
+
+    module_logger.setLevel(logging.DEBUG)
+    module_logger.info(f'==========================================================================================\n========== Module Logger INIT "{module_logger.name}" ==============================')
+    return module_logger

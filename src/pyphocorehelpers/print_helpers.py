@@ -902,6 +902,16 @@ def document_active_variables(params, include_explicit_values=False, enable_prin
 def build_module_logger(module_name='Spike3D.notebook', debug_print=False):
     """ Builds a logger for a specific module that logs to console output and a file. 
     
+    
+    Testing:
+    
+        module_logger.debug (f'DEBUG: module_logger: "com.PhoHale.Spike3D.notebook"')
+        module_logger.info(f'INFO: module_logger: "com.PhoHale.Spike3D.notebook"')
+        module_logger.warning(f'WARNING: module_logger: "com.PhoHale.Spike3D.notebook"')
+        module_logger.error(f'ERROR: module_logger: "com.PhoHale.Spike3D.notebook"')
+        module_logger.critical(f'CRITICAL: module_logger: "com.PhoHale.Spike3D.notebook"')
+        module_logger.exception(f'EXCEPTION: module_logger: "com.PhoHale.Spike3D.notebook"')
+
     """
     logging_dir = Path('EXTERNAL/TESTING/Logging') # 'C:\Users\pho\repos\PhoPy3DPositionAnalysis2021\EXTERNAL\TESTING\Logging'
     # logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] %(name)s [%(levelname)-5.5s]  %(message)s")

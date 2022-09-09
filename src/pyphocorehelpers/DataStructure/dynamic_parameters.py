@@ -87,7 +87,6 @@ class DynamicParameters(DiffableObject, MutableMapping):
         dict_or = self.to_dict().__or__(other_dict)
         return DynamicParameters.init_from_dict(dict_or)
         
-
     def __getattr__(self, item):
         # Gets called when the item is not found via __getattribute__
         if DynamicParameters.debug_enabled:
@@ -98,7 +97,6 @@ class DynamicParameters(DiffableObject, MutableMapping):
         except KeyError as err:
             if DynamicParameters.debug_enabled:
                 print(f"DynamicParameters.__getattr__(self, item: {item}) KeyError: Attribute could not be found in dictionary either!\n\t KeyError: {err}")
-            
             # if DynamicParameters.outcome_on_item_not_found:
             # return super(DynamicParameters, self).__setattr__(item, 'orphan')
             raise
@@ -141,6 +139,8 @@ class DynamicParameters(DiffableObject, MutableMapping):
         return list(set(self.all_attributes) - set(self.original_attributes))
     
     
+    def has_attr(self, key):
+        return key in self.all_attributes
 
     def __hash__(self):
         """ custom hash function that allows use in dictionary just based off of the values and not the object instance. """

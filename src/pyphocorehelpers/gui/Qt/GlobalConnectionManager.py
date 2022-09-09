@@ -58,6 +58,14 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
         """ an IndexedOrderedDict of widgets/objects that can be driven by a driver."""
         return self._active_connections
     
+    def find_active_connection(self, description_str):
+        """ returns the active connection with the matching description_str. Does this by parsing the description string into its parts
+        description_str = 'Spike3DRaster<=Spike2DRaster'
+        """
+        drivable_identifier, driver_identifier = description_str.split('<=', maxsplit=2) # ['Spike3DRaster', 'Spike2DRaster']
+        drivable = self.registered_available_drivables.get(drivable_identifier, None)
+        assert drivable is not None, f"drivable used in connection with description {description_str} could not be found! drivable_identifier: {drivable_identifier}, driver_identifier: {driver_identifier}"
+        return self.active_connections.get(drivable, None)
 
     #### ================ Registration Methods:
     def register_driver(self, driver, driver_identifier=None):

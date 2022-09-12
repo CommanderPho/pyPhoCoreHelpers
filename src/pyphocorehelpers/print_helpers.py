@@ -675,21 +675,21 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
             # DataFrame has .items() property, but we don't want it
             # print(f'RAISE: found item of type: {str(curr_value_type)}! omit_curr_item_print: {omit_curr_item_print} - {curr_key}: {curr_value_type}')
             if not omit_curr_item_print:
-                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=curr_value_type_name)
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name)
                 if hasattr(curr_value, 'shape'):
-                    # curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=curr_value_type_name, suffix=f" - {curr_value.shape}")
+                    # curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, suffix=f" - {curr_value.shape}")
                     print(f"{curr_item_str} - {curr_value.shape}")
                 else:
                     print(f"{curr_item_str} - OMITTED TYPE WITH NO SHAPE")
         elif isinstance(curr_value, (np.ndarray, list, tuple)): 
             # Objects that are considered list-like are for example Python lists, tuples, sets, NumPy arrays, and Pandas Series.
             if not omit_curr_item_print:
-                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=curr_value_type_name)
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name)
                 print(f"{curr_item_str} - {np.shape(curr_value)}")
         else:
             # See if the curr_value has .items() or not.
             if not omit_curr_item_print:
-                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=curr_value_type_name)
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name)
                 print(curr_item_str)
                 
             try:

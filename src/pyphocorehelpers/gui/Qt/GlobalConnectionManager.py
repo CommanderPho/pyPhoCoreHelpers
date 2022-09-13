@@ -26,6 +26,10 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
     """ A singleton owned by the QApplication instance that owns connections between widgets/windows and includes tools for discovering widgets to control/be controlled by. """
     _currentInstance = None
     
+    sigAvailableDriversChanged = QtCore.Signal()
+    sigAvailableDrivablesChanged = QtCore.Signal()
+    sigConnectionsChanged = QtCore.Signal()
+    
     def __init__(self, owning_application: QtWidgets.QApplication, parent=None, **kwargs):
         super(GlobalConnectionManager, self).__init__(parent, **kwargs)
         
@@ -70,10 +74,15 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
     #### ================ Registration Methods:
     def register_driver(self, driver, driver_identifier=None):
         """Registers a new driver object/widget """
-        return GlobalConnectionManager.register_control_object(self._registered_available_drivers, driver, driver_identifier) # return the new identifier            
+        control_identifier = GlobalConnectionManager.register_control_object(self._registered_available_drivers, driver, driver_identifier) # return the new identifier
+        self.sigAvailableDriversChanged.emit()
+        return control_identifier
                 
     def register_drivable(self, drivable, drivable_identifier=None):
-        return GlobalConnectionManager.register_control_object(self._registered_available_drivables, drivable, drivable_identifier) # return the new identifier 
+        control_identifier = GlobalConnectionManager.register_control_object(self._registered_available_drivables, drivable, drivable_identifier) # return the new identifier
+        self.sigAvailableDrivablesChanged.emit()
+        return control_identifier
+    
     
     def unregister_object(self, control_object, debug_print=True):
         # unregisters object from both drivers and drivables
@@ -97,9 +106,16 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
                     print(f'found connection corresponding to object to be removed. Removing connection...')
                 found_connection.connection = None
                 found_connection = None
+                self.sigConnectionsChanged.emit()
                 if debug_print:
                     print('\tdone.')
-        
+                    
+
+        if found_driver_key is not None:
+            self.sigAvailableDriversChanged.emit()
+        if found_drivable_key is not None:
+            self.sigAvailableDrivablesChanged.emit()
+            
         return found_driver_key, found_drivable_key
         
     def connect_drivable_to_driver(self, drivable, driver, custom_connect_function=None):

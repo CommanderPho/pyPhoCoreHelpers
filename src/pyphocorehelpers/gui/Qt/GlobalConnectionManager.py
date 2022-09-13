@@ -82,7 +82,8 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
         if found_driver_key is not None:
             if debug_print:
                 print(f'removed object with key {found_driver_key} from drivers list.')
-        
+            
+            
         # For Drivable List:
         found_drivable_key, found_drivable_object = GlobalConnectionManager._unregister_object(self._registered_available_drivables, control_object=control_object)
         if found_drivable_key is not None:
@@ -340,6 +341,25 @@ class GlobalConnectionManager(QtCore.QObject, metaclass=Singleton):
     #     sync_connection = spike_raster_plt_2d.window_scrolled.connect(controlled_spike_raster_plt.spikes_window.update_window_start_end)
     #     return sync_connection
 
+    @classmethod
+    def is_known_driver(cls, obj):
+        """ returns True if the obj has the known methods required to register as a driver without a custom connection function """
+        if hasattr(obj, 'window_scrolled'):
+            return True
+        # elif hasattr(obj, '')
+        #     return True
+        else:
+            return False
+        
+    @classmethod
+    def is_known_drivable(cls, obj):
+        """ returns True if the obj has the known methods required to register as a drivable without a custom connection function """
+        if hasattr(obj, 'on_window_changed'):
+            return True
+        elif hasattr(obj, 'update_window_start_end'):
+            return True
+        else:
+            return False
 
 ### Usesful Examples:
 

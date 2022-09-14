@@ -899,7 +899,7 @@ def document_active_variables(params, include_explicit_values=False, enable_prin
 
 
 
-def build_module_logger(module_name='Spike3D.notebook', debug_print=False):
+def build_module_logger(module_name='Spike3D.notebook', file_logging_dir=Path('EXTERNAL/TESTING/Logging'), debug_print=False):
     """ Builds a logger for a specific module that logs to console output and a file. 
     
     
@@ -913,29 +913,32 @@ def build_module_logger(module_name='Spike3D.notebook', debug_print=False):
         module_logger.exception(f'EXCEPTION: module_logger: "com.PhoHale.Spike3D.notebook"')
 
     """
-    logging_dir = Path('EXTERNAL/TESTING/Logging') # 'C:\Users\pho\repos\PhoPy3DPositionAnalysis2021\EXTERNAL\TESTING\Logging'
     # logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] %(name)s [%(levelname)-5.5s]  %(message)s")
     logFormatter = logging.Formatter("%(relativeCreated)d %(name)s]  [%(levelname)-5.5s]  %(message)s")
 
     module_logger = logging.getLogger(f'com.PhoHale.{module_name}') # create logger
-    module_logging_path = logging_dir.joinpath(f'debug_{module_logger.name}.log') # module_logger.name # 'com.PhoHale.Spike3D.notebook'
-
-
     print(f'build_module_logger(module_name="{module_name}"):')
     if debug_print:
         print(f'\t module_logger.handlers: {module_logger.handlers}')
     module_logger.handlers = []
     # module_logger.removeHandler()
 
-    print(f'\t Module logger {module_logger.name} will log to {str(module_logging_path)}')
-    fileHandler = logging.FileHandler(module_logging_path)
-    fileHandler.setFormatter(logFormatter)
-    module_logger.addHandler(fileHandler)
+    if file_logging_dir is not None:
+        # file logging enabled:
+        # file_logging_dir = Path('EXTERNAL/TESTING/Logging') # 'C:\Users\pho\repos\PhoPy3DPositionAnalysis2021\EXTERNAL\TESTING\Logging'
+        module_logging_path = file_logging_dir.joinpath(f'debug_{module_logger.name}.log') # module_logger.name # 'com.PhoHale.Spike3D.notebook'
+
+        # File Logging:    
+        print(f'\t Module logger {module_logger.name} has file logging enabled and will log to {str(module_logging_path)}')
+        fileHandler = logging.FileHandler(module_logging_path)
+        fileHandler.setFormatter(logFormatter)
+        module_logger.addHandler(fileHandler)
 
     # consoleHandler = logging.StreamHandler(sys.stdout)
     # consoleHandler.setFormatter(logFormatter)
     # # module_logger.addHandler(consoleHandler)
 
+    # General Logger Setup:
     module_logger.setLevel(logging.DEBUG)
     module_logger.info(f'==========================================================================================\n========== Module Logger INIT "{module_logger.name}" ==============================')
     return module_logger

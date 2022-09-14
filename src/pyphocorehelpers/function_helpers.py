@@ -11,7 +11,7 @@ from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters
 TODO: add a version of compose_functions that's capable of reporting progress of executing the composed functions, and perhaps that is capable of timing them. 
 """
 
-def compose_functions(*args):
+def compose_functions(*args, progress_logger=None, error_logger=None):
     """ Composes n functions passed as input arguments into a single lambda function efficienctly.
     right-to-left ordering (default): compose(f1, f2, ..., fn) == lambda x: f1(...(f2(fn(x))...)
     # OLD: left-to-right ordering: compose(f1, f2, ..., fn) == lambda x: fn(...(f2(f1(x))...)
@@ -23,7 +23,10 @@ def compose_functions(*args):
     """
     def _(x):
         result = x
-        for f in reversed(args):
+        total_num_funcs = len(args)
+        for i, f in enumerate(reversed(args)):
+            if progress_logger is not None:
+                progress_logger(f'Executing [{i}/{total_num_funcs}]: {f}')
             result = f(result)
         return result
     return _
@@ -48,7 +51,7 @@ class CapturedException(DynamicParameters):
 
     
 
-def compose_functions_with_error_handling(*args):
+def compose_functions_with_error_handling(*args, progress_logger=None, error_logger=None):
     """ Composes n functions passed as input arguments into a single lambda function efficienctly.
     right-to-left ordering (default): compose(f1, f2, ..., fn) == lambda x: f1(...(f2(fn(x))...)
     # OLD: left-to-right ordering: compose(f1, f2, ..., fn) == lambda x: fn(...(f2(f1(x))...)
@@ -59,9 +62,13 @@ def compose_functions_with_error_handling(*args):
         composed_post_load_function(curr_kdiba_pipeline.sess)
     """
     def _(x):
+        """ implicitly captures progress_logger from outer function"""
         result = x # initially set the result to the input
         accumulated_errors = dict() # empty list for keeping track of exceptions
-        for f in reversed(args):
+        total_num_funcs = len(args)
+        for i, f in enumerate(reversed(args)):
+            if progress_logger is not None:
+                progress_logger(f'Executing [{i}/{total_num_funcs}]: {f}')
             try:
                 temp_result = f(result) # evaluate the function 'f' using the result provided from the previous output or the initial input
             except (TypeError, ValueError, NameError, AttributeError, KeyError, NotImplementedError) as e:
@@ -70,9 +77,15 @@ def compose_functions_with_error_handling(*args):
                 # accumulated_errors.append(e) # add the error to the accumulated error array
                 temp_result = result # restore the result from prior to the calculations?
                 # result shouldn't be updated unless there wasn't an error, so it should be fine to move on to the next function
+                if error_logger is not None:
+                    error_logger(f'\t Encountered error: {accumulated_errors[f]} continuing.')
+                                
             else:
                 # only if no error occured do we commit the temp_result to result
                 result = temp_result
+                if progress_logger is not None:
+                    progress_logger('\t done.')
+                    
             # finally:
             #     # do this no matter what
             #     # result

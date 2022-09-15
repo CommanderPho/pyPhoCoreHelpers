@@ -582,7 +582,7 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         - computed_data: <class 'dict'>
             - pf1D: <class 'neuropy.analyses.placefields.PfND'>
             - pf2D: <class 'neuropy.analyses.placefields.PfND'>
-            - pf2D_Decoder: <class 'pyphoplacecellanalysis.Analysis.reconstruction.BayesianPlacemapPositionDecoder'>
+            - pf2D_Decoder: <class 'pyphoplacecellanalysis.Analysis.Decoder.reconstruction.BayesianPlacemapPositionDecoder'>
             - pf2D_TwoStepDecoder: <class 'dict'>
                 - xbin: <class 'numpy.ndarray'> - (59,)
                 - ybin: <class 'numpy.ndarray'> - (21,)

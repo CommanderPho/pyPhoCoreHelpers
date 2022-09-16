@@ -562,6 +562,42 @@ def strip_type_str_to_classname(a_type_str):
     return re.search(r"<class '([^']+)'>", a_type_str).group(1)
 
 
+
+def safe_get_variable_shape(a_value):
+    """ generally and safely tries several methods of determining a_value's shape 
+    
+    assert safe_get_variable_shape(active_one_step_decoder.time_bin_size) is None
+    assert isinstance(safe_get_variable_shape(active_one_step_decoder.spikes_df), tuple)
+    assert isinstance(safe_get_variable_shape(active_one_step_decoder.F), tuple)
+
+    
+    """
+    value_shape = np.shape(a_value)
+    if value_shape != ():
+        # np.shape(...) worked
+        return value_shape
+    else:        
+        # empty shape:
+        if hasattr(a_value, 'shape'):
+            ## get the shape property
+            value_shape = a_value.shape
+            return value_shape
+        else:
+            # didn't work, try len(a_value):
+            try:
+                value_shape = len(a_value)
+            except TypeError as e:
+                # no length, no way to get shape
+                value_shape = None
+                return value_shape # value_shape = 'scalar'
+            except Exception as e:
+                raise e
+
+    return value_shape
+
+
+    
+
 _GLOBAL_DO_NOT_EXPAND_CLASS_TYPES = [pd.DataFrame, pd.TimedeltaIndex, TimedeltaIndexResampler]
 _GLOBAL_DO_NOT_EXPAND_CLASSNAMES = ["<class 'pyvista.core.pointset.StructuredGrid'>", "<class 'pyvista.core.pointset.UnstructuredGrid'>", "<class 'pandas.core.series.Series'>"]
 _GLOBAL_MAX_DEPTH = 20

@@ -548,33 +548,47 @@ class BinningInfo(object):
     bin_indicies: np.ndarray
 
 
-def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=None):
+def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=None, variable_start_value:float=None, variable_end_value:float=None):
     """[summary]
 
     Args:
-        variable_values ([type]): [description]
-        num_bins (int, optional): [description]. Defaults to None.
-        bin_size (float, optional): [description]. Defaults to None.
-        debug_print (bool, optional): [description]. Defaults to False.
+        variable_values ([type]): The variables to be binned, used to determine the start and end edges of the returned bins.
+        num_bins (int, optional): The total number of bins to create. Defaults to None.
+        bin_size (float, optional): The size of each bin. Defaults to None.
+        variable_start_value (float, optional): The minimum value of the binned variable. If specified, overrides the lower binned limit instead of computing it from variable_values. Defaults to None.
+        variable_end_value (float, optional): The maximum value of the binned variable. If specified, overrides the upper binned limit instead of computing it from variable_values. Defaults to None.
+        debug_print (bool, optional): Whether to print debug messages. Defaults to False.
 
     Raises:
         ValueError: [description]
 
     Returns:
-        [type]: [description]
+        np.array<float>: The computed bins
+        BinningInfo: information about how the binning was performed
         
     Usage:
         ## Binning with Fixed Number of Bins:    
-        xbin, ybin, bin_info = compute_spanning_bins(pos_df.x.to_numpy(), bin_size=active_config.computation_config.grid_bin[0]) # bin_size mode
-        print(bin_info)
+        xbin_edges, xbin_edges_binning_info = compute_spanning_bins(pos_df.x.to_numpy(), bin_size=active_config.computation_config.grid_bin[0]) # bin_size mode
+        print(xbin_edges_binning_info)
         ## Binning with Fixed Bin Sizes:
-        xbin, ybin, bin_info = compute_spanning_bins(pos_df.x.to_numpy(), num_bins=num_bins) # num_bins mode
-        print(bin_info)
+        xbin_edges_edges, xbin_edges_binning_info = compute_spanning_bins(pos_df.x.to_numpy(), num_bins=num_bins) # num_bins mode
+        print(xbin_edges_binning_info)
         
     """
     assert (num_bins is None) or (bin_size is None), 'You cannot constrain both num_bins AND bin_size. Specify only one or the other.'
     assert (num_bins is not None) or (bin_size is not None), 'You must specify either the num_bins XOR the bin_size.'
-    curr_variable_extents = (np.nanmin(variable_values), np.nanmax(variable_values))
+    
+    if variable_start_value is not None:
+        curr_variable_min_extent = variable_start_value
+    else:
+        curr_variable_min_extent = np.nanmin(variable_values)
+        
+    if variable_end_value is not None:
+        curr_variable_max_extent = variable_end_value
+    else:
+        curr_variable_max_extent = np.nanmax(variable_values)
+        
+    curr_variable_extents = (curr_variable_min_extent, curr_variable_max_extent)
     
     if num_bins is not None:
         ## Binning with Fixed Number of Bins:
@@ -629,6 +643,15 @@ def get_bin_edges(bin_centers):
     bin_starts = bin_centers - half_bin_width
     bin_ends = bin_centers + half_bin_width
     return interleave_elements(bin_starts, bin_ends)
+
+
+def debug_print_1D_bin_infos(bins, label='bins'):
+    """ prints info about the 1D bins provided 
+    Usage:
+        debug_print_1D_bin_infos(time_window_centers, label='time_window_centers')
+        >> time_window_centers: [1211.71 1211.96 1212.21 ... 2076.96 2077.21 2077.46], count: 3464, start: 1211.7133460667683, end: 2077.4633460667683, unique_steps: [0.25]
+    """
+    print(f'{label}: {bins}, count: {len(bins)}, start: {bins[0]}, end: {bins[-1]}, unique_steps: {np.unique(np.diff(bins))}')
 
 
 # ==================================================================================================================== #

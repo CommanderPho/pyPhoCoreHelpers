@@ -108,7 +108,25 @@ def build_pairwise_indicies(target_indicies, debug_print=False):
     return out_pair_indicies
 
 
-def interleave_elements(start_points, end_points):
+# def old_interleave_elements(start_points, end_points):
+#     """ Given two equal sized arrays, produces an output array of double that size that contains elements of start_points interleaved with elements of end_points
+#     Example:
+#         a_starts = ['A','B','C','D']
+#         a_ends = ['a','b','c','d']
+#         a_interleaved = interleave_elements(a_starts, a_ends)
+#         >> a_interleaved: ['A','a','B','b','C','c','D','d']
+#     """
+#     assert np.shape(start_points) == np.shape(end_points), f"start_points and end_points must be the same shape. np.shape(start_points): {np.shape(start_points)}, np.shape(end_points): {np.shape(end_points)}"
+#     start_points = np.atleast_2d(start_points)
+#     end_points = np.atleast_2d(end_points)
+#     all_points_shape = (np.shape(start_points)[0] * 2, np.shape(start_points)[1]) # it's double the length of the start_points
+#     all_points = np.zeros(all_points_shape)
+#     all_points[np.arange(0, all_points_shape[0], 2), :] = start_points # fill the even elements
+#     all_points[np.arange(1, all_points_shape[0], 2), :] = end_points # fill the odd elements
+#     assert np.shape(all_points)[0] == (np.shape(start_points)[0] * 2), f"newly created all_points is not of corrrect size! np.shape(all_points): {np.shape(all_points)}"
+#     return all_points
+
+def interleave_elements(start_points, end_points, debug_print:bool=False):
     """ Given two equal sized arrays, produces an output array of double that size that contains elements of start_points interleaved with elements of end_points
     Example:
         a_starts = ['A','B','C','D']
@@ -116,15 +134,43 @@ def interleave_elements(start_points, end_points):
         a_interleaved = interleave_elements(a_starts, a_ends)
         >> a_interleaved: ['A','a','B','b','C','c','D','d']
     """
+    if not isinstance(start_points, np.ndarray):
+        start_points = np.array(start_points)
+    if not isinstance(end_points, np.ndarray):
+        end_points = np.array(end_points)
     assert np.shape(start_points) == np.shape(end_points), f"start_points and end_points must be the same shape. np.shape(start_points): {np.shape(start_points)}, np.shape(end_points): {np.shape(end_points)}"
+    # Capture initial shapes to determine if np.atleast_2d changed the shapes
+    start_points_initial_shape = np.shape(start_points)
+    end_points_initial_shape = np.shape(end_points)
+    
+    # Capture initial datatypes for building the appropriate empty np.ndarray later:
+    start_points_dtype = start_points.dtype # e.g. 'str32'
+    end_points_dtype = end_points.dtype # e.g. 'str32'
+    assert start_points_dtype == end_points_dtype, f"start_points and end_points must be the same datatype. start_points.dtype: {start_points.dtype.name}, end_points.dtype: {end_points.dtype.name}"
     start_points = np.atleast_2d(start_points)
     end_points = np.atleast_2d(end_points)
+    if debug_print:
+        print(f'start_points: {start_points}\nend_points: {end_points}')
+        print(f'np.shape(start_points): {np.shape(start_points)}\tnp.shape(end_points): {np.shape(end_points)}') # np.shape(start_points): (1, 4)	np.shape(end_points): (1, 4)
+        print(f'start_points_dtype.name: {start_points_dtype.name}\tend_points_dtype.name: {end_points_dtype.name}')
+      
+    if (np.shape(start_points) != start_points_initial_shape) and (np.shape(start_points)[0] == 1):
+        # Shape changed after np.atleast_2d(...) which erroniously adds the newaxis to the 0th dimension. Fix by transposing:
+        start_points = start_points.T
+    if (np.shape(end_points) != end_points_initial_shape) and (np.shape(end_points)[0] == 1):
+        # Shape changed after np.atleast_2d(...) which erroniously adds the newaxis to the 0th dimension. Fix by transposing:
+        end_points = end_points.T
+    if debug_print:
+        print(f'POST-TRANSFORM: np.shape(start_points): {np.shape(start_points)}\tnp.shape(end_points): {np.shape(end_points)}') # POST-TRANSFORM: np.shape(start_points): (4, 1)	np.shape(end_points): (4, 1)
     all_points_shape = (np.shape(start_points)[0] * 2, np.shape(start_points)[1]) # it's double the length of the start_points
-    all_points = np.zeros(all_points_shape)
+    if debug_print:
+        print(f'all_points_shape: {all_points_shape}') # all_points_shape: (2, 4)
+    # all_points = np.zeros(all_points_shape)
+    all_points = np.empty(all_points_shape, dtype=start_points_dtype) # Create an empty array with the appropriate dtype to hold the objects
     all_points[np.arange(0, all_points_shape[0], 2), :] = start_points # fill the even elements
     all_points[np.arange(1, all_points_shape[0], 2), :] = end_points # fill the odd elements
     assert np.shape(all_points)[0] == (np.shape(start_points)[0] * 2), f"newly created all_points is not of corrrect size! np.shape(all_points): {np.shape(all_points)}"
-    return all_points
+    return np.squeeze(all_points)
 
 
 # def extract_windows_vectorized(array, clearing_time_index, max_time, sub_window_size):
@@ -501,34 +547,6 @@ class BinningInfo(object):
     num_bins: int
     bin_indicies: np.ndarray
 
-def build_spanning_bins(variable_values, max_bin_size:float, debug_print=False):
-    """ DEPRICATED! out_digitized_variable_bins include both endpoints (bin edges)
-
-    Args:
-        variable_values ([type]): [description]
-        max_bin_size (float): [description]
-        debug_print (bool, optional): [description]. Defaults to False.
-
-    Returns:
-        out_digitized_variable_bins [type]: [description]
-        out_binning_info [BinningInfo]: contains info about how the binning was conducted
-    """
-    raise DeprecationWarning
-    # compute extents:
-    curr_variable_extents = (np.nanmin(variable_values), np.nanmax(variable_values))
-    num_subdivisions = int(np.ceil((curr_variable_extents[1] - curr_variable_extents[0])/max_bin_size)) # get the next integer size above float_bin_size
-    actual_subdivision_step_size = (curr_variable_extents[1] - curr_variable_extents[0]) / float(num_subdivisions) # the actual exact size of the bin
-    if debug_print:
-        print(f'for max_bin_size: {max_bin_size} -> num_subdivisions: {num_subdivisions}, actual_subdivision_step_size: {actual_subdivision_step_size}')
-    # out_bin_indicies = np.arange(num_subdivisions)
-    out_binning_info = BinningInfo(curr_variable_extents, actual_subdivision_step_size, num_subdivisions, np.arange(num_subdivisions))
-    out_digitized_variable_bins = np.linspace(curr_variable_extents[0], curr_variable_extents[1], num_subdivisions, dtype=float)#.astype(float)
-    
-    assert out_digitized_variable_bins[-1] == out_binning_info.variable_extents[1], "out_digitized_variable_bins[-1] should be the maximum variable extent!"
-    assert out_digitized_variable_bins[0] == out_binning_info.variable_extents[0], "out_digitized_variable_bins[0] should be the minimum variable extent!"
-
-    # All above arge the bin_edges
-    return out_digitized_variable_bins, out_binning_info
 
 def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=None):
     """[summary]

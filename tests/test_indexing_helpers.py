@@ -18,7 +18,7 @@ except ModuleNotFoundError as e:
     print('pyphocorehelpers_folder: {}'.format(pyphocorehelpers_folder))
     sys.path.insert(0, str(src_folder))
 finally:
-    from pyphocorehelpers.indexing_helpers import get_bin_centers, build_spanning_bins, BinningInfo, compute_spanning_bins, build_spanning_grid_matrix
+    from pyphocorehelpers.indexing_helpers import get_bin_centers, get_bin_edges, BinningInfo, compute_spanning_bins, build_spanning_grid_matrix, interleave_elements
 
 
 class TestIndexingMethods(unittest.TestCase):
@@ -53,12 +53,31 @@ class TestIndexingMethods(unittest.TestCase):
             149.42118763, 150.46451456, 151.50784149, 152.55116842,
             153.59449535])
         # unit_specific_binned_spike_counts, out_digitized_variable_bins, out_binning_info = ZhangReconstructionImplementation.time_bin_spike_counts_N_i(sess.spikes_df.copy(), time_bin_size, debug_print=debug_print) # unit_specific_binned_spike_counts.to_numpy(): (40, 85841)
+        
+        
+        self.test_interleave_elements = {
+            'string_elements': (['A','B','C','D'], ['a','b','c','d'], ['A', 'a', 'B', 'b', 'C', 'c', 'D', 'd']),
+            'float_elements': ([0, 1, 2, 3], [1000,1001,1002,1003], [0, 1000, 1, 1001, 2, 1002, 3, 1003]),
+            'nparrays': (np.array([0, 1, 2, 3]), np.array([1000,1001,1002,1003]), [0, 1000, 1, 1001, 2, 1002, 3, 1003]),
+            'nparrays_transposed': (np.array([0, 1, 2, 3]).T, np.array([1000,1001,1002,1003]).T, [0, 1000, 1, 1001, 2, 1002, 3, 1003]),
+            'points': (np.array([[0, 1, 2, 3], [0, 1, 2, 3]]).T, np.array([[1000,1001,1002,1003], [1000,1001,1002,1003]]).T, np.array([[   0,    0],
+                [1000, 1000],
+                [   1,    1],
+                [1001, 1001],
+                [   2,    2],
+                [1002, 1002],
+                [   3,    3],
+                [1003, 1003]])),
+        }
+        
+        
 
     def tearDown(self):
         self.integer_bin_edges=None
         self.float_bin_edges = None
         self.test_x_values = None
         self.test_y_values = None
+        self.test_interleave_elements = None
         
     # def test_time_bin_spike_counts_N_i(self, out_digitized_variable_bins, out_binning_info):
     #     np.shape(out_digitized_variable_bins) # (85842,), array([  22.30206346,   22.32206362,   22.34206378, ..., 1739.09557005, 1739.11557021, 1739.13557036])
@@ -137,41 +156,45 @@ class TestIndexingMethods(unittest.TestCase):
         self.assertEqual(active_position_extents[0], out_binning_info.variable_extents[0], "active_position_extents[0] should be the minimum variable extent!")
 
 
-    def test_build_spanning_bins_edges(self):
-        # active_position_extents = np.array([23.92332935, 261.86436665, 87.58388756, 153.31348421])
-        active_position_extents = np.array([23.92332935, 261.86436665])
-        out_digitized_variable_bins, out_binning_info = build_spanning_bins(active_position_extents, max_bin_size=5)
-        self.assertEqual(out_digitized_variable_bins[-1], out_binning_info.variable_extents[1], "out_digitized_variable_bins[-1] should be the maximum variable extent!")
-        self.assertEqual(out_digitized_variable_bins[0], out_binning_info.variable_extents[0], "out_digitized_variable_bins[0] should be the minimum variable extent!")
-        self.assertEqual(active_position_extents[-1], out_binning_info.variable_extents[1], "active_position_extents[-1] should be the maximum variable extent!")
-        self.assertEqual(active_position_extents[0], out_binning_info.variable_extents[0], "active_position_extents[0] should be the minimum variable extent!")
+    # def test_interleave_elements_string_elements(self):
+    #     test_interleave_elements = {
+    #         'string_elements': (['A','B','C','D'], ['a','b','c','d'], ['A', 'a', 'B', 'b', 'C', 'c', 'D', 'd']),
+    #         'float_elements': ([0, 1, 2, 3], [1000,1001,1002,1003], [0, 1000, 1, 1001, 2, 1002, 3, 1003]),
+    #         'nparrays': (np.array([0, 1, 2, 3]), np.array([1000,1001,1002,1003]), [0, 1000, 1, 1001, 2, 1002, 3, 1003]),
+    #         'nparrays_transposed': (np.array([0, 1, 2, 3]).T, np.array([1000,1001,1002,1003]).T, [0, 1000, 1, 1001, 2, 1002, 3, 1003]),
+    #         'points': (np.array([[0, 1, 2, 3], [0, 1, 2, 3]]).T, np.array([[1000,1001,1002,1003], [1000,1001,1002,1003]]).T, np.array([[   0,    0],
+    #             [1000, 1000],
+    #             [   1,    1],
+    #             [1001, 1001],
+    #             [   2,    2],
+    #             [1002, 1002],
+    #             [   3,    3],
+    #             [1003, 1003]])),
+    #     }
         
-        # Y position:
-        active_position_extents = np.array([87.58388756, 153.31348421])
-        out_digitized_variable_bins, out_binning_info = build_spanning_bins(active_position_extents, max_bin_size=5)
-        self.assertEqual(out_digitized_variable_bins[-1], out_binning_info.variable_extents[1], "out_digitized_variable_bins[-1] should be the maximum variable extent!")
-        self.assertEqual(out_digitized_variable_bins[0], out_binning_info.variable_extents[0], "out_digitized_variable_bins[0] should be the minimum variable extent!")
-        self.assertEqual(active_position_extents[-1], out_binning_info.variable_extents[1], "active_position_extents[-1] should be the maximum variable extent!")
-        self.assertEqual(active_position_extents[0], out_binning_info.variable_extents[0], "active_position_extents[0] should be the minimum variable extent!")
-
+    #     a_starts = ['A','B','C','D']
+    #     a_ends = ['a','b','c','d']
+    #     a_interleaved = interleave_elements(a_starts, a_ends)
+    #     print(f'a_interleaved: {a_interleaved}')
+    #     self.assertListEqual(['A', 'a', 'B', 'b', 'C', 'c', 'D', 'd'], a_interleaved)
         
-        # bin_centers = get_bin_centers(self.integer_bin_edges)
-        # self.assertEqual((np.shape(self.integer_bin_edges)[0] - 1), np.shape(bin_centers)[0], 'bin_centers should be one element smaller than bin_edges')
+    # def test_interleave_elements_float_elements(self):        
+    #     a_starts = [0, 1, 2, 3]
+    #     a_ends = [1000,1001,1002,1003]
+    #     a_interleaved = interleave_elements(a_starts, a_ends)
+    #     print(f'a_interleaved: {a_interleaved}')
+    #     self.assertListEqual([0, 1000, 1, 1001, 2, 1002, 3, 1003], a_interleaved)
+        
 
-    def test_build_and_compute_spanning_bins_edges_equivalency(self):
-        fixed_bin_size = 5
-        active_position_extents = np.array([23.92332935, 261.86436665])
-        build_out_digitized_variable_bins, build_out_binning_info = build_spanning_bins(active_position_extents, max_bin_size=fixed_bin_size)
-        compute_out_digitized_variable_bins, compute_out_binning_info = compute_spanning_bins(active_position_extents, num_bins=build_out_binning_info.num_bins) # use the found number of bins to directly build the compute version
-        # compute_out_digitized_variable_bins, compute_out_binning_info = compute_spanning_bins(active_position_extents, bin_size=fixed_bin_size)
-        print(f'test_build_and_compute_spanning_bins_edges_equivalency(): build_out_digitized_variable_bins: {build_out_digitized_variable_bins}, np.shape(build_out_digitized_variable_bins): {np.shape(build_out_digitized_variable_bins)}, build_out_binning_info: {build_out_binning_info}')
-        print(f'test_build_and_compute_spanning_bins_edges_equivalency(): compute_out_digitized_variable_bins: {compute_out_digitized_variable_bins}, np.shape(compute_out_digitized_variable_bins): {np.shape(compute_out_digitized_variable_bins)}, compute_out_binning_info: {compute_out_binning_info}')
-        self.assertEqual(build_out_binning_info.num_bins, compute_out_binning_info.num_bins, f"build_out_binning_info.num_bins ({build_out_binning_info.num_bins}) must be equal to compute_out_binning_info.num_bins ({compute_out_binning_info.num_bins})!")
-        # self.assertListEqual(build_out_digitized_variable_bins, compute_out_digitized_variable_bins, 'bins must be equal!')
-        self.assertAlmostEqual(build_out_digitized_variable_bins[0], compute_out_digitized_variable_bins[0], 'bins must be equal!')
-        self.assertAlmostEqual(build_out_digitized_variable_bins[1], compute_out_digitized_variable_bins[1], 'bins must be equal!')
-        self.assertAlmostEqual(build_out_digitized_variable_bins[-1], compute_out_digitized_variable_bins[-1], 'bins must be equal!')
-
+    def test_interleave_elements_batch(self):        
+        """ tests interleave_elements(...) """
+        for test_name, test_tuple in self.test_interleave_elements.items():
+            a_starts, a_ends, expected_interleaved_result = test_tuple
+            print(f'test_name: {test_name}')
+            a_interleaved_new = interleave_elements(a_starts, a_ends)
+            print(f'\ta_interleaved_new: {a_interleaved_new}')
+            self.assertSequenceEqual(np.array(expected_interleaved_result).tolist(), a_interleaved_new.tolist())
+            
 if __name__ == '__main__':
     unittest.main()
     

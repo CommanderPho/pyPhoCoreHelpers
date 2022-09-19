@@ -635,14 +635,16 @@ def get_bin_centers(bin_edges):
     return (bin_edges[:-1] + np.diff(bin_edges) / 2.0)
     
 def get_bin_edges(bin_centers):
-    """ TODO: CHECK
-    For a series of 1D bin centers given by bin_centers, returns the edges of the bins.
-    Reciprocal of get_bin_centers(bin_edges)
+    """ For a series of 1D bin centers given by bin_centers, returns the edges of the bins. Output will have one more element than bin_centers
+        Reciprocal of get_bin_centers(bin_edges)
     """
-    half_bin_width = float((bin_centers[1] - bin_centers[0])) / 2.0 # TODO: assumes fixed bin width
-    bin_starts = bin_centers - half_bin_width
-    bin_ends = bin_centers + half_bin_width
-    return interleave_elements(bin_starts, bin_ends)
+    bin_width = float((bin_centers[1] - bin_centers[0]))
+    half_bin_width = bin_width / 2.0 # TODO: assumes fixed bin width
+    bin_start_edges = bin_centers - half_bin_width
+    last_edge_bin = bin_centers[-1] + half_bin_width # the last edge bin is one half_bin_width beyond the last bin_center
+    out = bin_start_edges.tolist()
+    out.append(last_edge_bin) # append the last_edge_bin to the bins.
+    return np.array(out)
 
 
 def debug_print_1D_bin_infos(bins, label='bins'):

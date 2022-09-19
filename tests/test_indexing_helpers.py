@@ -88,6 +88,26 @@ class TestIndexingMethods(unittest.TestCase):
         bin_centers = get_bin_centers(self.integer_bin_edges)
         self.assertEqual((np.shape(self.integer_bin_edges)[0] - 1), np.shape(bin_centers)[0], 'bin_centers should be one element smaller than bin_edges')
 
+    def test_get_bin_edges(self):
+        bin_centers = get_bin_centers(self.integer_bin_edges)
+        recovered_bin_edges = get_bin_edges(bin_centers)
+        self.assertSequenceEqual(recovered_bin_edges.tolist(), self.integer_bin_edges.tolist())
+        
+        
+    def test_get_bin_centers_floats(self):
+        bin_centers = get_bin_centers(self.float_bin_edges)
+        self.assertEqual((np.shape(self.float_bin_edges)[0] - 1), np.shape(bin_centers)[0], 'bin_centers should be one element smaller than bin_edges')
+        
+    def test_get_bin_edges_floats(self):
+        bin_centers = get_bin_centers(self.float_bin_edges)
+        recovered_bin_edges = get_bin_edges(bin_centers)
+        # self.assertSequenceEqual(recovered_bin_edges.tolist(), self.float_bin_edges.tolist())
+        self.assertTrue(np.isclose(recovered_bin_edges, self.float_bin_edges).all())
+        
+        
+        
+        
+        
     def test_build_spanning_grid_matrix(self):
 
         all_positions_matrix, flat_all_positions_matrix, original_data_shape = build_spanning_grid_matrix(self.test_x_values, self.test_y_values)
@@ -195,6 +215,8 @@ class TestIndexingMethods(unittest.TestCase):
             print(f'\ta_interleaved_new: {a_interleaved_new}')
             self.assertSequenceEqual(np.array(expected_interleaved_result).tolist(), a_interleaved_new.tolist())
             
+            
+
 if __name__ == '__main__':
     unittest.main()
     

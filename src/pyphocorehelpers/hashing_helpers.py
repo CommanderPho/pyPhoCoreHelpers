@@ -1,4 +1,12 @@
 
+def freeze(d):
+    """ recursively freezes dicts with nested dict/list elements so they may be hashed """
+    if isinstance(d, dict):
+        return frozenset((key, freeze(value)) for key, value in d.items())
+    elif isinstance(d, list):
+        return tuple(freeze(value) for value in d)
+    return d
+
 
 def get_hash_tuple(a_dict, included_keys=None):
     """ Helps in hashing a dictionary by flattening it to a flat list of its keys and values, and then converting it into a tuple (which is what the hash function expects). """

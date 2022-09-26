@@ -1,5 +1,6 @@
 from collections import namedtuple
 from itertools import islice
+from typing import Optional
 import numpy as np
 import pandas as pd
 
@@ -539,6 +540,23 @@ def find_neighbours(value, df, colname):
 # Discrete Bins/Binning                                                                                                #
 # ==================================================================================================================== #
 
+def get_bin_centers(bin_edges):
+    """ For a series of 1D bin edges given by bin_edges, returns the center of the bins. Output will have one less element than bin_edges. """
+    return (bin_edges[:-1] + np.diff(bin_edges) / 2.0)
+    
+def get_bin_edges(bin_centers):
+    """ For a series of 1D bin centers given by bin_centers, returns the edges of the bins. Output will have one more element than bin_centers
+        Reciprocal of get_bin_centers(bin_edges)
+    """
+    bin_width = float((bin_centers[1] - bin_centers[0]))
+    half_bin_width = bin_width / 2.0 # TODO: assumes fixed bin width
+    bin_start_edges = bin_centers - half_bin_width
+    last_edge_bin = bin_centers[-1] + half_bin_width # the last edge bin is one half_bin_width beyond the last bin_center
+    out = bin_start_edges.tolist()
+    out.append(last_edge_bin) # append the last_edge_bin to the bins.
+    return np.array(out)
+
+
 @dataclass
 class BinningInfo(object):
     """Docstring for BinningInfo."""
@@ -547,6 +565,77 @@ class BinningInfo(object):
     num_bins: int
     bin_indicies: np.ndarray
 
+class BinningContainer(object):
+    """A container that allows accessing either bin_edges (self.edges) or bin_centers (self.centers) """
+    edges: np.ndarray
+    centers: np.ndarray
+    
+    edge_info: BinningInfo
+    center_info: BinningInfo
+    
+    def __init__(self, edges: Optional[np.ndarray]=None, centers: Optional[np.ndarray]=None, edge_info: Optional[BinningInfo]=None, center_info: Optional[BinningInfo]=None):
+        super(BinningContainer, self).__init__()
+        assert (edges is not None) or (centers is not None) # Require either centers or edges to be provided
+        if edges is not None:
+            self.edges = edges
+        else:
+            # Compute from edges
+            self.edges = get_bin_edges(centers)
+            
+        if centers is not None:
+            self.centers = centers
+        else:
+            self.centers = get_bin_centers(edges)
+            
+            
+        if edge_info is not None:
+            self.edge_info = edge_info
+        else:
+            # Otherwise try to reverse engineer edge_info:
+            self.edge_info = BinningContainer.build_edge_binning_info(self.edges)
+            
+        if center_info is not None:
+            self.center_info = center_info
+        else:
+            self.center_info = BinningContainer.build_center_binning_info(self.centers, self.edge_info.variable_extents)
+            
+            
+    @classmethod
+    def build_edge_binning_info(cls, edges):
+        # Otherwise try to reverse engineer edge_info            
+        actual_window_size = edges[2] - edges[1]
+        variable_extents = [edges[0], edges[-1]] # get first and last values as the extents
+        return BinningInfo(variable_extents, actual_window_size, len(edges), np.arange(len(edges)))
+    
+    
+    @classmethod
+    def build_center_binning_info(cls, centers, variable_extents):
+        # Otherwise try to reverse engineer center_info
+        actual_window_size = centers[2] - centers[1]
+        return BinningInfo(variable_extents, actual_window_size, len(centers), np.arange(len(centers)))
+    
+    def setup_from_edges(self, edges: np.ndarray, edge_info: Optional[BinningInfo]=None):
+        # Set the edges first:
+        self.edges = edges
+        if edge_info is not None:
+            self.edge_info = edge_info # valid edge_info provided, use that
+        else:
+            # Otherwise try to reverse engineer edge_info:
+            self.edge_info = BinningContainer.build_edge_binning_info(self.edges)
+            # actual_window_size = self.edges[2] - self.edges[1]
+            # variable_extents = [self.edges[0], self.edges[-1]] # get first and last values as the extents
+            # self.edge_info = BinningInfo(variable_extents, actual_window_size, len(self.edges), np.arange(len(self.edges)))
+        
+        
+        ## Build the Centers from the new edges:
+        self.centers = get_bin_centers(edges)
+        # actual_window_size = self.centers[2] - self.centers[1]
+        # self.center_info = BinningInfo(self.edge_info.variable_extents, actual_window_size, len(self.centers), np.arange(len(self.centers)))
+        self.center_info = BinningContainer.build_center_binning_info(self.centers, self.edge_info.variable_extents)
+            
+        
+    
+    
 
 def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=None, variable_start_value:float=None, variable_end_value:float=None):
     """[summary]
@@ -629,22 +718,6 @@ def compute_position_grid_size(*any_1d_series, num_bins:tuple):
         out_bin_grid_step_size[i] = xbin_info.step
 
     return out_bin_grid_step_size, out_bins, out_bins_info
-
-def get_bin_centers(bin_edges):
-    """ For a series of 1D bin edges given by bin_edges, returns the center of the bins. Output will have one less element than bin_edges. """
-    return (bin_edges[:-1] + np.diff(bin_edges) / 2.0)
-    
-def get_bin_edges(bin_centers):
-    """ For a series of 1D bin centers given by bin_centers, returns the edges of the bins. Output will have one more element than bin_centers
-        Reciprocal of get_bin_centers(bin_edges)
-    """
-    bin_width = float((bin_centers[1] - bin_centers[0]))
-    half_bin_width = bin_width / 2.0 # TODO: assumes fixed bin width
-    bin_start_edges = bin_centers - half_bin_width
-    last_edge_bin = bin_centers[-1] + half_bin_width # the last edge bin is one half_bin_width beyond the last bin_center
-    out = bin_start_edges.tolist()
-    out.append(last_edge_bin) # append the last_edge_bin to the bins.
-    return np.array(out)
 
 
 def debug_print_1D_bin_infos(bins, label='bins'):

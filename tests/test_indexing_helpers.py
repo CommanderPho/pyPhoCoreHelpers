@@ -18,7 +18,13 @@ except ModuleNotFoundError as e:
     print('pyphocorehelpers_folder: {}'.format(pyphocorehelpers_folder))
     sys.path.insert(0, str(src_folder))
 finally:
-    from pyphocorehelpers.indexing_helpers import get_bin_centers, get_bin_edges, BinningInfo, compute_spanning_bins, build_spanning_grid_matrix, interleave_elements
+    from pyphocorehelpers.indexing_helpers import get_bin_centers, get_bin_edges, BinningInfo, compute_spanning_bins, build_spanning_grid_matrix, interleave_elements, np_ffill_1D, np_bfill_1D # , np_ffill
+
+        
+def random_array():
+    choices = [1, 2, 3, 4, 5, 6, 7, 8, 9, np.nan]
+    out = np.random.choice(choices, size=(1000, 10))
+    return out
 
 
 class TestIndexingMethods(unittest.TestCase):
@@ -79,6 +85,8 @@ class TestIndexingMethods(unittest.TestCase):
         self.test_y_values = None
         self.test_interleave_elements = None
         
+
+
     # def test_time_bin_spike_counts_N_i(self, out_digitized_variable_bins, out_binning_info):
     #     np.shape(out_digitized_variable_bins) # (85842,), array([  22.30206346,   22.32206362,   22.34206378, ..., 1739.09557005, 1739.11557021, 1739.13557036])
     #     assert out_digitized_variable_bins[-1] == out_binning_info.variable_extents[1], "out_digitized_variable_bins[-1] should be the maximum variable extent!"
@@ -215,7 +223,44 @@ class TestIndexingMethods(unittest.TestCase):
             print(f'\ta_interleaved_new: {a_interleaved_new}')
             self.assertSequenceEqual(np.array(expected_interleaved_result).tolist(), a_interleaved_new.tolist())
             
-            
+    def test_np_ffills(self):
+        arr = np.array([[5, np.nan, np.nan, 7, 2],
+                [3, np.nan, 1, 8, np.nan],
+                [4, 9, 6, np.nan, np.nan]])
+        
+        """ 
+        
+        
+        np.array([[5., 5., 5., 7., 2.],
+       [3., 3., 1., 8., 8.],
+       [4., 9., 6., 6., 6.]])
+       
+        
+        np.array([[ 5.,  7.,  7.,  7.,  2.],
+       [ 3.,  1.,  1.,  8., np.nan],
+       [ 4.,  9.,  6., np.nan, np.nan]])
+       
+       
+        """
+        
+        # np_ffill, np_ffill_1D, np_bfill_1D
+        
+        out = np_ffill_1D(arr)
+        print(f'np_ffill_1D: {out}')
+        self.assertSequenceEqual(out.tolist(), np.array([[5., 5., 5., 7., 2.],
+       [3., 3., 1., 8., 8.],
+       [4., 9., 6., 6., 6.]]).tolist())
+        
+        
+        # out2 = np_ffill(arr, axis=1)
+        # print(f'np_ffill axis=0: {out2}')
+        # self.assertSequenceEqual(out.tolist(), out2.tolist())
+    
+        out2 = np_bfill_1D(arr)
+        print(f'np_bfill_1D: {out2}')
+        self.assertSequenceEqual(out2.tolist(), np.array([[ 5.,  7.,  7.,  7.,  2.],
+       [ 3.,  1.,  1.,  8., np.nan],
+       [ 4.,  9.,  6., np.nan, np.nan]]).tolist())
 
 if __name__ == '__main__':
     unittest.main()

@@ -633,9 +633,6 @@ class BinningContainer(object):
         # self.center_info = BinningInfo(self.edge_info.variable_extents, actual_window_size, len(self.centers), np.arange(len(self.centers)))
         self.center_info = BinningContainer.build_center_binning_info(self.centers, self.edge_info.variable_extents)
             
-        
-    
-    
 
 def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=None, variable_start_value:float=None, variable_end_value:float=None):
     """[summary]
@@ -819,3 +816,55 @@ def build_spanning_grid_matrix(x_values, y_values, debug_print=False):
     return all_entries_matrix, flat_all_entries_matrix, original_data_shape
 
 
+# ==================================================================================================================== #
+# Filling sentinal values with their adjacent values                                                                   #
+# ==================================================================================================================== #
+
+def np_ffill_1D(arr: np.ndarray):
+    '''  'forward-fill' the nan values in array arr. 
+    By that I mean replacing each nan value with the nearest valid value from the left.
+    row-wise by default
+    
+    Example:
+
+    Input:
+        array([[  5.,  nan,  nan,   7.,   2.],
+        [  3.,  nan,   1.,   8.,  nan],
+        [  4.,   9.,   6.,  nan,  nan]])
+       
+       
+    Desired Solution:
+        array([[  5.,   5.,   5.,  7.,  2.],
+        [  3.,   3.,   1.,  8.,  8.],
+        [  4.,   9.,   6.,  6.,  6.]])
+       
+       
+    Most efficient solution from StackOverflow as timed by author of question: https://stackoverflow.com/questions/41190852/most-efficient-way-to-forward-fill-nan-values-in-numpy-array
+    Solution provided by Divakar.
+    
+    '''
+    mask = np.isnan(arr)
+    idx = np.where(~mask,np.arange(mask.shape[1]),0)
+    np.maximum.accumulate(idx,axis=1, out=idx)
+    out = arr[np.arange(idx.shape[0])[:,None], idx]
+    return out
+
+def np_bfill_1D(arr: np.ndarray):
+    """ backfills the np.nan values instead of forward filling them 
+    Simple solution for bfill provided by financial_physician in comment below
+    """
+    return np_ffill_1D(arr[:, ::-1])[:, ::-1]
+
+# def np_ffill(arr: np.ndarray, axis:int=1):
+#     """ N-dimensional modification by RichieV
+    
+#     Note that axis=1 is required for it to be equal to np_ffill_1D. Not sure if it works.
+#     """
+#     idx_shape = tuple([slice(None)] + [np.newaxis] * (len(arr.shape) - axis - 1))
+#     idx = np.where(~np.isnan(arr), np.arange(arr.shape[axis])[idx_shape], 0)
+#     np.maximum.accumulate(idx, axis=axis, out=idx)
+#     slc = [np.arange(k)[tuple([slice(None) if dim==i else np.newaxis
+#         for dim in range(len(arr.shape))])]
+#         for i, k in enumerate(arr.shape)]
+#     slc[axis] = idx
+#     return arr[tuple(slc)]

@@ -4,7 +4,32 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 class PhoActiveFigureManager2D(object):
-    """Offers convenience methods for accessing and updating the extent (size and position on the screen) for the current Matplotlib figures (via its current_figure_manager property."""
+    """Offers convenience methods for accessing and updating the extent (size and position on the screen) for the current Matplotlib figures (via its current_figure_manager property.
+    
+    Usage:
+        from pyphocorehelpers.plotting.figure_management import PhoActiveFigureManager2D, capture_new_figures_decorator
+        fig_man = PhoActiveFigureManager2D(name=f'fig_man') # Initialize a new figure manager
+
+
+        fig_man.close_all()
+        
+        
+        fig_man.reshow_figure(extant_figs_dict[10])
+
+
+        
+        extant_figs_dict = fig_man.figures_dict
+        extant_fig_nums = fig_man.figure_nums
+        fig_num_figure_still_exists = [plt.fignum_exists(a_fig_num) for a_fig_num in extant_fig_nums]
+        fig_num_figure_still_exists #     # Figure is still opened or is closed
+        # if plt.fignum_exists(<figure number>):
+        #     # Figure is still opened
+        # else:
+        #     # Figure is closed
+        extant_figs_dict
+
+
+    """
     debug_print = False
     
     @property
@@ -140,6 +165,9 @@ class PhoActiveFigureManager2D(object):
 def capture_new_figures_decorator(func):
     """ a decorator that's supposed to capture all matplotlib figures generated within the function that it decorates by comparing the global plt.get_fignums() before and after that function's executions. Won't detect updated figures, and hasn't been thoroughly tested. 
     
+    Usage:
+        from pyphocorehelpers.plotting.figure_management import capture_new_figures_decorator
+        
     """
     def wrapper(*args, **kwargs):
         pre_fignums = plt.get_fignums()

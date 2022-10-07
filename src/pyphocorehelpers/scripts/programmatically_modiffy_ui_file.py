@@ -13,29 +13,50 @@ https://doc.qt.io/qt-5/quiloader.html - The QUiLoader class enables standalone a
 
 """
 
-def modify_ui_file(filename="/path/of/your_file.ui"):
+class QtDesigner_UiFile_Modifications:
+    """docstring for QtDesigner_UiFile_Modifications."""
+    # def __init__(self, arg):
+    #     super(QtDesigner_UiFile_Modifications, self).__init__()
+    
+    @classmethod
+    def make_non_translatable(cls, doc):
+        """ removes the Translatable properties from all strings """
+        strings = doc.elementsByTagName("string")
+        for i in range(strings.count()):
+            strings.item(i).toElement().setAttribute("notr", "true")
+        return doc
 
-    file = QtCore.QFile(filename)
-    if not file.open(QtCore.QFile.ReadOnly):
-        sys.exit(-1)
+# action
 
-    doc = QtXml.QDomDocument()
-    if not doc.setContent(file):
-        sys.exit(-1)
-    file.close()
+    @classmethod
+    def modify_ui_file(cls, filename="/path/of/your_file.ui"):
+        """ the main call function. Opens the file, loads it into XML, modifies it if needed, and then writes it back out. """
+        file = QtCore.QFile(filename)
+        if not file.open(QtCore.QFile.ReadOnly):
+            print(f'failed ot open file "{filename}"')
+            sys.exit(-1)
 
-    strings = doc.elementsByTagName("string")
-    for i in range(strings.count()):
-        strings.item(i).toElement().setAttribute("notr", "true")
+        doc = QtXml.QDomDocument()
+        if not doc.setContent(file):
+            print(f'failed to open file "{filename}" as XML content')
+            sys.exit(-1)
+        file.close()
+        ## Have the file in doc
 
-    if not file.open(QtCore.QFile.Truncate|QtCore.QFile.WriteOnly):
-        sys.exit(-1)
+        # Get the properties and make the changes:
+        doc = cls.make_non_translatable(doc)
 
-    xml = doc.toByteArray()
-    file.write(xml)
-    file.close()
+        # Re-open the file to write out the changes in doc:
+        if not file.open(QtCore.QFile.Truncate|QtCore.QFile.WriteOnly):
+            print(f'failed to write out the changes to the file: "{filename}"')
+            sys.exit(-1)
+
+        xml = doc.toByteArray()
+        file.write(xml)
+        file.close()
+
+
 
 if __name__ == '__main__':
-
     filename = r"C:\Users\pho\repos\pyPhoPlaceCellAnalysis\src\pyphoplacecellanalysis\GUI\Qt\Menus\GlobalApplicationMenusMainWindow\GlobalApplicationMenusMainWindow.ui"
-    modify_ui_file(filename=filename)
+    QtDesigner_UiFile_Modifications.modify_ui_file(filename=filename)

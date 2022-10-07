@@ -12,9 +12,8 @@ https://doc.qt.io/qt-5/qtdesigner-customwidgetplugin-example.html
 https://doc.qt.io/qt-5/quiloader.html - The QUiLoader class enables standalone applications to dynamically create user interfaces at run-time using the information stored in UI files or specified in plugin paths.
 
 """
-if __name__ == '__main__':
 
-    filename = "/path/of/your_file.ui"
+def modify_ui_file(filename="/path/of/your_file.ui"):
 
     file = QtCore.QFile(filename)
     if not file.open(QtCore.QFile.ReadOnly):
@@ -35,3 +34,8 @@ if __name__ == '__main__':
     xml = doc.toByteArray()
     file.write(xml)
     file.close()
+
+if __name__ == '__main__':
+
+    filename = r"C:\Users\pho\repos\pyPhoPlaceCellAnalysis\src\pyphoplacecellanalysis\GUI\Qt\Menus\GlobalApplicationMenusMainWindow\GlobalApplicationMenusMainWindow.ui"
+    modify_ui_file(filename=filename)

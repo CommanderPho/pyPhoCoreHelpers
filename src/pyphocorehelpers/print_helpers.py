@@ -9,14 +9,15 @@ import pprint
 import inspect
 import ast
 
+import site # Required for StackTraceFormatting
+from os.path import join, abspath # Required for StackTraceFormatting
+from traceback import extract_tb, format_list, format_exception_only # Required for StackTraceFormatting
+
 import re ## required for strip_type_str_to_classname(...)
 
 # Required for build_module_logger
 from pathlib import Path
 import logging
-
-
-
 
 class SimplePrintable:
     """Adds the default print method for classes that displays the class name and its dictionary.
@@ -26,9 +27,6 @@ class SimplePrintable:
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: {self.__dict__};>"
     
-    
-
-
 class iPythonKeyCompletingMixin:
     """ Enables iPython key completion
     Requires Implementors to provide:
@@ -47,7 +45,6 @@ class PrettyPrintable(iPythonKeyCompletingMixin):
         # p.text(self.__repr__() if not cycle else '...')
         p.text(self.__dict__.__repr__() if not cycle else "...")
         # return self.as_array().__repr__() # p.text(repr(self))
-
 
 class WrappingMessagePrinter(object):
     """ 
@@ -92,29 +89,6 @@ class WrappingMessagePrinter(object):
                 print(f'{begin_string}...', end=begin_line_ending)
             
             
-         
-    # @classmethod   
-    # def print_file_progress_message(cls, filepath, action: str, contents_description: str, print_line_ending=' ', returns_string=False):
-    #     """[summary]
-    #         print('Saving ripple epochs results to {}...'.format(ripple_epochs.filename), end=' ')
-    #         ripple_epochs.save()
-    #         print('done.')
-            
-    #     Args:
-    #         filepath ([type]): [description]
-    #         action (str): [description]
-    #         contents_description (str): [description]
-    #     """
-    #     #  print_file_progress_message(ripple_epochs.filename, 'Saving', 'mua results') # replaces: print('Saving ripple epochs results to {}...'.format(ripple_epochs.filename), end=' ')
-    #     if returns_string:
-    #         out_string = f'{action} {contents_description} results to {str(filepath)}...'
-    #         print(out_string, end=print_line_ending)
-    #         return f'{out_string}{print_line_ending}'
-    #     else:
-    #         print(f'{action} {contents_description} results to {str(filepath)}...', end=print_line_ending)
-        
-
-
 ## Category: Formatting Seconds as Human Readable:
 def split_seconds_human_readable(seconds):
     """ splits the seconds argument into hour, minute, seconds, and fractional_seconds components.
@@ -561,8 +535,6 @@ def strip_type_str_to_classname(a_type_str):
     """
     return re.search(r"<class '([^']+)'>", a_type_str).group(1)
 
-
-
 def safe_get_variable_shape(a_value):
     """ generally and safely tries several methods of determining a_value's shape 
     
@@ -595,8 +567,6 @@ def safe_get_variable_shape(a_value):
 
     return value_shape
 
-
-    
 
 _GLOBAL_DO_NOT_EXPAND_CLASS_TYPES = [pd.DataFrame, pd.TimedeltaIndex, TimedeltaIndexResampler]
 _GLOBAL_DO_NOT_EXPAND_CLASSNAMES = ["<class 'pyvista.core.pointset.StructuredGrid'>", "<class 'pyvista.core.pointset.UnstructuredGrid'>", "<class 'pandas.core.series.Series'>"]
@@ -751,12 +721,6 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
             except Exception as e:
                 print(f'Unhandled exception for outer block: {e}')
                 raise
-    
-
-
-# def debug_print_shapes(*arg):
-#     """ prints the shape of the passed arugments """
-
 
 def debug_dump_object_member_shapes(obj):
     """ prints the name, type, and shape of all member variables. 
@@ -858,7 +822,6 @@ def min_mean_max_sum(M, print_result=True):
         print(f'min: {out[0]}, mean: {out[1]}, max: {out[2]}, sum: {out[3]}')
     return out
     
-
 def document_active_variables(params, include_explicit_values=False, enable_print=True):
     """ Builds a skeleton for documenting variables and parameters by using the values set for a passed in instance.
     
@@ -978,3 +941,78 @@ def build_module_logger(module_name='Spike3D.notebook', file_logging_dir=Path('E
     module_logger.setLevel(logging.DEBUG)
     module_logger.info(f'==========================================================================================\n========== Module Logger INIT "{module_logger.name}" ==============================')
     return module_logger
+
+
+
+# ==================================================================================================================== #
+# Stack Trace Formatting                                                                                               #
+# ==================================================================================================================== #
+
+class StackTraceFormatting(object):
+    """
+
+    https://stackoverflow.com/questions/31949760/how-to-limit-python-traceback-to-specific-files
+    vaultah answered Oct 9, 2015 at 15:43
+
+    They both use the traceback.extract_tb.
+    It returns "a list of “pre-processed” stack trace entries extracted from the traceback object"; all of them are instances of traceback.FrameSummary (a named tuple).
+    Each traceback.FrameSummary object has a filename field which stores the absolute path of the corresponding file.
+    We check if it starts with any of the directory paths provided as separate function arguments to determine if we'll need to exclude the entry (or keep it).
+
+    """
+    @classmethod
+    def spotlight(cls, *show):
+        ''' Return a function to be set as new sys.excepthook.
+            It will SHOW traceback entries for files from these directories. 
+            https://stackoverflow.com/questions/31949760/how-to-limit-python-traceback-to-specific-files
+            vaultah answered Oct 9, 2015 at 15:43
+        '''
+        show = tuple(join(abspath(p), '') for p in show)
+
+        def _check_file(name):
+            return name and name.startswith(show)
+
+        def _print(type, value, tb):
+            show = (fs for fs in extract_tb(tb) if _check_file(fs.filename))
+            fmt = format_list(show) + format_exception_only(type, value)
+            print(''.join(fmt), end='', file=sys.stderr)
+
+        return _print
+
+    @classmethod
+    def shadow(cls, *hide):
+        ''' Return a function to be set as new sys.excepthook.
+            It will HIDE traceback entries for files from these directories. 
+            https://stackoverflow.com/questions/31949760/how-to-limit-python-traceback-to-specific-files
+            vaultah answered Oct 9, 2015 at 15:43
+        '''
+        hide = tuple(join(abspath(p), '') for p in hide)
+
+        def _check_file(name):
+            print(f'shadow:\t name: {name}')
+            return name and not name.startswith(hide)
+
+        def _print(type, value, tb):
+            print(f'shadow:\t tb: {tb}')
+            show = (fs for fs in extract_tb(tb) if _check_file(fs.filename))
+            fmt = format_list(show) + format_exception_only(type, value)
+            print(''.join(fmt), end='', file=sys.stderr)
+
+        return _print
+
+    @classmethod
+    def restore_default(cls):
+        """ Restores the default sys.excepthook from sys.__excepthook__
+        
+        """
+        sys.excepthook = sys.__excepthook__
+        print(f'Restored the default sys.excepthook from sys.__excepthook__.')
+        return sys.__excepthook__
+
+    @classmethod
+    def shadow_sitepackages(cls):
+        # Gets the "sitepackges" library directories for exclusion from the stacktrace
+        curr_sitepackages = site.getsitepackages()
+        print(f'Excluding sitepackages (library) directories from stacktraces: {curr_sitepackages}')
+        sys.excepthook = cls.shadow(*curr_sitepackages)
+        return sys.excepthook

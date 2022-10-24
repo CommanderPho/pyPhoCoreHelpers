@@ -1016,3 +1016,40 @@ class StackTraceFormatting(object):
         print(f'Excluding sitepackages (library) directories from stacktraces: {curr_sitepackages}')
         sys.excepthook = cls.shadow(*curr_sitepackages)
         return sys.excepthook
+
+
+
+# """ Solution for long and convoluted stacktraces into libraries. Installs a sys.excepthook
+# From:
+#     https://stackoverflow.com/questions/2615414/python-eliminating-stack-traces-into-library-code/2616262#2616262
+
+# Solution by Alex Martelli answered Apr 10, 2010 at 23:37
+
+# """
+
+# # def trimmedexceptions(type, value, tb, pylibdir=None, lev=None):
+# #     """trim system packages from the exception printout"""
+# #     if pylibdir is None:
+# #         import traceback, distutils.sysconfig
+# #         pylibdir = distutils.sysconfig.get_python_lib(1,1)
+# #         nlev = trimmedexceptions(type, value, tb, pylibdir, 0)
+# #         traceback.print_exception(type, value, tb, nlev)
+# #     else:
+# #         fn = tb.tb_frame.f_code.co_filename
+# #         if tb.tb_next is None or fn.startswith(pylibdir):
+# #             return lev
+# #         else:
+# #             return trimmedexceptions(type, value, tb.tb_next, pylibdir, lev+1)
+
+# # import sys
+# # sys.excepthook=trimmedexceptions
+# # This one doesn't seem to change anything either.
+
+# import sys
+# from pyphocorehelpers.print_helpers import StackTraceFormatting
+
+# # ## TODO: Investigate https://pymotw.com/2/sys/exceptions.html to try and figure out why my stacktrace handling isn't working
+# # # StackTraceFormatting.shadow_sitepackages()
+
+# sys.excepthook = StackTraceFormatting.restore_default()
+# # sys.excepthook = StackTraceFormatting.shadow('~\miniconda3\envs\phoviz_ultimate\lib\site-packages')

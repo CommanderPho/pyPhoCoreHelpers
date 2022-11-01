@@ -370,7 +370,12 @@ class PhoWidgetHelper:
         if font_size is None:
             font_size = p._theme.font.size
         if color is None:
-            color = p._theme.font.color
+            color = p._theme.font.color # this gets a 'pyvista.plotting.colors.Color' type, which
+            # color = color.float_rgba # want a float RGBA tuple, which is the output of the pv.parse_color(color) command
+            # the float RGBA tuple is causing a "TypeError: SetColor argument 1: expected a sequence of 3 values, got 4 values" in `p.textActor.GetTextProperty().SetColor(parse_color(color))`, so trying just RGB only
+            color = color.float_rgb # want a float RGB tuple
+
+
         if position is None:
             # Set the position of the text to the top left corner
             window_size = p.window_size

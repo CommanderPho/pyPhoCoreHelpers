@@ -2,6 +2,7 @@ from typing import Callable, List, Optional, OrderedDict  # for OrderedMeta
 from enum import Enum
 import re # for CodeConversion
 import numpy as np # for CodeConversion
+import pandas as pd
 from neuropy.utils.dynamic_container import overriding_dict_with # required for safely_accepts_kwargs
 
 
@@ -204,7 +205,70 @@ class CodeConversion(object):
             return param_item
         
         
-   
+    @classmethod
+    def convert_dictionary_to_defn_lines(cls, target_dict, multiline_assignment_code=False, dictionary_name:str='target_dict', include_comment:bool=True, copy_to_clipboard=True):
+        """ The reciprocal operation of convert_defn_lines_to_dictionary
+            code: lines of code that define several python variables to be converted to dictionary entries
+            multiline_assignment_code: if True, generates a separate line for each assignment, otherwise assignment is done inline
+            dictionary_name: the name to use for the dictionary in the generated code
+
+        Examples:
+            from pyphocorehelpers.general_helpers import CodeConversion
+            curr_active_pipeline.last_added_display_output
+            >>> {'spike_raster_plt_2d': <pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.SpikeRasterWidgets.Spike2DRaster.Spike2DRaster at 0x168558703a0>,
+                'spike_raster_plt_3d': <pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.SpikeRasterWidgets.Spike3DRaster.Spike3DRaster at 0x1673e722310>,
+                'spike_raster_window': <pyphoplacecellanalysis.GUI.Qt.SpikeRasterWindows.Spike3DRasterWindowWidget.Spike3DRasterWindowWidget at 0x1673e7aaa60>}
+
+            convert_dictionary_to_defn_lines(curr_active_pipeline.last_added_display_output, multiline_assignment_code=False, dictionary_name='curr_active_pipeline.last_added_display_output')
+            >>> spike_raster_plt_2d, spike_raster_plt_3d, spike_raster_window = curr_active_pipeline.last_added_display_output['spike_raster_plt_2d'], curr_active_pipeline.last_added_display_output['spike_raster_plt_3d'], curr_active_pipeline.last_added_display_output['spike_raster_window'] # Extract variables from the `curr_active_pipeline.last_added_display_output` dictionary to the local workspace
+
+            active_str = convert_dictionary_to_defn_lines(curr_active_pipeline.last_added_display_output, multiline_assignment_code=True, dictionary_name='curr_active_pipeline.last_added_display_output')
+            active_str
+            >>> "# Extract variables from the `curr_active_pipeline.last_added_display_output` dictionary to the local workspace\nspike_raster_plt_2d = curr_active_pipeline.last_added_display_output['spike_raster_plt_2d']\nspike_raster_plt_3d = curr_active_pipeline.last_added_display_output['spike_raster_plt_3d']\nspike_raster_window = curr_active_pipeline.last_added_display_output['spike_raster_window']"
+
+            print(active_str)
+            >>> 
+                # Extract variables from the `curr_active_pipeline.last_added_display_output` dictionary to the local workspace
+                spike_raster_plt_2d = curr_active_pipeline.last_added_display_output['spike_raster_plt_2d']
+                spike_raster_plt_3d = curr_active_pipeline.last_added_display_output['spike_raster_plt_3d']
+                spike_raster_window = curr_active_pipeline.last_added_display_output['spike_raster_window']
+
+        """
+        comment_str = f"# Extract variables from the `{dictionary_name}` dictionary to the local workspace"
+        if multiline_assignment_code:
+            # Separate line per assignment
+            """
+            # Extract variables from the `{dictionary_name}` dictionary to the local workspace
+            spike_raster_plt_2d = target_dict['spike_raster_plt_2d']
+            spike_raster_plt_3d = target_dict['spike_raster_plt_3d']
+            spike_raster_window = target_dict['spike_raster_window']
+
+            """
+            code_str = '\n'.join([f"{k} = {dictionary_name}['{k}']" for k,v in target_dict.items()])
+
+            if include_comment:
+                code_str = f"{comment_str}\n{code_str}" # add comment above code
+
+        else:
+            # Generates an inline assignment, e.g. "spike_raster_plt_2d, spike_raster_plt_3d, spike_raster_window = target_dict['spike_raster_plt_2d'], target_dict['spike_raster_plt_3d'], target_dict['spike_raster_window']"
+            """ Assignment all on a single line
+            spike_raster_plt_2d, spike_raster_plt_3d, spike_raster_window = target_dict['spike_raster_plt_2d'], target_dict['spike_raster_plt_3d'], target_dict['spike_raster_window'] # Extract variables from the `target_dict` dictionary to the local workspace
+            """
+            vars_name_list = list(target_dict.keys())
+            rhs_code_str = ', '.join([f"{dictionary_name}['{k}']" for k in vars_name_list])
+            lhs_code_str = ', '.join(vars_name_list)
+            code_str = f'{lhs_code_str} = {rhs_code_str}'
+            if include_comment:
+                code_str = f"{code_str} {comment_str}" # add comment at the very end of the code line
+
+        if copy_to_clipboard:
+            df = pd.DataFrame([code_str])
+            df.to_clipboard(index=False,header=False)
+            print(f'Copied "{code_str}" to clipboard!')
+
+        return code_str
+
+
    
     @classmethod     
     def convert_defn_lines_to_dictionary(cls, code, multiline_dict_defn=True, multiline_members_indent='    '):

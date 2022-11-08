@@ -19,6 +19,9 @@ import re ## required for strip_type_str_to_classname(...)
 from pathlib import Path
 import logging
 
+# Required for proper print_object_memory_usage
+import objsize # python -m pip install objsize==0.6.1
+
 class SimplePrintable:
     """Adds the default print method for classes that displays the class name and its dictionary.
     
@@ -160,7 +163,7 @@ def print_seconds_human_readable(seconds, h_m_s_format_array = ['{0:02}','{0:02}
 
 
 ## Category: Memory Usage:
-def print_dataframe_memory_usage(df):
+def print_dataframe_memory_usage(df, enable_print=True):
     """ df: a Pandas.DataFrame such as curr_active_pipeline.sess.spikes_df
     
     Usage:
@@ -202,8 +205,9 @@ def print_dataframe_memory_usage(df):
     curr_column_names = each_columns_usage_bytes.index
     each_columns_usage_MB = each_columns_usage_bytes.apply(lambda x: x/(1024*1024))
     # each_columns_usage_MB
-    each_columns_usage_MB_string = each_columns_usage_MB.apply(lambda x: f'{x:.2f} MB') # Round to 2 decimal places (the nearest 0.01 MB)
-    print(f'{each_columns_usage_MB_string}')
+    if enable_print:
+        each_columns_usage_MB_string = each_columns_usage_MB.apply(lambda x: f'{x:.2f} MB') # Round to 2 decimal places (the nearest 0.01 MB)
+        print(f'{each_columns_usage_MB_string}')
     
     # Index                 0.00 MB
     # t                     7.12 MB
@@ -233,18 +237,37 @@ def print_dataframe_memory_usage(df):
     print(f'============================\n{total_df_usage_MB_string}')
     return total_df_usage_MB # return the numeric number of megabytes that this df uses.
     
-def print_object_memory_usage(obj):
+def print_object_memory_usage(obj, enable_print=True):
     """ prints the size of the passed in object in MB (Megabytes)
     Usage:
         print_object_memory_usage(curr_bapun_pipeline.sess)
     """
-    size_bytes = obj.__sizeof__() # 1753723032
+    # size_bytes = obj.__sizeof__() # 1753723032
+    size_bytes = objsize.get_deep_size(obj)
     size_MB = size_bytes/(1024*1024)
-    object_size_string_MB = f'{size_MB} MB'
-    print(f'object size: {object_size_string_MB}')
+    if enable_print:
+        object_size_string_MB = f'{size_MB:0.6f} MB'
+        print(f'object size: {object_size_string_MB}')
+    return size_MB
+
+def print_filesystem_file_size(file_path, enable_print=True):
+    """ prints the size of the file represented by the passed in path (if it exists) in MB (Megabytes)
+    Usage:
+        print_object_memory_usage(curr_bapun_pipeline.sess)
+    """
+    if not isinstance(file_path, Path):
+        file_path = Path(file_path)
+    size_bytes = file_path.stat().st_size # Output is in bytes.
+    size_MB = size_bytes/(1024*1024)
+    if enable_print:
+        file_size_string_MB = f'{size_MB} MB'
+        print(f'filesize of {str(file_path)}: {file_size_string_MB}')
     return size_MB
 
 
+
+
+## Category: Debug Print
 def debug_print(*args, **kwargs):
     # print(f'xbin_edges: {xbin_edges}\nxbin_centers: {xbin_centers}\nybin_edges: {ybin_edges}\nybin_centers: {ybin_centers}')
     out_strings = []

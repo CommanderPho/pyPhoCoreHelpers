@@ -233,6 +233,12 @@ class CodeConversion(object):
                 spike_raster_plt_3d = curr_active_pipeline.last_added_display_output['spike_raster_plt_3d']
                 spike_raster_window = curr_active_pipeline.last_added_display_output['spike_raster_window']
 
+            
+        Example 2:
+            dictionary_definition_string = "{'firing_rate':curr_ax_firing_rate, 'lap_spikes': curr_ax_lap_spikes, 'placefield': curr_ax_placefield}"
+            CodeConversion.convert_dictionary_to_defn_lines(dictionary_definition_string, dictionary_name='curr_axs_dict')
+            >>>
+                firing_rate, lap_spikes, placefield = curr_axs_dict['firing_rate'], curr_axs_dict['lap_spikes'], curr_axs_dict['placefield'] # Extract variables from the `curr_axs_dict` dictionary to the local workspace
         """
         if isinstance(target_dict, str):
             # if the target_dict is a string instead of a dictionary, assume it is code that defines a dictionary

@@ -208,7 +208,7 @@ class CodeConversion(object):
     @classmethod
     def convert_dictionary_to_defn_lines(cls, target_dict, multiline_assignment_code=False, dictionary_name:str='target_dict', include_comment:bool=True, copy_to_clipboard=True):
         """ The reciprocal operation of convert_defn_lines_to_dictionary
-            code: lines of code that define several python variables to be converted to dictionary entries
+            target_dict: either a dictionary object or a string of code that defines a dictionary object (such as "{'firing_rate':curr_ax_firing_rate, 'lap_spikes': curr_ax_lap_spikes, 'placefield': curr_ax_placefield}")
             multiline_assignment_code: if True, generates a separate line for each assignment, otherwise assignment is done inline
             dictionary_name: the name to use for the dictionary in the generated code
 
@@ -234,6 +234,15 @@ class CodeConversion(object):
                 spike_raster_window = curr_active_pipeline.last_added_display_output['spike_raster_window']
 
         """
+        if isinstance(target_dict, str):
+            # if the target_dict is a string instead of a dictionary, assume it is code that defines a dictionary
+            try:
+                target_dict = cls.build_dummy_dictionary_from_defn_code(target_dict)
+            except Exception as e:
+                print(f'ERROR: Could not convert code string: {target_dict} to a proper dictionary! Exception: {e}')
+                raise e
+
+        assert isinstance(target_dict, dict), f"target_dict must be a dictionary but is of type: {type(target_dict)}, target_dict: {target_dict}"
         comment_str = f"# Extract variables from the `{dictionary_name}` dictionary to the local workspace"
         if multiline_assignment_code:
             # Separate line per assignment
@@ -269,7 +278,75 @@ class CodeConversion(object):
         return code_str
 
 
-   
+    @classmethod
+    def build_dummy_dictionary_from_defn_code(cls, code_dict_defn:str, max_iterations_before_abort:int=50, debug_print=False):
+        """ Consider an inline dictionary definition such as:
+        
+            # output the axes created:
+            axs_list.append({'firing_rate':curr_ax_firing_rate, 'lap_spikes': curr_ax_lap_spikes, 'placefield': curr_ax_placefield})
+
+        The goal is to be able to extract the members of this dictionary from its returned value, effectively "unwrapping" the dictionary. The problem with just using convert_dictionary_to_defn_lines(...) directly is that you don't have a dictionary, you have a string the defines the dictionary in the original code.
+        Attempting to build a dummy dictionary from this code doesn't work, as the variables aren't defined outside of the function that created them.
+
+        One way around this problem is to do the following to define the unbound variables in the dictionary to None:
+
+            curr_ax_firing_rate, curr_ax_lap_spikes, curr_ax_placefield = None, None, None
+            CodeConversion.convert_dictionary_to_defn_lines({'firing_rate':curr_ax_firing_rate, 'lap_spikes': curr_ax_lap_spikes, 'placefield': curr_ax_placefield}, dictionary_name='curr_axs_dict')
+
+        This works, but requires extracting the variable names and assigning None for each one. This function automates that process with eval(...)
+
+        >>> 
+            iteration 0: name 'curr_ax_firing_rate' is not defined
+            missing_variable_name: curr_ax_firing_rate
+            iteration 1: name 'curr_ax_lap_spikes' is not defined
+            missing_variable_name: curr_ax_lap_spikes
+            iteration 2: name 'curr_ax_placefield' is not defined
+            missing_variable_name: curr_ax_placefield
+            Copied "firing_rate, lap_spikes, placefield = target_dict['firing_rate'], target_dict['lap_spikes'], target_dict['placefield'] # Extract variables from the `target_dict` dictionary to the local workspace" to clipboard!
+
+        Inputs:
+            code_dict_defn: lines of code that define several python variables to be converted to dictionary entries
+                e.g. code_dict_defn: "{'firing_rate':curr_ax_firing_rate, 'lap_spikes': curr_ax_lap_spikes, 'placefield': curr_ax_placefield}"
+        Outputs:
+            a dictionary
+        """
+        target_dict = None
+        
+        num_iterations = 0
+        last_exception = None
+        while (num_iterations <= max_iterations_before_abort) and ((target_dict is None) or (not isinstance(target_dict, dict))):
+            try:
+                # Tries to turn the code_dict_defn, which is just a string, into a valid dictionary object
+                target_dict = eval(code_dict_defn) # , None, None # should produce NameError: name 'curr_ax_firing_rate' is not defined
+            except NameError as e:
+                if debug_print:
+                    print(f'iteration {num_iterations}: {e}')
+                last_exception = e
+                # when e is a NameError, str(e) is a stirng like: "name 'curr_ax_firing_rate' is not defined"
+                name_error_str = str(e)
+                name_error_split_str = name_error_str.split("'")
+                assert len(name_error_split_str)==3, f"name_error_split_str: {name_error_split_str}"
+                missing_variable_name = name_error_split_str[1] # e.g. 'curr_ax_firing_rate'
+                if debug_print:
+                    print(f'missing_variable_name: {missing_variable_name}')
+                exec(f'{missing_variable_name} = None') # define the missing variable as None
+                # print(f'\te.name: {e.name}')
+            except Exception as e:
+                print(f'ERROR: iteration {num_iterations}: Unhandled exception: {e}')
+                last_exception = e
+                raise e
+            num_iterations = num_iterations + 1
+
+        if target_dict is None:
+            # still no resolved dict, failed
+            if last_exception is not None:
+                raise last_exception
+            else:
+                raise NotImplementedError
+        else:
+            return target_dict
+            
+
     @classmethod     
     def convert_defn_lines_to_dictionary(cls, code, multiline_dict_defn=True, multiline_members_indent='    '):
         """ 

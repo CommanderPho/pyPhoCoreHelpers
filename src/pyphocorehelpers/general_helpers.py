@@ -359,7 +359,8 @@ class CodeConversion(object):
             code: lines of code that define several python variables to be converted to dictionary entries
             multiline_dict_defn: if True, each entry is converted to a new line (multi-line dict defn). Otherwise inline dict defn.
             
-            
+        Implementation: Internally calls cls._convert_defn_line_to_dictionary_line(...) for each line
+
         Examples:
             test_parameters_defns_code_string = '''
                 max_num_spikes_per_neuron = 20000 # the number of spikes to truncate each neuron's timeseries to

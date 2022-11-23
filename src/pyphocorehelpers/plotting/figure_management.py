@@ -2,6 +2,7 @@ import numpy as np
 from copy import deepcopy
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure, FigureBase # FigureBase: both Figure and SubFigure
 
 class PhoActiveFigureManager2D(object):
     """Offers convenience methods for accessing and updating the extent (size and position on the screen) for the current Matplotlib figures (via its current_figure_manager property.
@@ -110,8 +111,34 @@ class PhoActiveFigureManager2D(object):
 
 
     @classmethod
+    def reshow_figure_if_needed(cls, a_figure):
+        """ ensures the window for a figure with a valid handle in memory is open, and if it isn't it opens it """
+        if PhoActiveFigureManager2D.is_figure_open(a_figure):
+            return a_figure
+        else:
+            # Force reshow the figure:
+            return cls.reshow_figure(a_figure)
+
+    @classmethod
+    def is_figure_open(cls, a_figure) -> bool:
+        """ determines if the passed figure is currently open or of it its window has been closed. 
+        Inputs:        
+            a_closed_figure: either a figure with a valid handle in memory (hasn't been garbage collected) 
+                    OR a int/string fignum identifier
+        """
+        if isinstance(a_figure, FigureBase): # .Figure or .SubFigure
+            fignum = a_figure.number
+        elif isinstance(a_figure, (str, int)):
+            fignum = a_figure
+        else:
+            raise NotImplementedError
+        return plt.fignum_exists(fignum)
+
+    @classmethod
     def reshow_figure(cls, a_closed_figure):
-        """ re-opens the window for a figure with a valid handle in memory (hasn't been garbage collected) but no active window (perhaps because it was previously closed with plt.close(the_fig) """
+        """ re-opens the window for a figure with a valid handle in memory (hasn't been garbage collected) but no active window (perhaps because it was previously closed with plt.close(the_fig)
+        See also: cls.reshow_figure_if_needed(a_figure) doesn't reopen a figure that's already open, which is advantageous because it doesn't have to relayout it
+        """
         # create a dummy figure and use its manager to display "a_closed_figure"
         dummy = plt.figure()
         new_manager = dummy.canvas.manager

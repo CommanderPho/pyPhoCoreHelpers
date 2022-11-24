@@ -206,7 +206,7 @@ class CodeConversion(object):
         
         
     @classmethod
-    def convert_dictionary_to_defn_lines(cls, target_dict, multiline_assignment_code=False, dictionary_name:str='target_dict', include_comment:bool=True, copy_to_clipboard=True):
+    def convert_dictionary_to_defn_lines(cls, target_dict, multiline_assignment_code=False, dictionary_name:str='target_dict', include_comment:bool=True, copy_to_clipboard=True, output_variable_prefix=''):
         """ The reciprocal operation of convert_defn_lines_to_dictionary
             target_dict: either a dictionary object or a string of code that defines a dictionary object (such as "{'firing_rate':curr_ax_firing_rate, 'lap_spikes': curr_ax_lap_spikes, 'placefield': curr_ax_placefield}")
             multiline_assignment_code: if True, generates a separate line for each assignment, otherwise assignment is done inline
@@ -259,7 +259,7 @@ class CodeConversion(object):
             spike_raster_window = target_dict['spike_raster_window']
 
             """
-            code_str = '\n'.join([f"{k} = {dictionary_name}['{k}']" for k,v in target_dict.items()])
+            code_str = '\n'.join([f"{output_variable_prefix}{k} = {dictionary_name}['{k}']" for k,v in target_dict.items()])
 
             if include_comment:
                 code_str = f"{comment_str}\n{code_str}" # add comment above code
@@ -271,7 +271,7 @@ class CodeConversion(object):
             """
             vars_name_list = list(target_dict.keys())
             rhs_code_str = ', '.join([f"{dictionary_name}['{k}']" for k in vars_name_list])
-            lhs_code_str = ', '.join(vars_name_list)
+            lhs_code_str = ', '.join([f"{output_variable_prefix}{k}" for k in vars_name_list])
             code_str = f'{lhs_code_str} = {rhs_code_str}'
             if include_comment:
                 code_str = f"{code_str} {comment_str}" # add comment at the very end of the code line

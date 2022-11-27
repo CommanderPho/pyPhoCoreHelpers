@@ -566,6 +566,15 @@ class CodeConversion(object):
                 Output: ", **({'point_size': 8, 'font_size': 10, 'name': 'build_center_labels_test', 'shape_opacity': 0.8, 'show_points': False} | kwargs)"
 
             Usage (string-represented kwargs mode):
+                Consider in code:
+                    `sortby=shared_fragile_neuron_IDXs, included_unit_neuron_IDs=curr_any_context_neurons, fignum=None, ax=ax_long_pf_1D, curve_hatch_style=None`
+
+                We'd like to convert this to an optional dict, which can usually be done by passing it to CodeConversion.get_arguments_as_optional_dict(...) like:
+                    `CodeConversion.get_arguments_as_optional_dict(sortby=shared_fragile_neuron_IDXs, included_unit_neuron_IDs=curr_any_context_neurons, fignum=None, ax=ax_long_pf_1D, curve_hatch_style=None)`
+
+                Unfortunately, unless done in the original calling context many of the arguments are undefined, including:
+                    shared_fragile_neuron_IDXs, curr_any_context_neurons, ax_long_pf_1D
+
                 >>> CodeConversion.get_arguments_as_optional_dict("sortby=shared_fragile_neuron_IDXs, included_unit_neuron_IDs=curr_any_context_neurons, ax=ax_long_pf_1D", fignum=None, curve_hatch_style=None)
 
                 Output: , **({'fignum': None, 'curve_hatch_style': None, 'sortby': shared_fragile_neuron_IDXs, 'included_unit_neuron_IDs': curr_any_context_neurons, 'ax': ax_long_pf_1D} | kwargs)

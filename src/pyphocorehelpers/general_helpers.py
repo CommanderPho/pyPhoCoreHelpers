@@ -142,8 +142,25 @@ def get_arguments_as_optional_dict(**kwargs):
 
 class CodeConversion(object):
     """ Converts code (usually passed as text) to various alternative formats to ease development workflows. 
-    
-    
+
+
+    # Definition Lines: __________________________________________________________________________________________________ #
+    ## a multiline string containing lines of valid python code definitions
+    test_parameters_defns_code_string = '''
+                max_num_spikes_per_neuron = 20000 # the number of spikes to truncate each neuron's timeseries to
+                kleinberg_parameters = DynamicParameters(s=2, gamma=0.1)
+                use_progress_bar = False # whether to use a tqdm progress bar
+                debug_print = False # whether to print debug-level progress using traditional print(...) statements
+            '''
+    ## Functions: `convert_defn_lines_to_dictionary(...)`, `convert_defn_lines_to_parameters_list(...)`, `convert_defn_lines_to_parameters_list(...)`, 
+
+    # Dictionary: ________________________________________________________________________________________________________ #
+        {'spike_raster_plt_2d': <pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.SpikeRasterWidgets.Spike2DRaster.Spike2DRaster at 0x168558703a0>,
+                'spike_raster_plt_3d': <pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.SpikeRasterWidgets.Spike3DRaster.Spike3DRaster at 0x1673e722310>,
+                'spike_raster_window': <pyphoplacecellanalysis.GUI.Qt.SpikeRasterWindows.Spike3DRasterWindowWidget.Spike3DRasterWindowWidget at 0x1673e7aaa60>}
+
+
+
     """
     @classmethod
     def _stripComments(cls, code):
@@ -285,7 +302,73 @@ class CodeConversion(object):
 
 
     @classmethod
-    def build_dummy_dictionary_from_defn_code(cls, code_dict_defn:str, max_iterations_before_abort:int=50, debug_print=False):
+    def _parse_NameError(cls, e):
+        """Takes a NameError e and parses it into the name of the missing variable as a string
+
+        Args:
+            e (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        # when e is a NameError, str(e) is a stirng like: "name 'curr_ax_firing_rate' is not defined"
+        name_error_str = str(e)
+        name_error_split_str = name_error_str.split("'")
+        assert len(name_error_split_str)==3, f"name_error_split_str: {name_error_split_str}"
+        missing_variable_name = name_error_split_str[1] # e.g. 'curr_ax_firing_rate'
+        # print(f'\te.name: {e.name}')
+        return missing_variable_name
+
+    @classmethod
+    def extract_undefined_variable_names_from_code(cls, code_dict_defn:str, max_iterations_before_abort:int=50, debug_print=False):
+        """ Finds the names of all undefined variables in a given block of code by repetitively replacing it and re-evaluating it. Probably not the smartest doing this.
+        Based on `cls.build_dummy_dictionary_from_defn_code(...)`
+            
+
+        Inputs:
+            code_dict_defn: lines of code that define several python variables to be converted to dictionary entries
+                e.g. code_dict_defn: "{'firing_rate':curr_ax_firing_rate, 'lap_spikes': curr_ax_lap_spikes, 'placefield': curr_ax_placefield}"
+        Outputs:
+            a dictionary
+        """
+        did_complete = False
+        num_iterations = 0
+        last_exception = None
+        output_undefined_variable_names = []
+        while (num_iterations <= max_iterations_before_abort) and (not did_complete):
+            try:
+                # Tries to evaluate the code_dict_defn, which is just a string, into a valid dictionary object
+                eval(code_dict_defn) # , None, None # should produce NameError: name 'curr_ax_firing_rate' is not defined
+                did_complete = True
+            except NameError as e:
+                if debug_print:
+                    print(f'iteration {num_iterations}: {e}')
+                last_exception = e
+                missing_variable_name = cls._parse_NameError(e)
+                if debug_print:
+                    print(f'missing_variable_name: {missing_variable_name}')
+                output_undefined_variable_names.append(missing_variable_name)
+                exec(f'{missing_variable_name} = None') # define the missing variable as None in this environment to continue without errors
+            except Exception as e:
+                # Unhandled/Unexpected exception:
+                print(f'ERROR: iteration {num_iterations}: Unhandled exception: {e}')
+                last_exception = e
+                raise e
+            num_iterations = num_iterations + 1
+
+        if not did_complete:
+            # still failed to execute, failed
+            print(f'ERROR: Still failed to execute after {num_iterations}. Found output_undefined_variable_names: {output_undefined_variable_names}.')
+            if last_exception is not None:
+                raise last_exception
+            else:
+                raise NotImplementedError
+        else:
+            return output_undefined_variable_names
+
+
+    @classmethod
+    def build_dummy_dictionary_from_defn_code(cls, code_dict_defn:str, max_iterations_before_abort:int=50, missing_variable_values=None, debug_print=False):
         """ Consider an inline dictionary definition such as:
         
             # output the axes created:
@@ -320,24 +403,38 @@ class CodeConversion(object):
         
         num_iterations = 0
         last_exception = None
+
+        if missing_variable_values is None:
+            # should be a string
+            # missing_variable_values = {'*':'None'}
+            missing_variable_fill_function = lambda var_name: 'None'
+        elif isinstance(missing_variable_values, str):
+            missing_variable_fill_function = lambda var_name: missing_variable_values # use the literal string itself
+        elif isinstance(missing_variable_values, dict):
+            missing_variable_fill_function = lambda var_name: missing_variable_values.get(var_name, 'None') # find the value in the dictionary, or use 'None'
+        else:
+            raise NotImplementedError
+
+
+
         while (num_iterations <= max_iterations_before_abort) and ((target_dict is None) or (not isinstance(target_dict, dict))):
             try:
-                # Tries to turn the code_dict_defn, which is just a string, into a valid dictionary object
+                # Tries to evaluate the code_dict_defn, which is just a string, into a valid dictionary object
                 target_dict = eval(code_dict_defn) # , None, None # should produce NameError: name 'curr_ax_firing_rate' is not defined
             except NameError as e:
                 if debug_print:
                     print(f'iteration {num_iterations}: {e}')
                 last_exception = e
                 # when e is a NameError, str(e) is a stirng like: "name 'curr_ax_firing_rate' is not defined"
-                name_error_str = str(e)
-                name_error_split_str = name_error_str.split("'")
-                assert len(name_error_split_str)==3, f"name_error_split_str: {name_error_split_str}"
-                missing_variable_name = name_error_split_str[1] # e.g. 'curr_ax_firing_rate'
+                missing_variable_name = missing_variable_name = cls._parse_NameError(e) # e.g. 'curr_ax_firing_rate'
                 if debug_print:
                     print(f'missing_variable_name: {missing_variable_name}')
-                exec(f'{missing_variable_name} = None') # define the missing variable as None
-                # print(f'\te.name: {e.name}')
+
+                # missing_variable_assignment_str = f'{missing_variable_name} = None' # old way, always fill with None
+                missing_variable_assignment_str = f'{missing_variable_name} = {missing_variable_fill_function(missing_variable_name)}'
+                exec(missing_variable_assignment_str) # define the missing variable as None in this environment
             except Exception as e:
+                # Unhandled/Unexpected exception:
                 print(f'ERROR: iteration {num_iterations}: Unhandled exception: {e}')
                 last_exception = e
                 raise e
@@ -355,7 +452,8 @@ class CodeConversion(object):
 
     @classmethod     
     def convert_defn_lines_to_dictionary(cls, code, multiline_dict_defn=True, multiline_members_indent='    '):
-        """ 
+        """ Converts a multiline string containing lines of valid python code definitions into an output string containing a python dictionary definition.
+
             code: lines of code that define several python variables to be converted to dictionary entries
             multiline_dict_defn: if True, each entry is converted to a new line (multi-line dict defn). Otherwise inline dict defn.
             
@@ -459,15 +557,44 @@ class CodeConversion(object):
 
     ## Static Helpers:
     @classmethod
-    def get_arguments_as_optional_dict(cls, **kwargs):
+    def get_arguments_as_optional_dict(cls, *args, **kwargs):
         """ Easily converts your existing argument-list style default values into a dict:
                 Defines a simple function that takes only **kwargs as its inputs and prints the values it recieves. Paste your values as arguments to the function call. The dictionary will be output to the console, so you can easily copy and paste. 
             Usage:
                 >>> get_arguments_as_optional_dict(point_size=8, font_size=10, name='build_center_labels_test', shape_opacity=0.8, show_points=False)
 
                 Output: ", **({'point_size': 8, 'font_size': 10, 'name': 'build_center_labels_test', 'shape_opacity': 0.8, 'show_points': False} | kwargs)"
+
+            Usage (string-represented kwargs mode):
+                >>> CodeConversion.get_arguments_as_optional_dict("sortby=shared_fragile_neuron_IDXs, included_unit_neuron_IDs=curr_any_context_neurons, ax=ax_long_pf_1D", fignum=None, curve_hatch_style=None)
+
+                Output: , **({'fignum': None, 'curve_hatch_style': None, 'sortby': shared_fragile_neuron_IDXs, 'included_unit_neuron_IDs': curr_any_context_neurons, 'ax': ax_long_pf_1D} | kwargs)
         """
-        print(', **(' + f'{kwargs}' + ' | kwargs)')
+        if len(args) == 0:
+            # default mode, length of arguments is zero
+            pass
+        else:
+            # check for string input mode:
+            assert len(args) == 1, f"only string-represented kwargs are allowed as a non-keyword argument, but args: {args} (with length {len(args)} instead of 1) were passed."
+            str_rep_kwargs = args[0]
+            assert isinstance(str_rep_kwargs, str)
+            ## Try and parse the kwargs to a valid kwargs dict, ignoring NameErrors using
+            code_dict_defn=f"dict({str_rep_kwargs})"
+            try:
+                undefined_variable_names = CodeConversion.extract_undefined_variable_names_from_code(code_dict_defn)
+                replacement_wrapped_undefined_variable_dict = {a_name:f"'`{a_name}`'" for a_name in undefined_variable_names} # wrap each variable in markdown-style code quotes and then single quotes
+                parsed_kwargs = cls.build_dummy_dictionary_from_defn_code(code_dict_defn=code_dict_defn, max_iterations_before_abort=50, missing_variable_values=replacement_wrapped_undefined_variable_dict, debug_print=True)
+                kwargs = kwargs | parsed_kwargs # Combine the parsed_kwargs and the correctly passed kwargs into a combined dictionary to be used.
+            except Exception as e:
+                print(f'Interpreting as string-representation arg-list and converting to a dictionary resulted in code_dict_defn: {code_dict_defn} but still failed! Exception: {e}')
+                raise e
+            
+        out_dict_str = f'{kwargs}'
+        ## replace the sentinal wrapped values once the dict is built
+        for orig_name, sentinal_wrapped_name in replacement_wrapped_undefined_variable_dict.items():
+            out_dict_str = out_dict_str.replace(sentinal_wrapped_name, orig_name) # restore the non-sentinal-wrapped variable names that were subsituted in
+
+        print(', **(' + f'{out_dict_str}' + ' | kwargs)')
 
 
 

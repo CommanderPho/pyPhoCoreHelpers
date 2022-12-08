@@ -77,6 +77,43 @@ class ExtendedEnum(Enum):
         return dict(zip(cls.all_members(), values_list))
 
 
+    # ==================================================================================================================== #
+    # INIT Helpers                                                                                                         #
+    # ==================================================================================================================== #
+    @classmethod
+    def _init_from_upper_name_dict(cls) -> dict:
+        return dict(zip([a_name.upper() for a_name in cls.all_member_names()], cls.all_members()))
+    @classmethod
+    def _init_from_value_dict(cls) -> dict:
+        return dict(zip(cls.all_member_values(), cls.all_members()))
+
+    @classmethod
+    def init(cls, name=None, value=None, fallback_value=None):
+        """ Allows enum values to be initialized from either a name or value (but not both).
+
+            e.g. FileProgressAction.init('lOaDing') # <FileProgressAction.LOADING: 'Loading'> 
+        """
+        assert (name is not None) or (value is not None), "You must specify either name or value, and the other will be returned"
+        assert (name is None) or (value is None), "You cannot specify both name and value, as it would be ambiguous which takes priority. Please remove one of the two arguments."
+        if name is not None:
+            ## Name Mode:
+            if fallback_value is not None:
+                return cls._init_from_upper_name_dict().get(name.upper(), fallback_value)
+            else:
+                return cls._init_from_upper_name_dict()[name.upper()]
+        elif value is not None:
+            if fallback_value is not None:
+                return cls._init_from_value_dict().get(value, fallback_value)
+            else:
+                return cls._init_from_value_dict()[value]
+        else:
+            raise NotImplementedError # THIS SHOULD NOT EVEN BE POSSIBLE!
+
+
+
+
+
+
 class OrderedEnum(Enum):
     """ An enum that can be compared via comparison operators (like < and <=)
     Usage:

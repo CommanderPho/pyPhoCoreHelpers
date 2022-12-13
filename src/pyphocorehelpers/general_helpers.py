@@ -1,9 +1,13 @@
 from typing import Callable, List, Optional, OrderedDict  # for OrderedMeta
 from enum import Enum
+from enum import unique # GeneratedClassDefinitionType
+from pyphocorehelpers.DataStructure.enum_helpers import ExtendedEnum # required for GeneratedClassDefinitionType
+
 import re # for CodeConversion
 import numpy as np # for CodeConversion
 import pandas as pd
 from neuropy.utils.dynamic_container import overriding_dict_with # required for safely_accepts_kwargs
+from pyphocorehelpers.print_helpers import strip_type_str_to_classname # used to convert dict to class with types
 
 
 class OrderedMeta(type):
@@ -139,6 +143,38 @@ def get_arguments_as_optional_dict(**kwargs):
 
 
 
+@unique
+class GeneratedClassDefinitionType(ExtendedEnum):
+    """Specifies which type of class to generate in CodeConversion.convert_dictionary_to_class_defn(...)."""
+    STANDARD_CLASS = "STANDARD_CLASS"
+    DATACLASS = "DATACLASS"
+
+    @property
+    def class_decorators(self):
+        return self.decoratorsList()[self]
+
+    @property
+    def include_init_fcn(self):
+        return self.include_init_fcnList()[self]
+
+    @property
+    def include_properties_defns(self):
+        return self.include_properties_defnsList()[self]
+
+    # Static properties
+    @classmethod
+    def decoratorsList(cls):
+        return cls.build_member_value_dict([None,"@dataclass"])
+
+    @classmethod
+    def include_init_fcnList(cls):
+        return cls.build_member_value_dict([True, False])
+
+    @classmethod
+    def include_properties_defnsList(cls):
+        return cls.build_member_value_dict([False, True])
+
+
 
 class CodeConversion(object):
     """ Converts code (usually passed as text) to various alternative formats to ease development workflows. 
@@ -221,7 +257,41 @@ class CodeConversion(object):
             param_item = f"{matches_dict['var_name'].strip()}={matches_dict['end_portion'].strip()}"
             return param_item
         
+
+    @classmethod
+    def _try_parse_to_dictionary_if_needed(cls, target_dict) -> dict:
+        """ returns a for-sure dictionary or throws an Exception
         
+        target_dict: either a dictionary object or a string of code that defines a dictionary object (such as "{'firing_rate':curr_ax_firing_rate, 'lap_spikes': curr_ax_lap_spikes, 'placefield': curr_ax_placefield}")
+
+        """
+        if isinstance(target_dict, str):
+            # if the target_dict is a string instead of a dictionary, assume it is code that defines a dictionary
+            try:
+                target_dict = cls.build_dummy_dictionary_from_defn_code(target_dict)
+            except Exception as e:
+                print(f'ERROR: Could not convert code string: {target_dict} to a proper dictionary! Exception: {e}')
+                raise e
+
+        assert isinstance(target_dict, dict), f"target_dict must be a dictionary but is of type: {type(target_dict)}, target_dict: {target_dict}"
+        return target_dict # returns a for-sure dictionary or throws an Exception
+        
+    @classmethod
+    def _find_best_type_representation_string(cls, a_type, unspecified_generic_type_name='type', keep_generic_types=['NoneType'], types_replace_dict = {'numpy.':'np.', 'pandas.':'pd.'}):
+        """ Uses `strip_type_str_to_classname(a_type) to find the best type-string representation.
+
+        """
+        out_extracted_typestring = strip_type_str_to_classname(a_type_str=a_type)
+        if out_extracted_typestring in keep_generic_types:
+            # If the parsed typestring is in the ignored type-string list, keep the generic type_name instead of this one.
+            out_extracted_typestring = unspecified_generic_type_name
+
+        for find_str, rep_str in types_replace_dict.items():
+            out_extracted_typestring = out_extracted_typestring.replace(find_str, rep_str) # replace find_str with rep_str
+            # e.g. out_extracted_typestring.replace('numpy.', 'np.') # replace 'numpy.' with 'np.'
+
+        return out_extracted_typestring
+
     @classmethod
     def convert_dictionary_to_defn_lines(cls, target_dict, multiline_assignment_code=False, dictionary_name:str='target_dict', include_comment:bool=True, copy_to_clipboard=True, output_variable_prefix=''):
         """ The reciprocal operation of convert_defn_lines_to_dictionary
@@ -257,15 +327,7 @@ class CodeConversion(object):
             >>>
                 firing_rate, lap_spikes, placefield = curr_axs_dict['firing_rate'], curr_axs_dict['lap_spikes'], curr_axs_dict['placefield'] # Extract variables from the `curr_axs_dict` dictionary to the local workspace
         """
-        if isinstance(target_dict, str):
-            # if the target_dict is a string instead of a dictionary, assume it is code that defines a dictionary
-            try:
-                target_dict = cls.build_dummy_dictionary_from_defn_code(target_dict)
-            except Exception as e:
-                print(f'ERROR: Could not convert code string: {target_dict} to a proper dictionary! Exception: {e}')
-                raise e
-
-        assert isinstance(target_dict, dict), f"target_dict must be a dictionary but is of type: {type(target_dict)}, target_dict: {target_dict}"
+        target_dict = cls._try_parse_to_dictionary_if_needed(target_dict=target_dict) # Ensure a valid dictionary is provided or can be built
         comment_str = f"# Extract variables from the `{dictionary_name}` dictionary to the local workspace"
         if multiline_assignment_code:
             # Separate line per assignment
@@ -299,6 +361,96 @@ class CodeConversion(object):
             print(f'Copied "{code_str}" to clipboard!')
 
         return code_str
+    
+    @classmethod
+    def convert_dictionary_to_class_defn(cls, target_dict, class_name:str='TargetClass', class_definition_mode:GeneratedClassDefinitionType = None, copy_to_clipboard=True, output_variable_prefix='', class_decorators="@dataclass",
+        include_init_fcn=True, include_initializer_default_values=False, include_properties_defns=False, include_types=True, 
+        indent_character='    ', pre_class_spacing='\n', post_class_spacing='\n\n'):
+        """ Builds a class definition from a target_dict
+            target_dict: either a dictionary object or a string of code that defines a dictionary object (such as "{'firing_rate':curr_ax_firing_rate, 'lap_spikes': curr_ax_lap_spikes, 'placefield': curr_ax_placefield}")
+            multiline_assignment_code: if True, generates a separate line for each assignment, otherwise assignment is done inline
+            class_name: the name to use for the generated class in the generated code
+
+
+            include_types: bool - If True, type hints are included in both the properties_defns and init_fcn (if those are enabled, otherwise changes nothing)
+
+            include_properties_defns: if True, includes the properties at the top of the class definintion like is done in an @dataclass 
+            include_init_fcn: if True, includes a standard __init__(self, ...) function in the definintion
+
+
+
+
+        Examples:
+            from pyphocorehelpers.general_helpers import CodeConversion, GeneratedClassDefinitionType
+            CodeConversion.convert_dictionary_to_class_defn(_out.to_dict(), class_name='PlacefieldSnapshot', indent_character='    ', include_types=True, class_decorators=None, include_initializer_default_values=False)
+
+            >>>
+            class PlacefieldSnapshot(object):
+                # Docstring for PlacefieldSnapshot.
+
+                def __init__(self, num_position_samples_occupancy: np.ndarray, seconds_occupancy: np.ndarray, spikes_maps_matrix: np.ndarray, smoothed_spikes_maps_matrix: type, occupancy_weighted_tuning_maps_matrix: np.ndarray):
+                    super(PlacefieldSnapshot, self).__init__()        self.num_position_samples_occupancy = num_position_samples_occupancy
+                    self.seconds_occupancy = seconds_occupancy
+                    self.spikes_maps_matrix = spikes_maps_matrix
+                    self.smoothed_spikes_maps_matrix = smoothed_spikes_maps_matrix
+                    self.occupancy_weighted_tuning_maps_matrix = occupancy_weighted_tuning_maps_matrix
+
+
+
+        """
+        target_dict = cls._try_parse_to_dictionary_if_needed(target_dict=target_dict) # Ensure a valid dictionary is provided or can be built
+        if class_definition_mode is not None and isinstance(class_definition_mode, GeneratedClassDefinitionType):
+            # generated class definition type provided to shortcut the settings
+            print(f'WARNING: class_definition_mode ({class_definition_mode}) was provided, overriding the `class_decorators`,  `include_init_fcn`, `include_properties_defns` settings!')
+            class_decorators = class_definition_mode.class_decorators
+            include_init_fcn = class_definition_mode.include_init_fcn
+            include_properties_defns = class_definition_mode.include_properties_defns
+
+        if class_decorators is not None and len(class_decorators) > 0:
+            class_decorators=f"{class_decorators}\n" # append the line break after the decorators
+        else:
+            class_decorators = '' # empty string
+
+        # comment_str = f"\"\"\"Docstring for {dictionary_name}.\"\"\""
+        # comment_str = f'"""Docstring for {dictionary_name}.""""""'
+        comment_str = f'# Docstring for {class_name}.'
+        class_header_code_str = f"{pre_class_spacing}{class_decorators}class {class_name}(object):\n{indent_character}{comment_str}"
+
+        if include_properties_defns:
+            """ if include_properties_defns is True, includes the properties at the top of the class definintion like is done in an @dataclass 
+
+            """
+            if include_types:
+                # by default type(v) gives <class 'numpy.ndarray'>
+                member_properties_code_str = '\n'.join([f"{indent_character}{output_variable_prefix}{k}: {cls._find_best_type_representation_string(type(v))}" for k,v in target_dict.items()])
+            else:
+                # leave generic 'type' placeholder for each
+                member_properties_code_str = '\n'.join([f"{indent_character}{output_variable_prefix}{k}: type" for k,v in target_dict.items()])
+
+            member_properties_code_str = f"\n{member_properties_code_str}"
+        else:
+            member_properties_code_str = ''
+
+
+        if include_init_fcn:
+            init_fcn_code_str = cls._build_class_init_fcn(target_dict, class_name=class_name, output_variable_prefix=output_variable_prefix, include_type_hinting=include_types, include_default_values=include_initializer_default_values, indent_character=indent_character)
+            init_fcn_code_str = f"\n\n{init_fcn_code_str}"
+
+        else:
+            init_fcn_code_str = ''
+
+        code_str = f"{class_header_code_str}{member_properties_code_str}{init_fcn_code_str}{post_class_spacing}" # add comment above code
+
+        if copy_to_clipboard:
+            df = pd.DataFrame([code_str])
+            df.to_clipboard(index=False,header=False)
+            print(f'Copied "{code_str}" to clipboard!')
+
+        return code_str
+
+    # ==================================================================================================================== #
+    # Class/Static Methods                                                                                                 #
+    # ==================================================================================================================== #
 
 
     @classmethod
@@ -555,7 +707,7 @@ class CodeConversion(object):
     
     
 
-    ## Static Helpers:
+    # Static Helpers: ____________________________________________________________________________________________________ #
     @classmethod
     def get_arguments_as_optional_dict(cls, *args, **kwargs):
         """ Easily converts your existing argument-list style default values into a dict:
@@ -605,6 +757,45 @@ class CodeConversion(object):
 
         print(', **(' + f'{out_dict_str}' + ' | kwargs)')
 
+
+    @classmethod
+    def _build_class_init_fcn(cls, target_dict, class_name:str='ClassName', output_variable_prefix='', include_type_hinting=False, include_default_values=False,
+        indent_character='    '):
+        """
+
+        Usage:
+
+        from pyphocorehelpers.general_helpers import CodeConversion
+        init_fcn_code_str = CodeConversion._build_class_init_fcn(_out.to_dict(), class_name='PlacefieldSnapshot', include_type_hinting=False, include_default_values=False)
+        init_fcn_code_str
+
+        >>> Output:
+        def __init__(self, num_position_samples_occupancy, seconds_occupancy, spikes_maps_matrix, smoothed_spikes_maps_matrix, occupancy_weighted_tuning_maps_matrix):
+            super(PlacefieldSnapshot, self).__init__()        self.num_position_samples_occupancy = num_position_samples_occupancy
+            self.seconds_occupancy = seconds_occupancy
+            self.spikes_maps_matrix = spikes_maps_matrix
+            self.smoothed_spikes_maps_matrix = smoothed_spikes_maps_matrix
+            self.occupancy_weighted_tuning_maps_matrix = occupancy_weighted_tuning_maps_matrix
+
+
+        """
+        init_final_variable_names_list = [f"{output_variable_prefix}{k}" for k,v in target_dict.items()]
+
+
+        if include_type_hinting:
+            # by default type(v) gives <class 'numpy.ndarray'>
+            init_arguments_list = [f"{output_variable_prefix}{k}: {cls._find_best_type_representation_string(type(v))}" for k,v in target_dict.items()]    
+        else:
+            # no type hinting:
+            init_arguments_list = init_final_variable_names_list.copy() 
+
+        if include_default_values:
+            init_arguments_list = [f"{curr_arg_str}={v}" for curr_arg_str, v in zip(init_arguments_list, target_dict.values())]
+
+        member_properties_code_str = ', '.join(init_arguments_list)
+        member_assignments_code_str = '\n'.join([f'{indent_character}{indent_character}self.{a_final_arg_name} = {a_final_arg_name}' for a_final_arg_name in init_final_variable_names_list])
+
+        return f"""{indent_character}def __init__(self, {member_properties_code_str}):\n{indent_character}{indent_character}super({class_name}, self).__init__(){member_assignments_code_str}"""
 
 
 # Enum for size units

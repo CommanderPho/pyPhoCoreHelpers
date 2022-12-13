@@ -556,6 +556,8 @@ def strip_type_str_to_classname(a_type_str):
     ## TODO: compare m element-wise to desired_output_class_strings
 
     """
+    if isinstance(a_type_str, type):
+        a_type_str = str(a_type_str) # convert to a string
     return re.search(r"<class '([^']+)'>", a_type_str).group(1)
 
 def safe_get_variable_shape(a_value):

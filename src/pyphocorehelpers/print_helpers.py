@@ -92,7 +92,9 @@ class WrappingMessagePrinter(object):
                 print(f'{begin_string}...', end=begin_line_ending)
             
             
-## Category: Formatting Seconds as Human Readable:
+# ==================================================================================================================== #
+# Category: Formatting Seconds as Human Readable:                                                                      #
+# ==================================================================================================================== #
 def split_seconds_human_readable(seconds):
     """ splits the seconds argument into hour, minute, seconds, and fractional_seconds components.
         Does no formatting itself, but used by format_seconds_human_readable(...) for formatting seconds as a human-redable HH::MM:SS.FRACTIONAL time. 
@@ -162,7 +164,9 @@ def print_seconds_human_readable(seconds, h_m_s_format_array = ['{0:02}','{0:02}
     return h, m, s, fractional_seconds, formatted_timestamp_str
 
 
-## Category: Memory Usage:
+# ==================================================================================================================== #
+# Category: Memory Usage:                                                                                              #
+# ==================================================================================================================== #
 def print_dataframe_memory_usage(df, enable_print=True):
     """ df: a Pandas.DataFrame such as curr_active_pipeline.sess.spikes_df
     
@@ -267,7 +271,9 @@ def print_filesystem_file_size(file_path, enable_print=True):
 
 
 
-## Category: Debug Print
+# ==================================================================================================================== #
+# Category: Debug Print                                                                                                #
+# ==================================================================================================================== #
 def debug_print(*args, **kwargs):
     # print(f'xbin_edges: {xbin_edges}\nxbin_centers: {xbin_centers}\nybin_edges: {ybin_edges}\nybin_centers: {ybin_centers}')
     out_strings = []
@@ -535,7 +541,11 @@ def dbg_dump(*args, dumpopt_stream=sys.stderr, dumpopt_forcename=True, dumpopt_p
     else:
         return output.rstrip()
     
-## Category: Structural Overview/Outline:
+
+
+# ==================================================================================================================== #
+# Category: Structural Overview/Outline:                                                                               #
+# ==================================================================================================================== #
 
 def strip_type_str_to_classname(a_type_str):
     """ Extracts the class string out of the string returned by type(an_obj) 

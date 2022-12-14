@@ -18,7 +18,7 @@ class TopLevelWindowHelper:
         all_widgets_list = app.allWidgets()
         if searchType is not None:
             # Only widgets that inherit from searchType
-            all_widgets_with_superclass_list = [a_widget for a_widget in all_widgets_list if isinstance(a_widget, (SpikeRasterBase))]
+            all_widgets_with_superclass_list = [a_widget for a_widget in all_widgets_list if isinstance(a_widget, (searchType))]
             return all_widgets_with_superclass_list
         else:
             # return all widgets

@@ -109,23 +109,6 @@ def build_pairwise_indicies(target_indicies, debug_print=False):
     return out_pair_indicies
 
 
-# def old_interleave_elements(start_points, end_points):
-#     """ Given two equal sized arrays, produces an output array of double that size that contains elements of start_points interleaved with elements of end_points
-#     Example:
-#         a_starts = ['A','B','C','D']
-#         a_ends = ['a','b','c','d']
-#         a_interleaved = interleave_elements(a_starts, a_ends)
-#         >> a_interleaved: ['A','a','B','b','C','c','D','d']
-#     """
-#     assert np.shape(start_points) == np.shape(end_points), f"start_points and end_points must be the same shape. np.shape(start_points): {np.shape(start_points)}, np.shape(end_points): {np.shape(end_points)}"
-#     start_points = np.atleast_2d(start_points)
-#     end_points = np.atleast_2d(end_points)
-#     all_points_shape = (np.shape(start_points)[0] * 2, np.shape(start_points)[1]) # it's double the length of the start_points
-#     all_points = np.zeros(all_points_shape)
-#     all_points[np.arange(0, all_points_shape[0], 2), :] = start_points # fill the even elements
-#     all_points[np.arange(1, all_points_shape[0], 2), :] = end_points # fill the odd elements
-#     assert np.shape(all_points)[0] == (np.shape(start_points)[0] * 2), f"newly created all_points is not of corrrect size! np.shape(all_points): {np.shape(all_points)}"
-#     return all_points
 
 def interleave_elements(start_points, end_points, debug_print:bool=False):
     """ Given two equal sized arrays, produces an output array of double that size that contains elements of start_points interleaved with elements of end_points

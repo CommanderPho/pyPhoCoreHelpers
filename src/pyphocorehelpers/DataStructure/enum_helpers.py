@@ -1,7 +1,7 @@
-from enum import Enum
 
+from enum import Enum, unique
 
-
+@unique
 class ExtendedEnum(Enum):
     """ Allows Inheritors to list their members, values, and names as lists
 
@@ -34,7 +34,7 @@ class ExtendedEnum(Enum):
                 
             @property
             def actionVerb(self):
-                return FileProgressAction.actionVerbsList()[self.value]
+                return FileProgressAction.actionVerbsList()[self]
 
             # Static properties
             @classmethod

@@ -826,10 +826,26 @@ def np_ffill_1D(arr: np.ndarray):
     Solution provided by Divakar.
     
     '''
+    did_pad_1D_array = False
     mask = np.isnan(arr)
-    idx = np.where(~mask,np.arange(mask.shape[1]),0)
-    np.maximum.accumulate(idx,axis=1, out=idx)
+    if (arr.ndim < 2):
+        # maximum_index_value = mask.shape[0] # there's only one axis. 
+        print(f'np_ffill_1D(arr): (arr.ndim: {arr.ndim} < 2), adding dimension...')
+        arr = arr[:, np.newaxis] # .shape: (12100, 1)
+        did_pad_1D_array = True # indicate that we modified the 1D array
+        print(f'\t new dim: {arr.ndim}.')
+        assert arr.ndim == 2
+    
+    # arr[is_non_firing_bin, :] 
+
+    maximum_index_value = mask.shape[1]
+    idx = np.where(~mask, np.arange(maximum_index_value), 0) # chooses values from the ascending value range `np.arange(mask.shape[1])` when arr is *not* np.nan, and zeros when it is nan (idx.shape: 1D: (12100,), 2D: )
+    np.maximum.accumulate(idx, axis=1, out=idx)
     out = arr[np.arange(idx.shape[0])[:,None], idx]
+    # output should be the same shape as the input
+    if did_pad_1D_array:
+        out = np.squeeze(out)
+        print(f'\t final 1D array restored output shape: {out.shape}.')
     return out
 
 def np_bfill_1D(arr: np.ndarray):

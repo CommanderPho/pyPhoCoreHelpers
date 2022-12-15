@@ -90,6 +90,8 @@ class ExtendedEnum(Enum):
     @classmethod
     def init(cls, name=None, value=None, fallback_value=None):
         """ Allows enum values to be initialized from either a name or value (but not both).
+            Also allows passthrough of either name or value that are already of the correct type (of Enum type class) and those will just be returned.
+                useful for unvalidated parameters
 
             e.g. FileProgressAction.init('lOaDing') # <FileProgressAction.LOADING: 'Loading'> 
         """
@@ -97,11 +99,16 @@ class ExtendedEnum(Enum):
         assert (name is None) or (value is None), "You cannot specify both name and value, as it would be ambiguous which takes priority. Please remove one of the two arguments."
         if name is not None:
             ## Name Mode:
+            if isinstance(name, cls):
+                return name # already the correct instance of class itself, return name (this allows passthrough of unvalidated parameters that will return the converted Enum or the original value if it already was of the correct class            
             if fallback_value is not None:
                 return cls._init_from_upper_name_dict().get(name.upper(), fallback_value)
             else:
                 return cls._init_from_upper_name_dict()[name.upper()]
         elif value is not None:
+            ## Value Mode:
+            if isinstance(value, cls):
+                return value # already the correct instance of class itself, return value (this allows passthrough of unvalidated parameters that will return the converted Enum or the original value if it already was of the correct class
             if fallback_value is not None:
                 return cls._init_from_value_dict().get(value, fallback_value)
             else:

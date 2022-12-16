@@ -836,7 +836,6 @@ def np_ffill_1D(arr: np.ndarray, debug_print=False):
         if debug_print:
             print(f'\t new dim: {arr.ndim}.')
         assert arr.ndim == 2
-    
     mask = np.isnan(arr)
     idx = np.where(~mask, np.arange(mask.shape[1]), 0) # chooses values from the ascending value range `np.arange(mask.shape[1])` when arr is *not* np.nan, and zeros when it is nan (idx.shape: 1D: (12100,), 2D: )
     np.maximum.accumulate(idx, axis=1, out=idx)

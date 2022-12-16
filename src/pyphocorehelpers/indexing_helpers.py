@@ -831,16 +831,23 @@ def np_ffill_1D(arr: np.ndarray, debug_print=False):
         ## Pad a 1D (N,) array to (N,1) to work just like the 2D arrays.
         if debug_print:
             print(f'np_ffill_1D(arr): (arr.ndim: {arr.ndim} < 2), adding dimension...')
-        arr = arr[:, np.newaxis] # .shape: (12100, 1)
+        # arr = arr[:, np.newaxis] # .shape: (12100, 1)
+        arr = arr[np.newaxis,:] # .shape: (1, 12100) 
         did_pad_1D_array = True # indicate that we modified the 1D array
         if debug_print:
-            print(f'\t new dim: {arr.ndim}.')
+            print(f'\t new dim: {arr.ndim}, np.shape(arr): {np.shape(arr)}.')
         assert arr.ndim == 2
     mask = np.isnan(arr)
+    if debug_print:
+        print(f'\t np.shape(mask): {np.shape(mask)}.')
+
     idx = np.where(~mask, np.arange(mask.shape[1]), 0) # chooses values from the ascending value range `np.arange(mask.shape[1])` when arr is *not* np.nan, and zeros when it is nan (idx.shape: 1D: (12100,), 2D: )
     np.maximum.accumulate(idx, axis=1, out=idx)
     out = arr[np.arange(idx.shape[0])[:,None], idx]
     # output should be the same shape as the input
+    if debug_print:
+        print(f'\t pre-squeezed output shape: {out.shape}.')
+
     if did_pad_1D_array:
         out = np.squeeze(out)
         if debug_print:

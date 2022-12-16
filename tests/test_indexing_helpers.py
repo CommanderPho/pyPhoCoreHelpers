@@ -244,8 +244,8 @@ class TestIndexingMethods(unittest.TestCase):
         """
         
         # np_ffill, np_ffill_1D, np_bfill_1D
-        
-        out = np_ffill_1D(arr)
+        print(f'test_np_ffills(): arr: {arr}\n\tarr.shape: {arr.shape}, arr.ndim: {arr.ndim}')
+        out = np_ffill_1D(arr, debug_print=True)
         print(f'np_ffill_1D: {out}')
         are_close = np.allclose(out,  np.array([[5., 5., 5., 7., 2.], [3., 3., 1., 8., 8.], [4., 9., 6., 6., 6.]]), equal_nan=True)
         print(f'\t are_close: {are_close}')
@@ -253,7 +253,6 @@ class TestIndexingMethods(unittest.TestCase):
     #     self.assertSequenceEqual(out.tolist(), np.array([[5., 5., 5., 7., 2.],
     #    [3., 3., 1., 8., 8.],
     #    [4., 9., 6., 6., 6.]]).tolist()) # assertSequenceEqual doesn't work!!
-        
         
         # out2 = np_ffill(arr, axis=1)
         # print(f'np_ffill axis=0: {out2}')
@@ -269,6 +268,7 @@ class TestIndexingMethods(unittest.TestCase):
     def test_np_ffills_1D(self):
         arr = np.array([5, np.nan, np.nan, 7, 2, 3, np.nan, 1, 8, np.nan, np.nan])
         arr = np.squeeze(arr) # make sure it's 1D
+        print(f'test_np_ffills_1D(): arr: {arr}\n\tarr.shape: {arr.shape}, arr.ndim: {arr.ndim}')
         """ 
         
         
@@ -285,12 +285,12 @@ class TestIndexingMethods(unittest.TestCase):
         """
         
         # np_ffill, np_ffill_1D, np_bfill_1D
-        
-        out = np_ffill_1D(arr)
+        out = np_ffill_1D(arr, debug_print=True)
         print(f'test_np_ffills_1D: {out}')
         are_close = np.allclose(out,  np.array([5., 5., 5., 7., 2., 3., 3., 1., 8., 8., 8.]), equal_nan=True)
         print(f'\t are_close: {are_close}')
         self.assertTrue(are_close)
+
 
 if __name__ == '__main__':
     unittest.main()

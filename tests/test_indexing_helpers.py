@@ -247,9 +247,12 @@ class TestIndexingMethods(unittest.TestCase):
         
         out = np_ffill_1D(arr)
         print(f'np_ffill_1D: {out}')
-        self.assertSequenceEqual(out.tolist(), np.array([[5., 5., 5., 7., 2.],
-       [3., 3., 1., 8., 8.],
-       [4., 9., 6., 6., 6.]]).tolist())
+        are_close = np.allclose(out,  np.array([[5., 5., 5., 7., 2.], [3., 3., 1., 8., 8.], [4., 9., 6., 6., 6.]]), equal_nan=True)
+        print(f'\t are_close: {are_close}')
+        self.assertTrue(are_close)
+    #     self.assertSequenceEqual(out.tolist(), np.array([[5., 5., 5., 7., 2.],
+    #    [3., 3., 1., 8., 8.],
+    #    [4., 9., 6., 6., 6.]]).tolist()) # assertSequenceEqual doesn't work!!
         
         
         # out2 = np_ffill(arr, axis=1)
@@ -258,9 +261,10 @@ class TestIndexingMethods(unittest.TestCase):
     
         out2 = np_bfill_1D(arr)
         print(f'np_bfill_1D: {out2}')
-        self.assertSequenceEqual(out2.tolist(), np.array([[ 5.,  7.,  7.,  7.,  2.],
-       [ 3.,  1.,  1.,  8., np.nan],
-       [ 4.,  9.,  6., np.nan, np.nan]]).tolist())
+        are_close2 = np.allclose(out2,  np.array([[ 5.,  7.,  7.,  7.,  2.], [ 3.,  1.,  1.,  8., np.nan], [ 4.,  9.,  6., np.nan, np.nan]]), equal_nan=True)
+        print(f'\t are_close2: {are_close2}')
+        self.assertTrue(are_close2)
+        # self.assertSequenceEqual(out2.tolist(), np.array([[ 5.,  7.,  7.,  7.,  2.], [ 3.,  1.,  1.,  8., np.nan], [ 4.,  9.,  6., np.nan, np.nan]]).tolist()) # assertSequenceEqual doesn't work!!
 
 if __name__ == '__main__':
     unittest.main()

@@ -266,6 +266,32 @@ class TestIndexingMethods(unittest.TestCase):
         self.assertTrue(are_close2)
         # self.assertSequenceEqual(out2.tolist(), np.array([[ 5.,  7.,  7.,  7.,  2.], [ 3.,  1.,  1.,  8., np.nan], [ 4.,  9.,  6., np.nan, np.nan]]).tolist()) # assertSequenceEqual doesn't work!!
 
+    def test_np_ffills_1D(self):
+        arr = np.array([5, np.nan, np.nan, 7, 2, 3, np.nan, 1, 8, np.nan, np.nan])
+        arr = np.squeeze(arr) # make sure it's 1D
+        """ 
+        
+        
+        np.array([[5., 5., 5., 7., 2.],
+       [3., 3., 1., 8., 8.],
+       [4., 9., 6., 6., 6.]])
+       
+        
+        np.array([[ 5.,  7.,  7.,  7.,  2.],
+       [ 3.,  1.,  1.,  8., np.nan],
+       [ 4.,  9.,  6., np.nan, np.nan]])
+       
+       
+        """
+        
+        # np_ffill, np_ffill_1D, np_bfill_1D
+        
+        out = np_ffill_1D(arr)
+        print(f'test_np_ffills_1D: {out}')
+        are_close = np.allclose(out,  np.array([5., 5., 5., 7., 2., 3., 3., 1., 8., 8., 8.]), equal_nan=True)
+        print(f'\t are_close: {are_close}')
+        self.assertTrue(are_close)
+
 if __name__ == '__main__':
     unittest.main()
     

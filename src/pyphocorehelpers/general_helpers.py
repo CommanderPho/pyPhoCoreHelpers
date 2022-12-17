@@ -357,7 +357,7 @@ class CodeConversion(object):
 
         if copy_to_clipboard:
             df = pd.DataFrame([code_str])
-            df.to_clipboard(index=False,header=False)
+            df.to_clipboard(index=False, header=False, sep=',')
             print(f'Copied "{code_str}" to clipboard!')
 
         return code_str

@@ -771,7 +771,13 @@ def build_spanning_grid_matrix(x_values, y_values, debug_print=False):
         
         For example, used to build a grid of position points from xbins and ybins.
     Usage:
-        all_positions_matrix, flat_all_positions_matrix, original_data_shape = build_all_positions_matrix(active_one_step_decoder.xbin_centers, active_one_step_decoder.ybin_centers)
+        from pyphocorehelpers.indexing_helpers import build_spanning_grid_matrix
+        all_positions_matrix, flat_all_positions_matrix, original_data_shape = build_spanning_grid_matrix(active_one_step_decoder.xbin_centers, active_one_step_decoder.ybin_centers)
+        
+    Outputs:
+        all_positions_matrix: a 3D matrix # .shape # (num_cols, num_rows, 2)
+        flat_all_positions_matrix: a list of 2-tuples of length num_rows * num_cols
+        original_data_shape: a tuple containing the shape of the original data (num_cols, num_rows)
     """
     num_rows = len(y_values)
     num_cols = len(x_values)

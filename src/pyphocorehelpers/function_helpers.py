@@ -5,7 +5,7 @@ from itertools import accumulate
 from functools import wraps # This convenience func preserves name and docstring
 from typing import List, Callable # for function composition
 
-from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters
+from pyphocorehelpers.print_helpers import CapturedException
 
 """ 
 TODO: add a version of compose_functions that's capable of reporting progress of executing the composed functions, and perhaps that is capable of timing them. 
@@ -30,26 +30,6 @@ def compose_functions(*args, progress_logger=None, error_logger=None):
             result = f(result)
         return result
     return _
-
-
-
-
-class CapturedException(DynamicParameters):
-    """ An exception and its related info/context during the process of executing composed functions with error handling."""
-    
-    def __repr__(self):
-        # Don't print out captured_result_state (as it's huge and clogs the console)
-        return f'!! {self.exc} ::::: {self.exc_info}'
-        # return super().__repr__()
-
-    
-    def __init__(self, exc, exc_info, captured_result_state):
-        super(CapturedException, self).__init__(exc=exc, exc_info=exc_info, captured_result_state=captured_result_state)
-        # self.exc = exc
-        # self.exc_info = exc_info
-        # self.captured_result_state = captured_result_state
-
-    
 
 def compose_functions_with_error_handling(*args, progress_logger=None, error_logger=None):
     """ Composes n functions passed as input arguments into a single lambda function efficienctly.
@@ -92,13 +72,6 @@ def compose_functions_with_error_handling(*args, progress_logger=None, error_log
             #     pass
         return result, accumulated_errors # new function returns both the result and the accumulated errors
     return _
-
-
-
-
-# Peak Finding:
-# https://plotly.com/python/peak-finding/
-
 
 
 

@@ -22,6 +22,9 @@ import logging
 # Required for proper print_object_memory_usage
 import objsize # python -m pip install objsize==0.6.1
 
+from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters # for CapturedException
+
+
 class SimplePrintable:
     """Adds the default print method for classes that displays the class name and its dictionary.
     
@@ -905,6 +908,27 @@ def document_active_variables(params, include_explicit_values=False, enable_prin
     return output_entries
     
     
+
+# ==================================================================================================================== #
+# Exceptions and Error Handling                                                                                        #
+# ==================================================================================================================== #
+
+class CapturedException(DynamicParameters):
+    """ An exception and its related info/context during the process of executing composed functions with error handling."""
+    
+    def __repr__(self):
+        # Don't print out captured_result_state (as it's huge and clogs the console)
+        return f'!! {self.exc} ::::: {self.exc_info}'
+        # return super().__repr__()
+
+    
+    def __init__(self, exc, exc_info, captured_result_state):
+        super(CapturedException, self).__init__(exc=exc, exc_info=exc_info, captured_result_state=captured_result_state)
+        # self.exc = exc
+        # self.exc_info = exc_info
+        # self.captured_result_state = captured_result_state
+
+
     
 # ==================================================================================================================== #
 # LOGGING                                                                                                              #

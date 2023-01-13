@@ -550,6 +550,71 @@ def dbg_dump(*args, dumpopt_stream=sys.stderr, dumpopt_forcename=True, dumpopt_p
 # Category: Structural Overview/Outline:                                                                               #
 # ==================================================================================================================== #
 
+from pyphocorehelpers.DataStructure.enum_helpers import ExtendedEnum
+
+class TypePrintMode(ExtendedEnum):
+    """Describes the type of file progress actions that can be performed to get the right verbage.
+    Used by `print_file_progress_message(...)`
+    """
+    FULL_TYPE_STRING = "FullTypeString" # the complete output of calling type(obj) on the object. -- e.g. "<class 'pandas.core.frame.DataFrame'>"
+    FULL_TYPE_FQDN = "FQDN" # the fully qualified path to the type. -- e.g. "pandas.core.frame.DataFrame"
+    TYPE_NAME_ONLY = "NameOnly" # just the type name itself. -- e.g. "DataFrame"
+
+    def convert(self, curr_str:str, new_type) -> str:
+        """ Converts from a more complete TypePrintMode down to a less complete one 
+
+        Testing:
+            TypePrintMode.FULL_TYPE_STRING.convert("<class 'pandas.core.frame.DataFrame'>", new_type=TypePrintMode.FULL_TYPE_FQDN) == 'pandas.core.frame.DataFrame'
+            TypePrintMode.FULL_TYPE_STRING.convert("<class 'pandas.core.frame.DataFrame'>", new_type=TypePrintMode.FULL_TYPE_STRING) == "<class 'pandas.core.frame.DataFrame'>" # unaltered
+            TypePrintMode.FULL_TYPE_STRING.convert("<class 'pandas.core.frame.DataFrame'>", new_type=TypePrintMode.TYPE_NAME_ONLY) == 'DataFrame'
+
+        """
+        _action_dict = {TypePrintMode.FULL_TYPE_STRING:{TypePrintMode.FULL_TYPE_FQDN:TypePrintMode._convert_FULL_TYPE_STR_to_FQDN, TypePrintMode.TYPE_NAME_ONLY:(lambda x: TypePrintMode._convert_FQDN_to_NAME_ONLY(TypePrintMode._convert_FULL_TYPE_STR_to_FQDN(x)))},
+                        TypePrintMode.FULL_TYPE_FQDN:{TypePrintMode.TYPE_NAME_ONLY:TypePrintMode._convert_FQDN_to_NAME_ONLY}
+                        }
+        _curr_conversion_dict = _action_dict.get(self, {}) # if not found for this type, return empty dict
+        _conversion_fcn = _curr_conversion_dict.get(new_type, (lambda x: x)) # if not found for this type, return current string
+        return _conversion_fcn(curr_str) # call the conversion function on the curr_str
+
+
+    # Private Conversion Functions _______________________________________________________________________________________ #
+    @classmethod
+    def _convert_FULL_TYPE_STR_to_FQDN(cls, curr_str: str) -> str:
+        """ Extracts the class string out of the string returned by type(an_obj) 
+        a_type_str: a string returned by type(an_obj) in the form of ["<class 'tuple'>", "<class 'int'>", "<class 'float'>", "<class 'numpy.ndarray'>", "<class 'pandas.core.series.Series'>", "<class 'pandas.core.frame.DataFrame'>", "<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>", "<class 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters'>"]
+        return: str
+        
+        Example:
+            test_input_class_strings = ["<class 'tuple'>", "<class 'int'>", "<class 'float'>", "<class 'numpy.ndarray'>", "<class 'pandas.core.series.Series'>", "<class 'pandas.core.frame.DataFrame'>", "<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>", "<class 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters'>"]
+            m = [strip_type_str_to_classname(a_test_str) for a_test_str in test_input_class_strings]
+            print(m)
+            
+            >> ['tuple', 'int', 'float', 'numpy.ndarray', 'pandas.core.series.Series', 'pandas.core.frame.DataFrame', 'pyphocorehelpers.indexing_helpers.BinningInfo', 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters']
+
+        TESTING: TODO:
+            test_input_class_strings = ["<class 'tuple'>", "<class 'int'>", "<class 'float'>", "<class 'numpy.ndarray'>", "<class 'pandas.core.series.Series'>", "<class 'pandas.core.frame.DataFrame'>", "<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>", "<class 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters'>"]
+            desired_output_class_strings = ['tuple','int','float','numpy.ndarray', 'pandas.core.series.Series', 'pandas.core.frame.DataFrame', 'pyphocorehelpers.indexing_helpers.BinningInfo', 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters']
+            m = [strip_type_str_to_classname(a_test_str) for a_test_str in test_input_class_strings]
+            ## TODO: compare m element-wise to desired_output_class_strings
+
+        """
+        if isinstance(curr_str, type):
+            curr_str = str(curr_str) # convert to a string
+        return re.search(r"<class '([^']+)'>", curr_str).group(1)
+
+    @classmethod
+    def _convert_FQDN_to_NAME_ONLY(cls, curr_str: str) -> str:
+        """ returns only the last portion of the dotted name. e.g. 'pandas.core.frame.DataFrame' -> 'DataFrame'
+        TESTING: TODO:
+            TypePrintMode._convert_FQDN_to_NAME_ONLY('pandas.core.frame.DataFrame') == 'DataFrame'
+            TypePrintMode._convert_FQDN_to_NAME_ONLY('numpy.ndarray') == 'ndarray'
+            TypePrintMode._convert_FQDN_to_NAME_ONLY('float') == 'float'
+        """
+        return curr_str.rsplit('.', 1)[-1] # 
+
+
+
+
 def strip_type_str_to_classname(a_type_str):
     """ Extracts the class string out of the string returned by type(an_obj) 
     a_type_str: a string returned by type(an_obj) in the form of ["<class 'tuple'>", "<class 'int'>", "<class 'float'>", "<class 'numpy.ndarray'>", "<class 'pandas.core.series.Series'>", "<class 'pandas.core.frame.DataFrame'>", "<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>", "<class 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters'>"]
@@ -558,20 +623,13 @@ def strip_type_str_to_classname(a_type_str):
     Example:
         test_input_class_strings = ["<class 'tuple'>", "<class 'int'>", "<class 'float'>", "<class 'numpy.ndarray'>", "<class 'pandas.core.series.Series'>", "<class 'pandas.core.frame.DataFrame'>", "<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>", "<class 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters'>"]
         m = [strip_type_str_to_classname(a_test_str) for a_test_str in test_input_class_strings]
-        print(m)
-        
+        print(m)        
         >> ['tuple', 'int', 'float', 'numpy.ndarray', 'pandas.core.series.Series', 'pandas.core.frame.DataFrame', 'pyphocorehelpers.indexing_helpers.BinningInfo', 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters']
 
-    TESTING: TODO:
-    test_input_class_strings = ["<class 'tuple'>", "<class 'int'>", "<class 'float'>", "<class 'numpy.ndarray'>", "<class 'pandas.core.series.Series'>", "<class 'pandas.core.frame.DataFrame'>", "<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>", "<class 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters'>"]
-    desired_output_class_strings = ['tuple','int','float','numpy.ndarray', 'pandas.core.series.Series', 'pandas.core.frame.DataFrame', 'pyphocorehelpers.indexing_helpers.BinningInfo', 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters']
-    m = [strip_type_str_to_classname(a_test_str) for a_test_str in test_input_class_strings]
-    ## TODO: compare m element-wise to desired_output_class_strings
-
     """
-    if isinstance(a_type_str, type):
-        a_type_str = str(a_type_str) # convert to a string
-    return re.search(r"<class '([^']+)'>", a_type_str).group(1)
+    return TypePrintMode._convert_FULL_TYPE_STR_to_FQDN(a_type_str)
+
+
 
 def safe_get_variable_shape(a_value):
     """ generally and safely tries several methods of determining a_value's shape 

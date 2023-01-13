@@ -674,6 +674,12 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         curr_key (_type_): _description_
         curr_value (_type_): _description_
         depth (int, optional): _description_. Defaults to 0.
+        custom_item_formater (((depth_string, curr_key, type_string, type_name) -> str), optional): e.g. , custom_item_formatter=(lambda depth_string, curr_key, type_string, type_name: f"{depth_string}- {curr_key}: {type_name}")
+
+            custom_item_formater Examples:
+                from pyphocorehelpers.print_helpers import TypePrintMode
+                print_keys_if_possible('computation_config', curr_active_pipeline.computation_results['maze1'].computation_config, custom_item_formatter=(lambda depth_string, curr_key, type_string, type_name: f"{depth_string}- {curr_key}: <{TypePrintMode.FULL_TYPE_STRING.convert(type_string, new_type=TypePrintMode.TYPE_NAME_ONLY)}>"))
+
 
     Returns:
         None
@@ -771,7 +777,7 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
             def _format_curr_value(depth_string, curr_key, type_string, type_name):
                 return f"{depth_string}- {curr_key}: {type_name}"
             custom_item_formatter = _format_curr_value
-
+        # e.g. lambda depth_string, curr_key, type_string, type_name: f"{depth_string}- {curr_key}: {type_name}"
         
         if isinstance(curr_value, tuple(_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES)) or (curr_value_type_string in _GLOBAL_DO_NOT_EXPAND_CLASSNAMES) or (curr_value_type_string in (additional_excluded_item_classes or [])):
             # DataFrame has .items() property, but we don't want it

@@ -94,7 +94,170 @@ class WrappingMessagePrinter(object):
             if enable_print:
                 print(f'{begin_string}...', end=begin_line_ending)
             
+# ==================================================================================================================== #
+# Category: Colored (ANSI-Formatted) Outputs:                                                                          #
+# ==================================================================================================================== #
+class ANSI_COLOR_STRINGS:
+    """ Hardcoded ANSI-color strings. Can be used in print(...) like: `print(f"{bcolors.WARNING}Warning: No active frommets remain. Continue?{bcolors.ENDC}")` """
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+    MAGENTA = '\033[35m'
+    CYAN = '\033[36m'
+    LIGHTRED = '\033[91m'
+    LIGHTGREEN = '\033[92m'
+    LIGHTYELLOW = '\033[93m'
+    LIGHTBLUE = '\033[94m'
+    LIGHTMAGENTA = '\033[95m'
+    LIGHTCYAN = '\033[96m'
+
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+class ANSI_Coloring(object):
+    """docstring for ANSI_Coloring."""
+    def __init__(self, arg):
+        super(ANSI_Coloring, self).__init__()
+
+    @classmethod
+    def ansi_highlight_only_suffix(cls, type_string, suffix_color=ANSI_COLOR_STRINGS.BOLD):
+        """ From a FQDN-style type_string like 'pyphoplacecellanalysis.General.Model.ComputationResults.ComputationResult' generates a ansi-formatted string with the last suffix (the type name) colored. 
+        Usage:
+            type_string = 'pyphoplacecellanalysis.General.Model.ComputationResults.ComputationResult'
+            ansi_highlighted_type_string = ansi_highlight_only_suffix(type_string)
+            print(ansi_highlighted_type_string)
+            >>> 'pyphoplacecellanalysis.General.Model.\x1b[93mComputationResult\x1b[0m'
+        """
+        return '.'.join(type_string.split('.')[:-2] + [(suffix_color + type_string.split('.')[-1] + ANSI_COLOR_STRINGS.ENDC)])
+
+
+import io # used by DocumentationFilePrinter to capture stdout to a string buffer
+from datetime import datetime # used by DocumentationFilePrinter to add the current date to the documentation header
+from contextlib import redirect_stdout # used by DocumentationFilePrinter to capture print output
+from ansi2html import Ansi2HTMLConverter # used by DocumentationFilePrinter to build html document from ansi-color coded version
+from pathlib import Path
+
+class DocumentationFilePrinter(object):
+    """ Used to print and save readable data-structure documentation (in both plain and rich text) by wrapping `print_keys_if_possible(...)
+    
+        Usage:
+            from pyphocorehelpers.print_helpers import DocumentationFilePrinter
+            doc_printer = DocumentationFilePrinter(doc_output_parent_folder=Path('C:/Users/pho/repos/PhoPy3DPositionAnalysis2021/EXTERNAL/DEVELOPER_NOTES/DataStructureDocumentation'), doc_name='ComputationResult')
+            doc_printer.save_documentation('ComputationResult', curr_active_pipeline.computation_results['maze1'], non_expanded_item_keys=['_reverse_cellID_index_map'])
+
+    """
+    def __init__(self, doc_output_parent_folder='C:/Users/pho/repos/PhoPy3DPositionAnalysis2021/EXTERNAL/DEVELOPER_NOTES/DataStructureDocumentation', doc_name='ComputationResult', custom_plain_text_formatter=None, custom_rich_text_formatter=None, enable_print:bool=True):
+        if not isinstance(doc_output_parent_folder, Path):
+            doc_output_parent_folder = Path(doc_output_parent_folder)
+        self.doc_output_parent_folder = doc_output_parent_folder
+        self.doc_name = doc_name
+        self.output_md_file = self.doc_output_parent_folder.joinpath(self.doc_name).with_suffix('.md')
+        self.output_temp_ansi_file = self.doc_output_parent_folder.joinpath(self.doc_name).with_suffix('.ansi')
+        self.output_html_file = self.doc_output_parent_folder.joinpath(self.doc_name).with_suffix('.html')
+        
+        self.md_string = ''
+        self.ansi_string = ''
+        self.html_string = ''
+        
+        self.enable_print = enable_print
+        
+        if custom_plain_text_formatter is None:
+            self._custom_plain_text_formatter = DocumentationFilePrinter._default_plain_text_formatter
+        if custom_rich_text_formatter is None:
+            self._custom_rich_text_formatter = DocumentationFilePrinter._default_rich_text_formatter
+
+        self.doc_header_string = f"{self.doc_name} - printed by print_keys_if_possible on {datetime.today().strftime('%Y-%m-%d')}\n===================================================================================================\n\n"
+        self.doc_rich_header_string = f"{ANSI_COLOR_STRINGS.BOLD}{ANSI_COLOR_STRINGS.LIGHTRED}{self.doc_name}{ANSI_COLOR_STRINGS.ENDC} - printed by DocumentationFilePrinter on {datetime.today().strftime('%Y-%m-%d')}\n==================================================================================================="
+
+        # ansi-to-html conversion
+        # self._asci_to_html_converter = Ansi2HTMLConverter(title=f'DOCS<{self.doc_name}>', dark_bg=True, linkify=True)
+
+        custom_css_content_dict = {'font-family':'"Lucida Console", "Courier New", monospace', 'font-size':'8px'} # 'font-family: "Lucida Console", "Courier New", monospace; font-size: 12px;'
+        self._asci_to_html_converter = Ansi2HTMLConverter(title=f'DOCS<{self.doc_name}>', dark_bg=False, linkify=True, custom_bg='#FFFFFF', custom_fg='#FF0000', custom_content_css_dict=custom_css_content_dict)
+           
+    def save_documentation(self, *args, skip_save_to_file=False, skip_print=False, custom_plain_text_formatter=None, custom_rich_text_formatter=None, **kwargs):
+        """
+            skip_print: if False, relies on self.enable_print's value to determine whether the output will be printed when this function is called
             
+            Internally calls:
+                print_keys_if_possible(*args, custom_rich_text_formatter=None, **kwargs) with custom_item_formatter= both plain and rich text formatters to print documentation
+                saves to files unless skip_save_to_file=True
+                
+            Usage:
+                doc_printer = DocumentationFilePrinter(doc_output_parent_folder=Path('C:/Users/pho/repos/PhoPy3DPositionAnalysis2021/EXTERNAL/DEVELOPER_NOTES/DataStructureDocumentation'), doc_name='ComputationResult')
+                doc_printer.save_documentation('ComputationResult', curr_active_pipeline.computation_results['maze1'], non_expanded_item_keys=['_reverse_cellID_index_map'])
+
+                
+        """
+        ## Load both plaintext and rich-text output into dp.md_string, dp.ansi_string, and dp.html_string:
+        if 'custom_item_formatter' in kwargs:
+            print(f'WARNING: you must provide either `custom_plain_text_formatter` or `custom_rich_text_formatter` when calling save_documentation(...), but you passed `custom_item_formatter`')
+            raise NotImplementedError
+            
+        if custom_plain_text_formatter is None:
+            custom_plain_text_formatter = self._custom_plain_text_formatter
+        if custom_rich_text_formatter is None:
+            custom_rich_text_formatter = self._custom_rich_text_formatter
+            
+        
+        # Plaintext version:
+        with io.StringIO() as buf, redirect_stdout(buf):
+            print(self.doc_header_string)
+            print_keys_if_possible(*args, **kwargs, custom_item_formatter=custom_plain_text_formatter)
+            self.md_string = buf.getvalue()
+
+        # Rich (ANSI-colored) text version:
+        with io.StringIO() as buf, redirect_stdout(buf):
+            print(self.doc_rich_header_string)
+            print_keys_if_possible(*args, **kwargs, custom_item_formatter=custom_rich_text_formatter)
+            self.ansi_string = buf.getvalue()
+
+        # ansi_string to html:
+        self.html_string = self._asci_to_html_converter.convert(self.ansi_string)
+        
+        if not skip_save_to_file:
+            self.write_to_files()
+        
+        if (not skip_print) and self.enable_print:
+            print(self.ansi_string)
+        
+    def write_to_files(self):
+        ## Write variables out to files:
+
+        # Write plaintext version to file:
+        with open(self.output_md_file, 'w') as f:
+            f.write(self.md_string)
+        
+        # Write html version to file:
+        with open(self.output_html_file, 'w') as f_html:
+            f_html.write(self.html_string)
+
+        print(f"wrote to '{str(self.output_md_file)}' & '{str(self.output_html_file)}'.")
+
+    # private methods ____________________________________________________________________________________________________ #
+    @classmethod
+    def _default_plain_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+        return f"{depth_string}- {curr_key}: {type_name}{' (children omitted)' if is_omitted_from_expansion else ''}"
+    @classmethod
+    def _default_rich_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+        """ formats using ANSI_Coloring for rich colored output """
+        # return f"{depth_string}- {bcolors.OKBLUE}{curr_key}{bcolors.ENDC}: {bcolors.OKGREEN}{type_name}{bcolors.ENDC}{(bcolors.WARNING + ' (children omitted)' + bcolors.ENDC) if is_omitted_from_expansion else ''}"
+        # variable_type_color = ANSI_COLOR_STRINGS.OKGREEN
+        variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA
+
+        return f"{depth_string}- {ANSI_COLOR_STRINGS.OKBLUE}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC) if is_omitted_from_expansion else ''}"
+
+
 # ==================================================================================================================== #
 # Category: Formatting Seconds as Human Readable:                                                                      #
 # ==================================================================================================================== #
@@ -270,8 +433,6 @@ def print_filesystem_file_size(file_path, enable_print=True):
         file_size_string_MB = f'{size_MB} MB'
         print(f'filesize of {str(file_path)}: {file_size_string_MB}')
     return size_MB
-
-
 
 
 # ==================================================================================================================== #
@@ -560,6 +721,7 @@ class TypePrintMode(ExtendedEnum):
     FULL_TYPE_FQDN = "FQDN" # the fully qualified path to the type. -- e.g. "pandas.core.frame.DataFrame"
     TYPE_NAME_ONLY = "NameOnly" # just the type name itself. -- e.g. "DataFrame"
 
+    # Public methods _____________________________________________________________________________________________________ #
     def convert(self, curr_str:str, new_type) -> str:
         """ Converts from a more complete TypePrintMode down to a less complete one 
 
@@ -575,7 +737,6 @@ class TypePrintMode(ExtendedEnum):
         _curr_conversion_dict = _action_dict.get(self, {}) # if not found for this type, return empty dict
         _conversion_fcn = _curr_conversion_dict.get(new_type, (lambda x: x)) # if not found for this type, return current string
         return _conversion_fcn(curr_str) # call the conversion function on the curr_str
-
 
     # Private Conversion Functions _______________________________________________________________________________________ #
     @classmethod
@@ -683,12 +844,12 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         depth (int, optional): _description_. Defaults to 0.
         additional_excluded_item_classes (list, optional): A list of class types to exclude
         non_expanded_item_keys (list, optional): a list of keys which will not be expanded, no matter their type, only themselves printed.
-        custom_item_formater (((depth_string, curr_key, type_string, type_name) -> str), optional): e.g. , custom_item_formatter=(lambda depth_string, curr_key, type_string, type_name: f"{depth_string}- {curr_key}: {type_name}")
+        custom_item_formater (((depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False) -> str), optional): e.g. , custom_item_formatter=(lambda depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False: f"{depth_string}- {curr_key}: {type_name}")
 
             custom_item_formater Examples:
                 from pyphocorehelpers.print_helpers import TypePrintMode
-                print_keys_if_possible('computation_config', curr_active_pipeline.computation_results['maze1'].computation_config, custom_item_formatter=(lambda depth_string, curr_key, type_string, type_name: f"{depth_string}- {curr_key}: <{TypePrintMode.FULL_TYPE_STRING.convert(type_string, new_type=TypePrintMode.TYPE_NAME_ONLY)}>"))
-
+                print_keys_if_possible('computation_config', curr_active_pipeline.computation_results['maze1'].computation_config, custom_item_formatter=(lambda depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False: f"{depth_string}- {curr_key}: <{TypePrintMode.FULL_TYPE_STRING.convert(type_string, new_type=TypePrintMode.TYPE_NAME_ONLY)}>{' (children omitted)' if is_omitted_from_expansion else ''}))
+                ! See DocumentationFilePrinter._plain_text_format_curr_value and DocumentationFilePrinter._rich_text_format_curr_value for further examples 
 
     Returns:
         None
@@ -786,13 +947,8 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
 
         if custom_item_formatter is None:
             # Define default print format function if no custom one is provided:
-            def _format_curr_value(depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
-                _out_string = f"{depth_string}- {curr_key}: {type_name}"
-                if is_omitted_from_expansion:
-                    _out_string = f'{_out_string} (children omitted)'
-                return _out_string
-
-            custom_item_formatter = _format_curr_value
+            # see DocumentationFilePrinter._plain_text_format_curr_value and DocumentationFilePrinter._rich_text_format_curr_value for examples
+            custom_item_formatter = DocumentationFilePrinter._default_plain_text_formatter
         # e.g. lambda depth_string, curr_key, type_string, type_name, is_omitted_from_expansion: f"{depth_string}- {curr_key}: {type_name}"
 
         if isinstance(curr_value, tuple(_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES)) or (curr_value_type_string in _GLOBAL_DO_NOT_EXPAND_CLASSNAMES) or (curr_value_type_string in (additional_excluded_item_classes or [])) or (is_non_expanded_item):

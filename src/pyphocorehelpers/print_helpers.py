@@ -640,11 +640,18 @@ def safe_get_variable_shape(a_value):
 
     
     """
-    value_shape = np.shape(a_value)
+    try:
+        value_shape = np.shape(a_value)
+    except ValueError:
+        # 'ipdb>  np.array(a_value) >>> *** ValueError: could not broadcast input array from shape (2,12) into shape (2,)' occurs when a_value is a list of differently shaped np.arrays
+        value_shape = () # set value_shape to () to continue trying other size tests
+    except Exception as e:
+        raise e
+    
     if value_shape != ():
         # np.shape(...) worked
         return value_shape
-    else:        
+    else:
         # empty shape:
         if hasattr(a_value, 'shape'):
             ## get the shape property
@@ -667,13 +674,15 @@ def safe_get_variable_shape(a_value):
 _GLOBAL_DO_NOT_EXPAND_CLASS_TYPES = [pd.DataFrame, pd.TimedeltaIndex, TimedeltaIndexResampler]
 _GLOBAL_DO_NOT_EXPAND_CLASSNAMES = ["<class 'pyvista.core.pointset.StructuredGrid'>", "<class 'pyvista.core.pointset.UnstructuredGrid'>", "<class 'pandas.core.series.Series'>"]
 _GLOBAL_MAX_DEPTH = 20
-def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_curr_item_print=False, additional_excluded_item_classes=None, custom_item_formatter=None):
+def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_curr_item_print=False, additional_excluded_item_classes=None, non_expanded_item_keys=None, custom_item_formatter=None):
     """Prints the keys of an object if possible, in a recurrsive manner.
 
     Args:
-        curr_key (_type_): _description_
-        curr_value (_type_): _description_
+        curr_key (str): the current key
+        curr_value (_type_): the current value
         depth (int, optional): _description_. Defaults to 0.
+        additional_excluded_item_classes (list, optional): A list of class types to exclude
+        non_expanded_item_keys (list, optional): a list of keys which will not be expanded, no matter their type, only themselves printed.
         custom_item_formater (((depth_string, curr_key, type_string, type_name) -> str), optional): e.g. , custom_item_formatter=(lambda depth_string, curr_key, type_string, type_name: f"{depth_string}- {curr_key}: {type_name}")
 
             custom_item_formater Examples:
@@ -773,17 +782,23 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         curr_value_type_string = str(curr_value_type) # string like "<class 'numpy.ndarray'>"
         curr_value_type_name = strip_type_str_to_classname(curr_value_type_string) # string like "numpy.ndarray"
         
+        is_non_expanded_item = curr_key in (non_expanded_item_keys or [])
+
         if custom_item_formatter is None:
-            def _format_curr_value(depth_string, curr_key, type_string, type_name):
-                return f"{depth_string}- {curr_key}: {type_name}"
+            # Define default print format function if no custom one is provided:
+            def _format_curr_value(depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+                _out_string = f"{depth_string}- {curr_key}: {type_name}"
+                if is_omitted_from_expansion:
+                    _out_string = f'{_out_string} (children omitted)'
+                return _out_string
+
             custom_item_formatter = _format_curr_value
-        # e.g. lambda depth_string, curr_key, type_string, type_name: f"{depth_string}- {curr_key}: {type_name}"
-        
-        if isinstance(curr_value, tuple(_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES)) or (curr_value_type_string in _GLOBAL_DO_NOT_EXPAND_CLASSNAMES) or (curr_value_type_string in (additional_excluded_item_classes or [])):
-            # DataFrame has .items() property, but we don't want it
-            # print(f'RAISE: found item of type: {str(curr_value_type)}! omit_curr_item_print: {omit_curr_item_print} - {curr_key}: {curr_value_type}')
+        # e.g. lambda depth_string, curr_key, type_string, type_name, is_omitted_from_expansion: f"{depth_string}- {curr_key}: {type_name}"
+
+        if isinstance(curr_value, tuple(_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES)) or (curr_value_type_string in _GLOBAL_DO_NOT_EXPAND_CLASSNAMES) or (curr_value_type_string in (additional_excluded_item_classes or [])) or (is_non_expanded_item):
+            # Non-expanded items (won't recurrsively call `print_keys_if_possible` but will print unless omit_curr_item_print is True:
             if not omit_curr_item_print:
-                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name)
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=True)
                 if hasattr(curr_value, 'shape'):
                     # curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, suffix=f" - {curr_value.shape}")
                     print(f"{curr_item_str} - {curr_value.shape}")
@@ -792,25 +807,27 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         elif isinstance(curr_value, (np.ndarray, list, tuple)): 
             # Objects that are considered list-like are for example Python lists, tuples, sets, NumPy arrays, and Pandas Series.
             if not omit_curr_item_print:
-                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name)
-                print(f"{curr_item_str} - {np.shape(curr_value)}")
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
+                print(f"{curr_item_str} - {safe_get_variable_shape(curr_value)}")
         else:
+            # Print the current item first:
             # See if the curr_value has .items() or not.
             if not omit_curr_item_print:
-                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name)
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
                 print(curr_item_str)
                 
+            # Then recurrsively try to expand the item if possible:
             try:
                 for (curr_child_key, curr_child_value) in curr_value.items():
                     # print children keys
-                    print_keys_if_possible(curr_child_key, curr_child_value, max_depth=max_depth, depth=(depth+1), omit_curr_item_print=False, additional_excluded_item_classes=additional_excluded_item_classes, custom_item_formatter=custom_item_formatter)
+                    print_keys_if_possible(curr_child_key, curr_child_value, max_depth=max_depth, depth=(depth+1), omit_curr_item_print=False, additional_excluded_item_classes=additional_excluded_item_classes, non_expanded_item_keys=non_expanded_item_keys, custom_item_formatter=custom_item_formatter)
             except AttributeError as e:
                 # AttributeError: 'PfND' object has no attribute 'items'
                 
                 # Try to get __dict__ from the item:
                 try:
                     curr_value_dict_rep = vars(curr_value) # gets the .__dict__ property if curr_value has one, otherwise throws a TypeError
-                    print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, max_depth=max_depth, depth=depth, omit_curr_item_print=True, additional_excluded_item_classes=additional_excluded_item_classes, custom_item_formatter=custom_item_formatter) # do not increase depth in this regard so it prints at the same level. Also tell it not to print again.
+                    print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, max_depth=max_depth, depth=depth, omit_curr_item_print=True, additional_excluded_item_classes=additional_excluded_item_classes, non_expanded_item_keys=non_expanded_item_keys, custom_item_formatter=custom_item_formatter) # do not increase depth in this regard so it prints at the same level. Also tell it not to print again.
                     
                 except TypeError:
                     # print(f"{depth_string}- {curr_value_type}")

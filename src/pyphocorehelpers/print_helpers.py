@@ -146,6 +146,7 @@ from datetime import datetime # used by DocumentationFilePrinter to add the curr
 from contextlib import redirect_stdout # used by DocumentationFilePrinter to capture print output
 from ansi2html import Ansi2HTMLConverter # used by DocumentationFilePrinter to build html document from ansi-color coded version
 from pathlib import Path
+from pyphocorehelpers.Filesystem.open_in_system_file_manager import reveal_in_system_file_manager # used by DocumentationFilePrinter to showing the output files
 
 class DocumentationFilePrinter(object):
     """ Used to print and save readable data-structure documentation (in both plain and rich text) by wrapping `print_keys_if_possible(...)
@@ -179,12 +180,15 @@ class DocumentationFilePrinter(object):
         self.doc_header_string = f"{self.doc_name} - printed by print_keys_if_possible on {datetime.today().strftime('%Y-%m-%d')}\n===================================================================================================\n\n"
         self.doc_rich_header_string = f"{ANSI_COLOR_STRINGS.BOLD}{ANSI_COLOR_STRINGS.LIGHTRED}{self.doc_name}{ANSI_COLOR_STRINGS.ENDC} - printed by DocumentationFilePrinter on {datetime.today().strftime('%Y-%m-%d')}\n==================================================================================================="
 
-        # ansi-to-html conversion
-        # self._asci_to_html_converter = Ansi2HTMLConverter(title=f'DOCS<{self.doc_name}>', dark_bg=True, linkify=True)
+        # ansi-to-html conversion:
+        custom_css_content_dict = {'font-family':'"Lucida Console", "Courier New", monospace', 'font-size':'11px'} # 'font-family: "Lucida Console", "Courier New", monospace; font-size: 12px;'
+        # self._asci_to_html_converter = Ansi2HTMLConverter(title=f'DOCS<{self.doc_name}>', dark_bg=False, custom_content_css_dict=custom_css_content_dict)
+        # self._asci_to_html_converter = Ansi2HTMLConverter(title=f'DOCS<{self.doc_name}>', dark_bg=False, linkify=True, custom_bg='#FFFFFF', custom_fg='#FF0000', custom_content_css_dict=custom_css_content_dict)
+        ## Light:
+        # self._asci_to_html_converter = Ansi2HTMLConverter(title=f'DOCS<{self.doc_name}>', dark_bg=False, linkify=True, custom_bg='#FFFFFF', custom_fg=None, custom_content_css_dict=custom_css_content_dict)
+        ## Dark (better for screen):
+        self._asci_to_html_converter = Ansi2HTMLConverter(title=f'DOCS<{self.doc_name}>', dark_bg=True, custom_content_css_dict=custom_css_content_dict)
 
-        custom_css_content_dict = {'font-family':'"Lucida Console", "Courier New", monospace', 'font-size':'8px'} # 'font-family: "Lucida Console", "Courier New", monospace; font-size: 12px;'
-        self._asci_to_html_converter = Ansi2HTMLConverter(title=f'DOCS<{self.doc_name}>', dark_bg=False, linkify=True, custom_bg='#FFFFFF', custom_fg='#FF0000', custom_content_css_dict=custom_css_content_dict)
-           
     def save_documentation(self, *args, skip_save_to_file=False, skip_print=False, custom_plain_text_formatter=None, custom_rich_text_formatter=None, **kwargs):
         """
             skip_print: if False, relies on self.enable_print's value to determine whether the output will be printed when this function is called
@@ -244,6 +248,11 @@ class DocumentationFilePrinter(object):
 
         print(f"wrote to '{str(self.output_md_file)}' & '{str(self.output_html_file)}'.")
 
+    def reveal_output_files_in_system_file_manager(self):
+        # reveal_in_system_file_manager(self.doc_output_parent_folder)
+        reveal_in_system_file_manager(self.output_html_file)
+
+
     # private methods ____________________________________________________________________________________________________ #
     @classmethod
     def _default_plain_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
@@ -252,10 +261,18 @@ class DocumentationFilePrinter(object):
     def _default_rich_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
         """ formats using ANSI_Coloring for rich colored output """
         # return f"{depth_string}- {bcolors.OKBLUE}{curr_key}{bcolors.ENDC}: {bcolors.OKGREEN}{type_name}{bcolors.ENDC}{(bcolors.WARNING + ' (children omitted)' + bcolors.ENDC) if is_omitted_from_expansion else ''}"
-        # variable_type_color = ANSI_COLOR_STRINGS.OKGREEN
-        variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA
+        key_color = ANSI_COLOR_STRINGS.OKBLUE
+        variable_type_color = ANSI_COLOR_STRINGS.LIGHTGREEN # looks better on screen
+        # variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA # converts to greyscale for printing better
+        return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC) if is_omitted_from_expansion else ''}"
 
-        return f"{depth_string}- {ANSI_COLOR_STRINGS.OKBLUE}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC) if is_omitted_from_expansion else ''}"
+    @classmethod
+    def _default_rich_text_greyscale_print_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+        """ formats using ANSI_Coloring for rich colored output """
+        # return f"{depth_string}- {bcolors.OKBLUE}{curr_key}{bcolors.ENDC}: {bcolors.OKGREEN}{type_name}{bcolors.ENDC}{(bcolors.WARNING + ' (children omitted)' + bcolors.ENDC) if is_omitted_from_expansion else ''}"
+        key_color = ANSI_COLOR_STRINGS.OKBLUE
+        variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA # converts to greyscale for printing better
+        return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}"
 
 
 # ==================================================================================================================== #

@@ -849,8 +849,8 @@ def safe_get_variable_shape(a_value):
     return value_shape
 
 
-_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES = [pd.DataFrame, pd.TimedeltaIndex, TimedeltaIndexResampler]
-_GLOBAL_DO_NOT_EXPAND_CLASSNAMES = ["<class 'pyvista.core.pointset.StructuredGrid'>", "<class 'pyvista.core.pointset.UnstructuredGrid'>", "<class 'pandas.core.series.Series'>"]
+_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES = [pd.DataFrame, pd.TimedeltaIndex, TimedeltaIndexResampler, logging.Logger, logging.Manager]
+_GLOBAL_DO_NOT_EXPAND_CLASSNAMES = ["<class 'pyvista.core.pointset.StructuredGrid'>", "<class 'pyvista.core.pointset.UnstructuredGrid'>", "<class 'pandas.core.series.Series'>", "<class 'logging.Logger'>", "<class 'pyphoplacecellanalysis.General.Pipeline.Stages.Display.Plot'>"]
 _GLOBAL_MAX_DEPTH = 20
 def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_curr_item_print=False, additional_excluded_item_classes=None, non_expanded_item_keys=None, custom_item_formatter=None):
     """Prints the keys of an object if possible, in a recurrsive manner.

@@ -1,3 +1,0 @@
-[submodule "src/pyphocorehelpers/extras/pickle_inspector"]
-	path = src/pyphocorehelpers/extras/pickle_inspector
-	url = https://github.com/CommanderPho/pickle_inspector.git

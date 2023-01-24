@@ -972,10 +972,10 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
             # Non-expanded items (won't recurrsively call `print_keys_if_possible` but will print unless omit_curr_item_print is True:
             if not omit_curr_item_print:
                 curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=True)
-                if hasattr(curr_value, 'shape'):
-                    # curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, suffix=f" - {curr_value.shape}")
+                # Recommendationa against using hasattr suggested here: https://hynek.me/articles/hasattr/
+                try:
                     print(f"{curr_item_str} - {curr_value.shape}")
-                else:
+                except (AttributeError, AssertionError) as e:
                     print(f"{curr_item_str} - OMITTED TYPE WITH NO SHAPE")
         elif isinstance(curr_value, (np.ndarray, list, tuple)): 
             # Objects that are considered list-like are for example Python lists, tuples, sets, NumPy arrays, and Pandas Series.

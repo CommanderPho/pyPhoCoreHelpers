@@ -1,15 +1,6 @@
+from enum import Enum
 
-from enum import Enum, unique
-
-@unique
-class ExtendedEnum(Enum):
-    """ Allows Inheritors to list their members, values, and names as lists
-
-    Attribution:
-        By blueFast answered Feb 28, 2019 at 5:58
-        https://stackoverflow.com/a/54919285/9732163
-
-
+""" 
     Usage:
 
     === For an Enum that inherits ExtendedEnum defined below:
@@ -49,31 +40,39 @@ class ExtendedEnum(Enum):
         FileProgressAction.all_member_values() # ['Loading', 'Saving', 'Generic']
         FileProgressAction.build_member_value_dict(['from','to',':']) # {<FileProgressAction.LOADING: 'Loading'>: 'from', <FileProgressAction.SAVING: 'Saving'>: 'to', <FileProgressAction.GENERIC: 'Generic'>: ':'}
 
+"""
+class ExtendedEnum(Enum):
+    """ Allows Inheritors to list their members, values, and names as lists
+
+    Attribution:
+        By blueFast answered Feb 28, 2019 at 5:58
+        https://stackoverflow.com/a/54919285/9732163
+
     """
     # @classmethod
-    # def to_list(cls):
+    # def all_members(cls) -> list:
+    #     return list(map(lambda c: c, cls))
+
+    # @classmethod
+    # def all_member_names(cls) -> list:
+    #     return list(map(lambda c: c.name, cls))
+
+    # @classmethod
+    # def all_member_values(cls) -> list:
     #     return list(map(lambda c: c.value, cls))
 
     @classmethod
     def all_members(cls) -> list:
-        return list(map(lambda c: c, cls))
-
+        return list(cls)
     @classmethod
     def all_member_names(cls) -> list:
-        return list(map(lambda c: c.name, cls))
-
+        return [member.name for member in cls]
     @classmethod
     def all_member_values(cls) -> list:
-        return list(map(lambda c: c.value, cls))
-
+        return [member.value for member in cls]
     @classmethod
     def build_member_value_dict(cls, values_list) -> dict:
-        """ 
-        
-        values_list: <list>: e.g. ['from','to',':']
-
-        """
-        assert len(values_list) == len(cls.all_members()), f"there must be one value in values_list for each enum member but len(values_list): {len(values_list)} and len(cls.all_members): {len(cls.all_members())}."
+        assert len(values_list) == len(cls.all_members()), f"values_list must have one value for each member of the enum, but got {len(values_list)} values for {len(cls.all_members())} members."
         return dict(zip(cls.all_members(), values_list))
 
 

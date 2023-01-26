@@ -1,4 +1,6 @@
 from typing import List, Optional, OrderedDict  # for OrderedMeta
+from datetime import datetime # for `get_now_day_str`
+import time # for `get_now_time_str`, `get_now_time_precise_str`
 import numpy as np
 import pandas as pd
 from pandas.core.resample import TimedeltaIndexResampler
@@ -23,6 +25,9 @@ import logging
 import objsize # python -m pip install objsize==0.6.1
 
 from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters # for CapturedException
+
+
+
 
 
 class SimplePrintable:
@@ -273,6 +278,21 @@ class DocumentationFilePrinter(object):
         key_color = ANSI_COLOR_STRINGS.OKBLUE
         variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA # converts to greyscale for printing better
         return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}"
+
+
+
+# ==================================================================================================================== #
+# Category: Getting Current Date/Time as String for File Names/Logging/etc:                                            #
+# ==================================================================================================================== #
+# Helpers to get the current date and time. Written as functions so they stay current:
+# from pyphocorehelpers.print_helpers import get_now_day_str, get_now_time_str, get_now_time_precise_str
+def get_now_day_str() -> str:
+    return datetime.today().strftime('%Y-%m-%d')
+def get_now_time_str(time_separator='-') -> str:
+    return str(time.strftime(f"%Y-%m-%d_%H{time_separator}%m", time.localtime(time.time())))
+def get_now_time_precise_str(time_separator='-') -> str:
+    return str(time.strftime(f"%Y-%m-%d_%H{time_separator}%m{time_separator}%S", time.localtime(time.time())))
+
 
 
 # ==================================================================================================================== #

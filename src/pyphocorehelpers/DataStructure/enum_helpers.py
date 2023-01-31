@@ -49,18 +49,6 @@ class ExtendedEnum(Enum):
         https://stackoverflow.com/a/54919285/9732163
 
     """
-    # @classmethod
-    # def all_members(cls) -> list:
-    #     return list(map(lambda c: c, cls))
-
-    # @classmethod
-    # def all_member_names(cls) -> list:
-    #     return list(map(lambda c: c.name, cls))
-
-    # @classmethod
-    # def all_member_values(cls) -> list:
-    #     return list(map(lambda c: c.value, cls))
-
     @classmethod
     def all_members(cls) -> list:
         return list(cls)

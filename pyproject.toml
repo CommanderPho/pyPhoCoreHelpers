@@ -16,6 +16,8 @@ PyQt5-sip = "^12.11.1"
 numpy = "^1.23.2"
 pandas = "^1.5.1"
 neuropy = {git = "https://github.com/CommanderPho/NeuroPy.git"}
+ansi2html = "^1.8.0"
+numba = "^0.56.4"
 
 [tool.poetry.group.dev.dependencies]
 importlib-metadata = "^6.0.0"

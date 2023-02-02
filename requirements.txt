@@ -20,28 +20,13 @@ PyQt5_sip == 12.11.0
 # C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\gui\Qt\qevent_lookup_helpers.py: 1
 QtPy == 2.1.0
 
-# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\Filesystem\HDF5\silx_hdf5_viewer.py: 77
-fabio == 0.14.0
-
 # C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\Filesystem\HDF5\hdf5_file_helpers.py: 1
 # C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\Filesystem\HDF5\silx_hdf5_viewer.py: 69
 h5py == 3.7.0
 
-# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\Filesystem\HDF5\silx_hdf5_viewer.py: 64
-hdf5plugin == 3.3.1
-
-# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\__init__.py: 7
-importlib_metadata == 4.11.4
-
 # C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\gui\Qt\GlobalConnectionManager.py: 3
 # C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\gui\Qt\TopLevelWindowHelper.py: 1
 indexed == 1.2.1
-
-# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\plotting\background_helpers.py: 4,5,6
-# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\plotting\figure_management.py: 5
-# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\plotting\historical_results.py: 4,5
-# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\plotting\mixins\figure_param_text_box.py: 1,2,3
-matplotlib == 3.6.2
 
 # C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\DataStructure\data_structure_builders.py: 1
 # C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\Filesystem\HDF5\silx_hdf5_viewer.py: 56
@@ -69,6 +54,23 @@ objsize == 0.6.1
 # C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\print_helpers.py: 3,4
 pandas == 1.5.1
 
+
+/* ================================================================================================================== */
+/* DEV-ONLY                                                                                                           */
+/* ================================================================================================================== */
+# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\__init__.py: 7
+importlib_metadata == 4.11.4
+
+
+/* ================================================================================================================== */
+/* VISUALIZATION-ONLY                                                                                                 */
+/* ================================================================================================================== */
+# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\plotting\background_helpers.py: 4,5,6
+# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\plotting\figure_management.py: 5
+# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\plotting\historical_results.py: 4,5
+# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\plotting\mixins\figure_param_text_box.py: 1,2,3
+matplotlib == 3.6.2
+
 # C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\gui\PyVista\PhoCustomVtkWidgets.py: 10,306
 pyvista == 0.36.1
 
@@ -79,5 +81,11 @@ silx == 1.1.0a0
 # C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\plotting\vedo_qt_helpers.py: 4
 vedo == 2022.1.0.dev9
 
+# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\Filesystem\HDF5\silx_hdf5_viewer.py: 64
+hdf5plugin == 3.3.1
+
 # C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\plotting\vedo_qt_helpers.py: 3
 vtk == 9.1.0
+
+# C:\Users\pho\repos\pyPhoCoreHelpers\src\pyphocorehelpers\Filesystem\HDF5\silx_hdf5_viewer.py: 77
+fabio == 0.14.0

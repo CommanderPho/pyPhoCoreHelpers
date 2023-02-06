@@ -109,7 +109,6 @@ def build_pairwise_indicies(target_indicies, debug_print=False):
     return out_pair_indicies
 
 
-
 def interleave_elements(start_points, end_points, debug_print:bool=False):
     """ Given two equal sized arrays, produces an output array of double that size that contains elements of start_points interleaved with elements of end_points
     Example:
@@ -155,33 +154,6 @@ def interleave_elements(start_points, end_points, debug_print:bool=False):
     all_points[np.arange(1, all_points_shape[0], 2), :] = end_points # fill the odd elements
     assert np.shape(all_points)[0] == (np.shape(start_points)[0] * 2), f"newly created all_points is not of corrrect size! np.shape(all_points): {np.shape(all_points)}"
     return np.squeeze(all_points)
-
-
-# def extract_windows_vectorized(array, clearing_time_index, max_time, sub_window_size):
-#     start = clearing_time_index + 1 - sub_window_size + 1
-    
-#     sub_windows = (
-#         start +
-#         # expand_dims are used to convert a 1D array to 2D array.
-#         np.expand_dims(np.arange(sub_window_size), 0) +
-#         np.expand_dims(np.arange(max_time + 1), 0).T
-#     )
-    
-#     return array[sub_windows]
-
-
-# def vectorized_stride_v2(array, clearing_time_index, max_time, sub_window_size, stride_size):
-#     start = clearing_time_index + 1 - sub_window_size + 1
-    
-#     sub_windows = (
-#         start + 
-#         np.expand_dims(np.arange(sub_window_size), 0) +
-#         # Create a rightmost vector as [0, V, 2V, ...].
-#         np.expand_dims(np.arange(max_time + 1, step=stride_size), 0).T
-#     )
-    
-#     return array[sub_windows]
-
 
 # ==================================================================================================================== #
 # Dictionary and Maps                                                                                                  #
@@ -388,16 +360,7 @@ def nested_dicts_to_flatpaths(curr_key, curr_value, max_depth=20, depth=0, flat_
             # is_terminal_item = False   
             
         except AttributeError as e:                
-#             # Try to get __dict__ from the item:
-#             try:
-#                 curr_value_dict_rep = vars(curr_value) # gets the .__dict__ property if curr_value has one, otherwise throws a TypeError
-#                 print_keys_if_possible(f'{curr_key}.__dict__', curr_value_dict_rep, max_depth=max_depth, depth=depth, omit_curr_item_print=True) # do not increase depth in this regard so it prints at the same level. Also tell it not to print again.
 
-#             except TypeError:
-#                 # print(f"{depth_string}- {curr_value_type}")
-#                 return None # terminal item
-
-            # print(f'AttributeError: {e}')
             is_terminal_item = True
     
  
@@ -458,67 +421,7 @@ def find_neighbours(value, df, colname):
     
     
     #If the series is already sorted, an efficient method of finding the indexes is by using bisect functions.
-   
  
-# def get_closests(df, col, val):
-#     """ Requires already sorted lists. """
-#     lower_idx = pd.bisect_left(df[col].values, val)
-#     higher_idx = pd.bisect_right(df[col].values, val)
-#     if higher_idx == lower_idx:      #val is not in the list
-#         return lower_idx - 1, lower_idx
-#     else:                            #val is in the list
-#         return lower_idx
-
-    
-# def find_closest_values(target, source, k_matches=1):
-#     """[summary]
-    
-#     Usage:
-#         find_closest_values(target, source, k_matches=1)
-
-#     Args:
-#         target ([type]): [description]
-#         source ([type]): [description]
-#         k_matches (int, optional): [description]. Defaults to 1.
-
-#     Returns:
-#         [type]: [description]
-#     """
-#     k_above = source[source >= target].nsmallest(k_matches)
-#     k_below = source[source < target].nlargest(k_matches)
-#     k_all = pd.concat([k_below, k_above]).sort_values()
-#     return k_all
-
-
-
-
-# class MatrixFlattenTransformer(object):
-# """ Supposed to allow easy transformation of data from a flattened representation to the original.
-# Usage:
-#     trans = MatrixFlattenTransformer(original_data_shape)
-#     test_all_positions_matrix = trans.unflatten(flat_all_positions_matrix)
-#     print(f'np.shape(test_all_positions_matrix): {np.shape(test_all_positions_matrix)}')
-# """
-#     """ TODO: does not yet work. for MatrixFlattenTransformer."""
-#     def __init__(self, original_data_shape):
-#         super(MatrixFlattenTransformer, self).__init__()
-#         self.original_data_shape = original_data_shape
-
-#     def flatten(self, data):
-#         data_shape = np.shape(data)
-#         original_flat_shape = np.prod(self.original_data_shape)
-#         # assert np.shape(data) == self.original_data_shape, f"data passed in to flatten (with shape {np.shape(data)}) is not equal to the original data shape: {self.original_data_shape}"
-#         assert data_shape == original_flat_shape, f"data passed in to flatten (with shape {data_shape}) is not equal to the original shape's number of items (shape: {self.original_data_shape}, original_flat_shape: {original_flat_shape}"
-#         return np.reshape(data, (-1, 1))
-        
-#     def unflatten(self, flat_data):
-#         flat_data_shape = np.shape(flat_data)
-#         original_data_shape_ndim = len(self.original_data_shape)
-#         # assert (flat_data_shape[:original_data_shape_ndim] == self.original_data_shape), f"data passed in to unflatten (with shape {flat_data_shape}) must match the original data shape ({self.original_data_shape}), at least up to the number of dimensions in the original"
-#         additional_dimensions = flat_data_shape[original_data_shape_ndim:]        
-#         return np.reshape(flat_data, (self.original_data_shape[0], self.original_data_shape[1], *additional_dimensions))
-        
-
 # ==================================================================================================================== #
 # Discrete Bins/Binning                                                                                                #
 # ==================================================================================================================== #
@@ -865,17 +768,3 @@ def np_bfill_1D(arr: np.ndarray):
     Simple solution for bfill provided by financial_physician in comment below
     """
     return np_ffill_1D(arr[:, ::-1])[:, ::-1]
-
-# def np_ffill(arr: np.ndarray, axis:int=1):
-#     """ N-dimensional modification by RichieV
-    
-#     Note that axis=1 is required for it to be equal to np_ffill_1D. Not sure if it works.
-#     """
-#     idx_shape = tuple([slice(None)] + [np.newaxis] * (len(arr.shape) - axis - 1))
-#     idx = np.where(~np.isnan(arr), np.arange(arr.shape[axis])[idx_shape], 0)
-#     np.maximum.accumulate(idx, axis=axis, out=idx)
-#     slc = [np.arange(k)[tuple([slice(None) if dim==i else np.newaxis
-#         for dim in range(len(arr.shape))])]
-#         for i, k in enumerate(arr.shape)]
-#     slc[axis] = idx
-#     return arr[tuple(slc)]

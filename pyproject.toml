@@ -32,7 +32,6 @@ silx = "^1.1.2"
 vtk = "^9.2.5"
 
 # [tool.poetry.group.remote.dependencies]
-# pyphocorehelpers = {git = "https://github.com/CommanderPho/pyPhoCoreHelpers.git"}
 # neuropy = {git = "https://github.com/CommanderPho/NeuroPy.git"} # , rev = "main", extras = ["acceleration"]
 
 [tool.poetry.group.local.dependencies]

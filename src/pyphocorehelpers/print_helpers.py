@@ -1257,6 +1257,9 @@ def build_module_logger(module_name='Spike3D.notebook', file_logging_dir=Path('E
 
     if file_logging_dir is not None:
         # file logging enabled:
+        # Create logging directory if it doesn't exist
+        file_logging_dir.mkdir(parents=True, exist_ok=True)
+
         # file_logging_dir = Path('EXTERNAL/TESTING/Logging') # 'C:\Users\pho\repos\PhoPy3DPositionAnalysis2021\EXTERNAL\TESTING\Logging'
         module_logging_path = file_logging_dir.joinpath(f'debug_{module_logger.name}.log') # module_logger.name # 'com.PhoHale.Spike3D.notebook'
 

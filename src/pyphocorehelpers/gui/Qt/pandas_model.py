@@ -1,5 +1,8 @@
 import sys
-import pandas as pd
+try:
+    import modin.pandas as pd # modin is a drop-in replacement for pandas that uses multiple cores
+except ImportError:
+    import pandas as pd # fallback to pandas when modin isn't available
 # from PyQt5.QtWidgets import QApplication, QTableView
 from PyQt5 import QtCore
 # from PyQt5.QtCore import QAbstractTableModel, Qt

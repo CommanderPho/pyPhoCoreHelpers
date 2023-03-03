@@ -5,10 +5,7 @@ from pyphocorehelpers.DataStructure.enum_helpers import ExtendedEnum # required 
 
 import re # for CodeConversion
 import numpy as np # for CodeConversion
-try:
-    import modin.pandas as pd # modin is a drop-in replacement for pandas that uses multiple cores
-except ImportError:
-    import pandas as pd # fallback to pandas when modin isn't available
+import pandas as pd
 from neuropy.utils.dynamic_container import overriding_dict_with # required for safely_accepts_kwargs
 from pyphocorehelpers.print_helpers import strip_type_str_to_classname # used to convert dict to class with types
 

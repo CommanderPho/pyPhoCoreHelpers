@@ -111,3 +111,79 @@ def add_method(cls):
         # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
         return func # returning func means func can still be used normally
     return decorator
+
+# ==================================================================================================================== #
+# Function Attributes Decorators                                                                                       #
+# ==================================================================================================================== #
+def function_attributes(short_name=None, tags=None, input_requires=None, output_provides=None):
+    """Adds function attributes to a function or class
+
+    ```python
+        from pyphocorehelpers.function_helpers import function_attributes
+
+        @function_attributes(short_name='pf_dt_sequential_surprise', tags=['tag1','tag2'], input_requires=[], output_provides=[])
+        def _perform_time_dependent_pf_sequential_surprise_computation(computation_result, debug_print=False):
+            # function body
+    ```
+    """
+    def decorator(func):
+        func.short_name = short_name
+        func.tags = tags
+        func.input_requires = input_requires
+        func.output_provides = output_provides
+        return func
+    return decorator
+
+
+
+# ==================================================================================================================== #
+# Documentation Decorators                                                                                             #
+# ==================================================================================================================== #
+def documentation_tags(func, *tags):
+    """Adds documentations tags toa  function or class
+
+    Usage:
+        from pyphocorehelpers.function_helpers import documentation_tags
+        @documentation_tags('tag1', 'tag2')
+        def my_function():
+            ...
+
+        Access via:
+            my_function.tags
+
+    """
+    @wraps(func)
+    def decorator(func):
+        func.tags = tags
+        return func
+    return decorator
+
+
+
+def invocation_log(func):
+    """Logs before and after calling a function
+    https://towardsdatascience.com/why-you-should-wrap-decorators-in-python-5ac3676835f9
+    Args:
+        func (_type_): _description_
+
+    Returns:
+        _type_: _description_
+
+    Usage:
+
+    @invocation_log
+    def say_hello(name):
+        '''Say hello to someone'''
+        print(f"Hello, {name}!")
+
+    """
+    @wraps(func)
+    def inner_func(*args, **kwargs):
+        """Inner function within the invocation_log"""
+        print(f'Before Calling {func.__name__}')
+        func(*args, **kwargs)
+        print(f'After Calling {func.__name__}')
+
+    return inner_func
+
+

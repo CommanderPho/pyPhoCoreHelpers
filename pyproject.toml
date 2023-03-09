@@ -31,12 +31,8 @@ hdf5plugin = "^4.1.1"
 silx = "^1.1.2"
 vtk = "^9.2.5"
 
-# [tool.poetry.group.remote.dependencies]
-# neuropy = {git = "https://github.com/CommanderPho/NeuroPy.git"} # , rev = "main", extras = ["acceleration"]
-
-[tool.poetry.group.local.dependencies]
+[tool.poetry.group.remote.dependencies]
 neuropy = {path = "../NeuroPy", develop=true} # , rev = "main", extras = ["acceleration"]
-
 
 [build-system]
 requires = ["poetry-core"]

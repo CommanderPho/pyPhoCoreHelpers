@@ -1,2 +1,2 @@
 [tool.poetry.group.remote.dependencies]
-neuropy = {git = "https://github.com/CommanderPho/NeuroPy.git"} # , rev = "main", extras = ["acceleration"]
+neuropy = {git = "https://github.com/CommanderPho/NeuroPy.git"}

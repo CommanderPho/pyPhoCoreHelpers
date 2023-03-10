@@ -1,2 +1,2 @@
 [tool.poetry.group.remote.dependencies]
-neuropy = {path = "../NeuroPy", develop=true} # , extras = ["acceleration"]
+neuropy = {path = "../NeuroPy", develop=true}

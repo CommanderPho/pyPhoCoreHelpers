@@ -53,3 +53,4 @@ MANIFEST
 .conda*/
 **/__pycache__
 desktop.ini
+*.sha256

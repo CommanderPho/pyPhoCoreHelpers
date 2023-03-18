@@ -143,6 +143,65 @@ def get_arguments_as_optional_dict(**kwargs):
 
 
 
+
+""" 
+
+@dataclass
+class SurpriseAnalysisResult(object):
+    # Docstring for SurpriseAnalysisResult.
+    active_filter_epochs: neuropy.core.epoch.Epoch
+    original_1D_decoder: pyphoplacecellanalysis.Analysis.Decoder.reconstruction.BayesianPlacemapPositionDecoder
+    all_included_filter_epochs_decoder_result: neuropy.utils.dynamic_container.DynamicContainer
+    flat_all_epochs_measured_cell_spike_counts: np.ndarray
+    flat_all_epochs_measured_cell_firing_rates: np.ndarray
+    flat_all_epochs_decoded_epoch_time_bins: np.ndarray
+    flat_all_epochs_computed_surprises: np.ndarray
+    flat_all_epochs_computed_expected_cell_firing_rates: np.ndarray
+    flat_all_epochs_difference_from_expected_cell_spike_counts: np.ndarray
+    flat_all_epochs_difference_from_expected_cell_firing_rates: np.ndarray
+    all_epochs_decoded_epoch_time_bins_mean: np.ndarray
+    all_epochs_computed_cell_surprises_mean: np.ndarray
+    all_epochs_all_cells_computed_surprises_mean: np.ndarray
+
+
+# Suggested resolution 0: simple imports
+import neuropy
+import pyphoplacecellanalysis
+
+# Better resolution 1: transform full type strings into import statements
+
+neuropy.core.epoch.Epoch
+from neuropy.core.epoch import Epoch
+
+pyphoplacecellanalysis.Analysis.Decoder.reconstruction.BayesianPlacemapPositionDecoder
+from pyphoplacecellanalysis.Analysis.Decoder.reconstruction import BayesianPlacemapPositionDecoder
+
+neuropy.utils.dynamic_container.DynamicContainer
+from neuropy.utils.dynamic_container import DynamicContainer
+
+
+from neuropy.core.epoch import Epoch # extract last item from type string with: type_str.split('.')[-1] 
+
+
+@dataclass
+class SurpriseAnalysisResult(object):
+    # Docstring for SurpriseAnalysisResult.
+    active_filter_epochs: neuropy.core.epoch.Epoch
+    original_1D_decoder: pyphoplacecellanalysis.Analysis.Decoder.reconstruction.BayesianPlacemapPositionDecoder
+    all_included_filter_epochs_decoder_result: neuropy.utils.dynamic_container.DynamicContainer
+    flat_all_epochs_measured_cell_spike_counts: np.ndarray
+    flat_all_epochs_measured_cell_firing_rates: np.ndarray
+    flat_all_epochs_decoded_epoch_time_bins: np.ndarray
+    flat_all_epochs_computed_surprises: np.ndarray
+    flat_all_epochs_computed_expected_cell_firing_rates: np.ndarray
+    flat_all_epochs_difference_from_expected_cell_spike_counts: np.ndarray
+    flat_all_epochs_difference_from_expected_cell_firing_rates: np.ndarray
+    all_epochs_decoded_epoch_time_bins_mean: np.ndarray
+    all_epochs_computed_cell_surprises_mean: np.ndarray
+    all_epochs_all_cells_computed_surprises_mean: np.ndarray
+
+"""
+
 @unique
 class GeneratedClassDefinitionType(ExtendedEnum):
     """Specifies which type of class to generate in CodeConversion.convert_dictionary_to_class_defn(...)."""
@@ -228,7 +287,6 @@ class CodeConversion(object):
         else:
             matches_group = m.groupdict()  # {'var_name': 'Malcolm', 'equals_portion': 'Reynolds', 'end_portion': ''}
             return matches_group
-        
 
     @classmethod
     def _convert_defn_line_to_dictionary_line(cls, code_line):
@@ -243,7 +301,6 @@ class CodeConversion(object):
             dict_line = f"'{matches_dict['var_name'].strip()}': {matches_dict['end_portion'].strip()}"
             return dict_line
         
-        
     @classmethod
     def _convert_defn_line_to_parameter_list_item(cls, code_line):
         """Converts a single line of code that defines a variable to a single entry in a parameter list.
@@ -256,7 +313,6 @@ class CodeConversion(object):
             # Format as entry in a parameter list:
             param_item = f"{matches_dict['var_name'].strip()}={matches_dict['end_portion'].strip()}"
             return param_item
-        
 
     @classmethod
     def _try_parse_to_dictionary_if_needed(cls, target_dict) -> dict:
@@ -291,6 +347,27 @@ class CodeConversion(object):
             # e.g. out_extracted_typestring.replace('numpy.', 'np.') # replace 'numpy.' with 'np.'
 
         return out_extracted_typestring
+
+    @classmethod
+    def split_type_str(cls, type_str):
+        """ for type_str = 'neuropy.core.epoch.Epoch' """
+        base_type_str = '.'.join(type_str.split('.')[:-2]) # 'neuropy.core.epoch'
+        class_name = type_str.split('.')[-1]  # 'Epoch'
+        return base_type_str, class_name
+
+    @classmethod
+    def get_import_statement_from_type_str(cls, type_str):
+        """ for type_str = 'neuropy.core.epoch.Epoch' """
+        split_type_components = type_str.split('.')
+        num_items = len(split_type_components)
+        base_type_str = '.'.join(split_type_components[:-2]) # 'neuropy.core.epoch'
+        class_name = split_type_components[-1]  # 'Epoch'
+        import_statement = f'from {base_type_str} import {class_name}' # 'from neuropy.core.epoch import Epoch'
+        return import_statement
+
+    # ==================================================================================================================== #
+    # Public/Main Methods                                                                                                  #
+    # ==================================================================================================================== #
 
     @classmethod
     def convert_dictionary_to_defn_lines(cls, target_dict, multiline_assignment_code=False, dictionary_name:str='target_dict', include_comment:bool=True, copy_to_clipboard=True, output_variable_prefix=''):
@@ -364,7 +441,7 @@ class CodeConversion(object):
     
     @classmethod
     def convert_dictionary_to_class_defn(cls, target_dict, class_name:str='TargetClass', class_definition_mode:GeneratedClassDefinitionType = None, copy_to_clipboard=True, output_variable_prefix='', class_decorators="@dataclass",
-        include_init_fcn=True, include_initializer_default_values=False, include_properties_defns=False, include_types=True, 
+        include_init_fcn=True, include_initializer_default_values=False, include_properties_defns=False, include_types=True, use_relative_types=True,
         indent_character='    ', pre_class_spacing='\n', post_class_spacing='\n\n'):
         """ Builds a class definition from a target_dict
             target_dict: either a dictionary object or a string of code that defines a dictionary object (such as "{'firing_rate':curr_ax_firing_rate, 'lap_spikes': curr_ax_lap_spikes, 'placefield': curr_ax_placefield}")
@@ -422,7 +499,37 @@ class CodeConversion(object):
             """
             if include_types:
                 # by default type(v) gives <class 'numpy.ndarray'>
-                member_properties_code_str = '\n'.join([f"{indent_character}{output_variable_prefix}{k}: {cls._find_best_type_representation_string(type(v))}" for k,v in target_dict.items()])
+                if use_relative_types:
+                    full_types_str_dict = {k:f"{cls._find_best_type_representation_string(type(v))}" for k,v in target_dict.items()}
+                    needed_import_statements = []
+                    relative_types_dict = {}
+                    for k, full_type_string in full_types_str_dict.items():
+                        """ for type_str = 'neuropy.core.epoch.Epoch' """
+                        split_type_components = full_type_string.split('.')
+                        num_items = len(split_type_components)
+                        if num_items == 1:
+                            base_type_str = None
+                            class_name = split_type_components[0]
+                            import_statement = f'import {class_name}' # 'from neuropy.core.epoch import Epoch'
+                        elif num_items == 2:
+                            base_type_str = split_type_components[0] # 'np'
+                            class_name = split_type_components[1] # 'ndarray'
+                            import_statement = f'from {base_type_str} import {class_name}' # 'from neuropy.core.epoch import Epoch'
+                        elif num_items > 2:
+                            base_type_str = '.'.join(split_type_components[:-1]) # 'neuropy.core.epoch'
+                            class_name = split_type_components[-1]  # 'Epoch'
+                            import_statement = f'from {base_type_str} import {class_name}' # 'from neuropy.core.epoch import Epoch'
+                        else:
+                            raise NotImplementedError
+                        
+                        if import_statement not in needed_import_statements:
+                            needed_import_statements.append(import_statement)
+                        relative_types_dict[k] = class_name
+
+                    import_statements_block = '\n'.join(needed_import_statements)
+                    member_properties_code_str = '\n'.join([f"{indent_character}{output_variable_prefix}{k}: {v}" for k,v in relative_types_dict.items()])
+                else:
+                    member_properties_code_str = '\n'.join([f"{indent_character}{output_variable_prefix}{k}: {cls._find_best_type_representation_string(type(v))}" for k,v in target_dict.items()])
             else:
                 # leave generic 'type' placeholder for each
                 member_properties_code_str = '\n'.join([f"{indent_character}{output_variable_prefix}{k}: type" for k,v in target_dict.items()])
@@ -439,6 +546,9 @@ class CodeConversion(object):
         else:
             init_fcn_code_str = ''
 
+        if import_statements_block is not None:
+            class_header_code_str=f"{import_statements_block}\n{class_header_code_str}" # prepend the imports
+
         code_str = f"{class_header_code_str}{member_properties_code_str}{init_fcn_code_str}{post_class_spacing}" # add comment above code
 
         if copy_to_clipboard:
@@ -451,7 +561,6 @@ class CodeConversion(object):
     # ==================================================================================================================== #
     # Class/Static Methods                                                                                                 #
     # ==================================================================================================================== #
-
 
     @classmethod
     def _parse_NameError(cls, e):
@@ -705,7 +814,30 @@ class CodeConversion(object):
         final_list_defn_str = list_prefix + flat_list_member_code_str + list_suffix
         return final_list_defn_str
     
-    
+    @classmethod
+    def convert_variable_tuple_code_to_dict_with_names(cls, tuple_string: str) -> str:
+        """ Given a line of code representing a simple tuple or comma separated list of variable names (such as would be returned from a function that returns multiple outputs, or placed on the LHS of a multi-item assignment) returns a transformed line of code representing a dictionary with keys equal to the variable name and value equal to the variable value.
+            
+        Example:
+            from pyphocorehelpers.general_helpers import CodeConversion
+
+            tuple_string = "(active_filter_epochs, original_1D_decoder, all_included_filter_epochs_decoder_result, flat_all_epochs_measured_cell_spike_counts, flat_all_epochs_measured_cell_firing_rates, flat_all_epochs_decoded_epoch_time_bins, flat_all_epochs_computed_surprises, flat_all_epochs_computed_expected_cell_firing_rates, flat_all_epochs_difference_from_expected_cell_spike_counts, flat_all_epochs_difference_from_expected_cell_firing_rates, all_epochs_decoded_epoch_time_bins_mean, all_epochs_computed_cell_surprises_mean, all_epochs_all_cells_computed_surprises_mean)"
+            result_dict_str_rep, result_dict = CodeConversion.convert_variable_tuple_code_to_dict_with_names(tuple_string)
+            print(result_dict_str_rep)
+            >>> {'active_filter_epochs':active_filter_epochs, 'original_1D_decoder':original_1D_decoder, 'all_included_filter_epochs_decoder_result':all_included_filter_epochs_decoder_result, 'flat_all_epochs_measured_cell_spike_counts':flat_all_epochs_measured_cell_spike_counts, 'flat_all_epochs_measured_cell_firing_rates':flat_all_epochs_measured_cell_firing_rates, 'flat_all_epochs_decoded_epoch_time_bins':flat_all_epochs_decoded_epoch_time_bins, 'flat_all_epochs_computed_surprises':flat_all_epochs_computed_surprises, 'flat_all_epochs_computed_expected_cell_firing_rates':flat_all_epochs_computed_expected_cell_firing_rates, 'flat_all_epochs_difference_from_expected_cell_spike_counts':flat_all_epochs_difference_from_expected_cell_spike_counts, 'flat_all_epochs_difference_from_expected_cell_firing_rates':flat_all_epochs_difference_from_expected_cell_firing_rates, 'all_epochs_decoded_epoch_time_bins_mean':all_epochs_decoded_epoch_time_bins_mean, 'all_epochs_computed_cell_surprises_mean':all_epochs_computed_cell_surprises_mean, 'all_epochs_all_cells_computed_surprises_mean':all_epochs_all_cells_computed_surprises_mean}
+        
+        """
+        # Remove the parentheses from the string
+        tuple_string = tuple_string.strip('()')
+        
+        # Split the string into a list of variable names
+        variable_names = tuple_string.split(',')
+        
+        # Create a dictionary with variable names as keys and None as values
+        result_dict = {f"'{name.strip()}'": name.strip() for name in variable_names}
+        result_dict_str_rep = ', '.join([f"'{name.strip()}':{name.strip()}" for name in variable_names])
+        result_dict_str_rep = '{' + result_dict_str_rep + '}'
+        return result_dict_str_rep, result_dict
 
     # Static Helpers: ____________________________________________________________________________________________________ #
     @classmethod
@@ -817,3 +949,56 @@ def convert_unit(size_in_bytes, unit):
         return size_in_bytes
 
    
+from dataclasses import dataclass
+
+
+@dataclass
+class LoadBuildSave(object):
+    """Tries to load the object from file first
+        If this isn't possible it runs something to compute it
+        Then it saves it so it can be loaded in the future.
+
+        Combines the code to perform this common procedure in a concise structure instead of requiring it to be spread out over several places.
+
+
+    Example 0: from `pyphoplacecellanalysis.General.Batch.NonInteractiveWrapper.batch_extended_computations`
+
+```python
+        try:
+            ## Get global 'jonathan_firing_rate_analysis' results:
+            curr_jonathan_firing_rate_analysis = curr_active_pipeline.global_computation_results.computed_data['jonathan_firing_rate_analysis']
+            neuron_replay_stats_df, rdf, aclu_to_idx, irdf = curr_jonathan_firing_rate_analysis['neuron_replay_stats_df'], curr_jonathan_firing_rate_analysis['rdf']['rdf'], curr_jonathan_firing_rate_analysis['rdf']['aclu_to_idx'], curr_jonathan_firing_rate_analysis['irdf']['irdf']
+            if progress_print:
+                print(f'{_comp_name} already computed.')
+        except (AttributeError, KeyError) as e:
+            if progress_print or debug_print:
+                print(f'{_comp_name} missing.')
+            if debug_print:
+                print(f'\t encountered error: {e}\n{traceback.format_exc()}\n.')
+            if progress_print or debug_print:
+                print(f'\t Recomputing {_comp_name}...')
+            curr_active_pipeline.perform_specific_computation(computation_functions_name_whitelist=['_perform_jonathan_replay_firing_rate_analyses'], fail_on_exception=True, debug_print=False) # fail_on_exception MUST be True or error handling is all messed up 
+            print(f'\t done.')
+            curr_jonathan_firing_rate_analysis = curr_active_pipeline.global_computation_results.computed_data['jonathan_firing_rate_analysis']
+            neuron_replay_stats_df, rdf, aclu_to_idx, irdf = curr_jonathan_firing_rate_analysis['neuron_replay_stats_df'], curr_jonathan_firing_rate_analysis['rdf']['rdf'], curr_jonathan_firing_rate_analysis['rdf']['aclu_to_idx'], curr_jonathan_firing_rate_analysis['irdf']['irdf']
+            newly_computed_values.append(_comp_name)
+        except Exception as e:
+            raise e
+
+
+    Example 1: from `pyphoplacecellanalysis.Analysis.Decoder.decoder_result.perform_full_session_leave_one_out_decoding_analysis`
+        # Save to file to cache in case we crash:
+        leave_one_out_surprise_result_pickle_path = output_data_folder.joinpath(f'leave_one_out_surprise_results{cache_suffix}.pkl').resolve()
+        print(f'leave_one_out_surprise_result_pickle_path: {leave_one_out_surprise_result_pickle_path}')
+        saveData(leave_one_out_surprise_result_pickle_path, (active_filter_epochs, original_1D_decoder, all_included_filter_epochs_decoder_result, 
+                                                            flat_all_epochs_measured_cell_spike_counts, flat_all_epochs_measured_cell_firing_rates, 
+                                                            flat_all_epochs_decoded_epoch_time_bins, flat_all_epochs_computed_surprises, flat_all_epochs_computed_expected_cell_firing_rates,
+                                                            flat_all_epochs_difference_from_expected_cell_spike_counts, flat_all_epochs_difference_from_expected_cell_firing_rates,
+                                                            all_epochs_decoded_epoch_time_bins_mean, all_epochs_computed_cell_surprises_mean, all_epochs_all_cells_computed_surprises_mean))
+
+
+```
+
+    """
+    property: type
+    

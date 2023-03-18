@@ -213,6 +213,10 @@ class GeneratedClassDefinitionType(ExtendedEnum):
         return self.decoratorsList()[self]
 
     @property
+    def class_required_imports(self):
+        return self.requiredImportsList()[self]
+
+    @property
     def include_init_fcn(self):
         return self.include_init_fcnList()[self]
 
@@ -224,6 +228,10 @@ class GeneratedClassDefinitionType(ExtendedEnum):
     @classmethod
     def decoratorsList(cls):
         return cls.build_member_value_dict([None,"@dataclass"])
+
+    @classmethod
+    def requiredImportsList(cls):
+        return cls.build_member_value_dict([None,"from dataclasses import dataclass"])
 
     @classmethod
     def include_init_fcnList(cls):
@@ -257,6 +265,9 @@ class CodeConversion(object):
 
 
     """
+    _types_replace_dict = {'numpy.':'np.', 'pandas.':'pd.'}
+    _inverse_types_replace_dict = {v:k for k,v in _types_replace_dict.items()}
+
     @classmethod
     def _stripComments(cls, code):
         code = str(code)
@@ -475,10 +486,13 @@ class CodeConversion(object):
 
 
         """
+        needed_import_statements = []
         target_dict = cls._try_parse_to_dictionary_if_needed(target_dict=target_dict) # Ensure a valid dictionary is provided or can be built
         if class_definition_mode is not None and isinstance(class_definition_mode, GeneratedClassDefinitionType):
             # generated class definition type provided to shortcut the settings
             print(f'WARNING: class_definition_mode ({class_definition_mode}) was provided, overriding the `class_decorators`,  `include_init_fcn`, `include_properties_defns` settings!')
+            class_required_imports = class_definition_mode.class_required_imports
+            needed_import_statements.append(class_required_imports)
             class_decorators = class_definition_mode.class_decorators
             include_init_fcn = class_definition_mode.include_init_fcn
             include_properties_defns = class_definition_mode.include_properties_defns
@@ -488,9 +502,11 @@ class CodeConversion(object):
         else:
             class_decorators = '' # empty string
 
+        comment_str = f'# Docstring for {class_name}. \n'
         # comment_str = f"\"\"\"Docstring for {dictionary_name}.\"\"\""
         # comment_str = f'"""Docstring for {dictionary_name}.""""""'
-        comment_str = f'# Docstring for {class_name}.'
+        # comment_str = f'\"\"\" Docstring for {class_name}. \"\"\"\n'
+
         class_header_code_str = f"{pre_class_spacing}{class_decorators}class {class_name}(object):\n{indent_character}{comment_str}"
 
         if include_properties_defns:
@@ -501,7 +517,7 @@ class CodeConversion(object):
                 # by default type(v) gives <class 'numpy.ndarray'>
                 if use_relative_types:
                     full_types_str_dict = {k:f"{cls._find_best_type_representation_string(type(v))}" for k,v in target_dict.items()}
-                    needed_import_statements = []
+                    
                     relative_types_dict = {}
                     for k, full_type_string in full_types_str_dict.items():
                         """ for type_str = 'neuropy.core.epoch.Epoch' """
@@ -511,22 +527,24 @@ class CodeConversion(object):
                             base_type_str = None
                             class_name = split_type_components[0]
                             import_statement = f'import {class_name}' # 'from neuropy.core.epoch import Epoch'
-                        elif num_items == 2:
-                            base_type_str = split_type_components[0] # 'np'
-                            class_name = split_type_components[1] # 'ndarray'
-                            import_statement = f'from {base_type_str} import {class_name}' # 'from neuropy.core.epoch import Epoch'
-                        elif num_items > 2:
+                        elif num_items > 1:
                             base_type_str = '.'.join(split_type_components[:-1]) # 'neuropy.core.epoch'
                             class_name = split_type_components[-1]  # 'Epoch'
                             import_statement = f'from {base_type_str} import {class_name}' # 'from neuropy.core.epoch import Epoch'
                         else:
                             raise NotImplementedError
                         
-                        if import_statement not in needed_import_statements:
-                            needed_import_statements.append(import_statement)
-                        relative_types_dict[k] = class_name
+                        if split_type_components[0] in ['np', 'pd']:
+                            # do different for pandas and numpy
+                            relative_types_dict[k] = full_type_string
+                            import_statement = None # f'import {split_type_components[0]}' # 'import numpy as np' TODO: import numpy/pd
+                        else:
+                            relative_types_dict[k] = class_name
 
-                    import_statements_block = '\n'.join(needed_import_statements)
+                        if (import_statement is not None) and (import_statement not in needed_import_statements):
+                            needed_import_statements.append(import_statement)
+
+                    
                     member_properties_code_str = '\n'.join([f"{indent_character}{output_variable_prefix}{k}: {v}" for k,v in relative_types_dict.items()])
                 else:
                     member_properties_code_str = '\n'.join([f"{indent_character}{output_variable_prefix}{k}: {cls._find_best_type_representation_string(type(v))}" for k,v in target_dict.items()])
@@ -546,10 +564,12 @@ class CodeConversion(object):
         else:
             init_fcn_code_str = ''
 
-        if import_statements_block is not None:
+        # Build the import statements:
+        if len(needed_import_statements) > 0:
+            import_statements_block = '\n'.join(needed_import_statements)
             class_header_code_str=f"{import_statements_block}\n{class_header_code_str}" # prepend the imports
 
-        code_str = f"{class_header_code_str}{member_properties_code_str}{init_fcn_code_str}{post_class_spacing}" # add comment above code
+        code_str = f"\n{class_header_code_str}{member_properties_code_str}{init_fcn_code_str}{post_class_spacing}" # add comment above code
 
         if copy_to_clipboard:
             df = pd.DataFrame([code_str])

@@ -115,7 +115,7 @@ def add_method(cls):
 # ==================================================================================================================== #
 # Function Attributes Decorators                                                                                       #
 # ==================================================================================================================== #
-def function_attributes(short_name=None, tags=None, input_requires=None, output_provides=None):
+def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None):
     """Adds function attributes to a function or class
 
     ```python
@@ -129,6 +129,7 @@ def function_attributes(short_name=None, tags=None, input_requires=None, output_
     def decorator(func):
         func.short_name = short_name
         func.tags = tags
+        func.creation_date = creation_date
         func.input_requires = input_requires
         func.output_provides = output_provides
         return func

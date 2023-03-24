@@ -115,13 +115,13 @@ def add_method(cls):
 # ==================================================================================================================== #
 # Function Attributes Decorators                                                                                       #
 # ==================================================================================================================== #
-def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None):
+def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None, uses=None, used_by=None):
     """Adds function attributes to a function or class
 
     ```python
         from pyphocorehelpers.function_helpers import function_attributes
 
-        @function_attributes(short_name='pf_dt_sequential_surprise', tags=['tag1','tag2'], input_requires=[], output_provides=[])
+        @function_attributes(short_name='pf_dt_sequential_surprise', tags=['tag1','tag2'], input_requires=[], output_provides=[], uses=[], used_by=[])
         def _perform_time_dependent_pf_sequential_surprise_computation(computation_result, debug_print=False):
             # function body
     ```
@@ -132,6 +132,8 @@ def function_attributes(short_name=None, tags=None, creation_date=None, input_re
         func.creation_date = creation_date
         func.input_requires = input_requires
         func.output_provides = output_provides
+        func.uses = uses
+        func.used_by = used_by
         return func
     return decorator
 

@@ -200,6 +200,31 @@ class SurpriseAnalysisResult(object):
     all_epochs_computed_cell_surprises_mean: np.ndarray
     all_epochs_all_cells_computed_surprises_mean: np.ndarray
 
+
+from attrs import define, field
+# import cattrs 
+
+@define
+class SurpriseAnalysisResult:
+    active_filter_epochs: Epoch
+    original_1D_decoder: BayesianPlacemapPositionDecoder
+    all_included_filter_epochs_decoder_result: DynamicContainer
+    flat_all_epochs_measured_cell_spike_counts: np.ndarray = field(metadata={'shape': ('n_neurons', 'n_total_time_bins')})
+    flat_all_epochs_measured_cell_firing_rates: np.ndarray = field(metadata={'shape': ('n_neurons', 'n_total_time_bins')})
+    flat_all_epochs_decoded_epoch_time_bins: np.ndarray = field(metadata={'shape': ('n_neurons', 'n_total_time_bins')})
+    flat_all_epochs_computed_surprises: np.ndarray = field(metadata={'shape': ('n_neurons', 'n_total_time_bins')})
+    flat_all_epochs_computed_expected_cell_firing_rates: np.ndarray = field(metadata={'shape': ('n_neurons', 'n_total_time_bins')})
+    flat_all_epochs_difference_from_expected_cell_spike_counts: np.ndarray = field(metadata={'shape': ('n_neurons', 'n_total_time_bins')})
+    flat_all_epochs_difference_from_expected_cell_firing_rates: np.ndarray = field(metadata={'shape': ('n_neurons', 'n_total_time_bins')})
+    all_epochs_decoded_epoch_time_bins_mean: np.ndarray = field(metadata={'shape': ('n_epochs', 'n_neurons')})
+    all_epochs_computed_cell_surprises_mean: np.ndarray = field(metadata={'shape': ('n_epochs', 'n_neurons')})
+    all_epochs_all_cells_computed_surprises_mean: np.ndarray = field(metadata={'shape': ('n_epochs',)})
+    flat_all_epochs_computed_one_left_out_to_global_surprises: np.ndarray = field(metadata={'shape': ('n_neurons', 'n_total_time_bins')})
+    all_epochs_computed_cell_one_left_out_to_global_surprises_mean: np.ndarray = field(metadata={'shape': ('n_epochs', 'n_neurons')})
+    all_epochs_all_cells_computed_one_left_out_to_global_surprises_mean: np.ndarray = field(metadata={'shape': ('n_epochs',)})
+    one_left_out_omitted_aclu_distance_df: pd.core.frame.DataFrame = field(metadata={'shape': ('n_neurons', 3)})
+    most_contributing_aclus: np.ndarray = field(metadata={'shape': ('n_neurons',)})
+
 """
 
 @unique
@@ -207,6 +232,7 @@ class GeneratedClassDefinitionType(ExtendedEnum):
     """Specifies which type of class to generate in CodeConversion.convert_dictionary_to_class_defn(...)."""
     STANDARD_CLASS = "STANDARD_CLASS"
     DATACLASS = "DATACLASS"
+    ATTRS_CLASS = "ATTRS_CLASS"
 
     @property
     def class_decorators(self):
@@ -227,19 +253,19 @@ class GeneratedClassDefinitionType(ExtendedEnum):
     # Static properties
     @classmethod
     def decoratorsList(cls):
-        return cls.build_member_value_dict([None,"@dataclass"])
+        return cls.build_member_value_dict([None,"@dataclass","@define"])
 
     @classmethod
     def requiredImportsList(cls):
-        return cls.build_member_value_dict([None,"from dataclasses import dataclass"])
+        return cls.build_member_value_dict([None,"from dataclasses import dataclass","from attrs import define, field"])
 
     @classmethod
     def include_init_fcnList(cls):
-        return cls.build_member_value_dict([True, False])
+        return cls.build_member_value_dict([True, False, False])
 
     @classmethod
     def include_properties_defnsList(cls):
-        return cls.build_member_value_dict([False, True])
+        return cls.build_member_value_dict([False, True, True])
 
 
 

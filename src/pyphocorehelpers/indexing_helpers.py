@@ -6,6 +6,7 @@ import pandas as pd
 
 from dataclasses import dataclass
 
+from pyphocorehelpers.function_helpers import function_attributes
 
 # ==================================================================================================================== #
 # List-Like and Iterators                                                                                              #
@@ -619,6 +620,7 @@ RowColTuple = namedtuple('RowColTuple', 'num_rows num_columns')
 PaginatedGridIndexSpecifierTuple = namedtuple('PaginatedGridIndexSpecifierTuple', 'linear_idx row_idx col_idx data_idx')
 RequiredSubplotsTuple = namedtuple('RequiredSubplotsTuple', 'num_required_subplots num_columns num_rows combined_indicies')
 
+@function_attributes(short_name='compute_paginated_grid_config', tags=['page','grid','config'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-03-30 16:47')
 def compute_paginated_grid_config(num_required_subplots, max_num_columns, max_subplots_per_page=None, data_indicies=None, last_figure_subplots_same_layout=True, debug_print=False):
     """ Fills row-wise first, and constrains the subplots values to just those that you need
     Args:

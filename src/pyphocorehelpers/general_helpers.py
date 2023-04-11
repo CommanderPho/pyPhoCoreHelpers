@@ -995,56 +995,57 @@ def convert_unit(size_in_bytes, unit):
         return size_in_bytes
 
    
-from dataclasses import dataclass
+# from dataclasses import dataclass
 
 
-@dataclass
-class LoadBuildSave(object):
-    """Tries to load the object from file first
-        If this isn't possible it runs something to compute it
-        Then it saves it so it can be loaded in the future.
+# @dataclass
+# class LoadBuildSave(object):
+#     """TODO 2023-04-11 - UNFINISHED 
+#         Tries to load the object from file first
+#         If this isn't possible it runs something to compute it
+#         Then it saves it so it can be loaded in the future.
 
-        Combines the code to perform this common procedure in a concise structure instead of requiring it to be spread out over several places.
-
-
-    Example 0: from `pyphoplacecellanalysis.General.Batch.NonInteractiveWrapper.batch_extended_computations`
-
-```python
-        try:
-            ## Get global 'jonathan_firing_rate_analysis' results:
-            curr_jonathan_firing_rate_analysis = curr_active_pipeline.global_computation_results.computed_data['jonathan_firing_rate_analysis']
-            neuron_replay_stats_df, rdf, aclu_to_idx, irdf = curr_jonathan_firing_rate_analysis['neuron_replay_stats_df'], curr_jonathan_firing_rate_analysis['rdf']['rdf'], curr_jonathan_firing_rate_analysis['rdf']['aclu_to_idx'], curr_jonathan_firing_rate_analysis['irdf']['irdf']
-            if progress_print:
-                print(f'{_comp_name} already computed.')
-        except (AttributeError, KeyError) as e:
-            if progress_print or debug_print:
-                print(f'{_comp_name} missing.')
-            if debug_print:
-                print(f'\t encountered error: {e}\n{traceback.format_exc()}\n.')
-            if progress_print or debug_print:
-                print(f'\t Recomputing {_comp_name}...')
-            curr_active_pipeline.perform_specific_computation(computation_functions_name_whitelist=['_perform_jonathan_replay_firing_rate_analyses'], fail_on_exception=True, debug_print=False) # fail_on_exception MUST be True or error handling is all messed up 
-            print(f'\t done.')
-            curr_jonathan_firing_rate_analysis = curr_active_pipeline.global_computation_results.computed_data['jonathan_firing_rate_analysis']
-            neuron_replay_stats_df, rdf, aclu_to_idx, irdf = curr_jonathan_firing_rate_analysis['neuron_replay_stats_df'], curr_jonathan_firing_rate_analysis['rdf']['rdf'], curr_jonathan_firing_rate_analysis['rdf']['aclu_to_idx'], curr_jonathan_firing_rate_analysis['irdf']['irdf']
-            newly_computed_values.append(_comp_name)
-        except Exception as e:
-            raise e
+#         Combines the code to perform this common procedure in a concise structure instead of requiring it to be spread out over several places.
 
 
-    Example 1: from `pyphoplacecellanalysis.Analysis.Decoder.decoder_result.perform_full_session_leave_one_out_decoding_analysis`
-        # Save to file to cache in case we crash:
-        leave_one_out_surprise_result_pickle_path = output_data_folder.joinpath(f'leave_one_out_surprise_results{cache_suffix}.pkl').resolve()
-        print(f'leave_one_out_surprise_result_pickle_path: {leave_one_out_surprise_result_pickle_path}')
-        saveData(leave_one_out_surprise_result_pickle_path, (active_filter_epochs, original_1D_decoder, all_included_filter_epochs_decoder_result, 
-                                                            flat_all_epochs_measured_cell_spike_counts, flat_all_epochs_measured_cell_firing_rates, 
-                                                            flat_all_epochs_decoded_epoch_time_bins, flat_all_epochs_computed_surprises, flat_all_epochs_computed_expected_cell_firing_rates,
-                                                            flat_all_epochs_difference_from_expected_cell_spike_counts, flat_all_epochs_difference_from_expected_cell_firing_rates,
-                                                            all_epochs_decoded_epoch_time_bins_mean, all_epochs_computed_cell_surprises_mean, all_epochs_all_cells_computed_surprises_mean))
+#     Example 0: from `pyphoplacecellanalysis.General.Batch.NonInteractiveWrapper.batch_extended_computations`
+
+# ```python
+#         try:
+#             ## Get global 'jonathan_firing_rate_analysis' results:
+#             curr_jonathan_firing_rate_analysis = curr_active_pipeline.global_computation_results.computed_data['jonathan_firing_rate_analysis']
+#             neuron_replay_stats_df, rdf, aclu_to_idx, irdf = curr_jonathan_firing_rate_analysis['neuron_replay_stats_df'], curr_jonathan_firing_rate_analysis['rdf']['rdf'], curr_jonathan_firing_rate_analysis['rdf']['aclu_to_idx'], curr_jonathan_firing_rate_analysis['irdf']['irdf']
+#             if progress_print:
+#                 print(f'{_comp_name} already computed.')
+#         except (AttributeError, KeyError) as e:
+#             if progress_print or debug_print:
+#                 print(f'{_comp_name} missing.')
+#             if debug_print:
+#                 print(f'\t encountered error: {e}\n{traceback.format_exc()}\n.')
+#             if progress_print or debug_print:
+#                 print(f'\t Recomputing {_comp_name}...')
+#             curr_active_pipeline.perform_specific_computation(computation_functions_name_whitelist=['_perform_jonathan_replay_firing_rate_analyses'], fail_on_exception=True, debug_print=False) # fail_on_exception MUST be True or error handling is all messed up 
+#             print(f'\t done.')
+#             curr_jonathan_firing_rate_analysis = curr_active_pipeline.global_computation_results.computed_data['jonathan_firing_rate_analysis']
+#             neuron_replay_stats_df, rdf, aclu_to_idx, irdf = curr_jonathan_firing_rate_analysis['neuron_replay_stats_df'], curr_jonathan_firing_rate_analysis['rdf']['rdf'], curr_jonathan_firing_rate_analysis['rdf']['aclu_to_idx'], curr_jonathan_firing_rate_analysis['irdf']['irdf']
+#             newly_computed_values.append(_comp_name)
+#         except Exception as e:
+#             raise e
 
 
-```
+#     Example 1: from `pyphoplacecellanalysis.Analysis.Decoder.decoder_result.perform_full_session_leave_one_out_decoding_analysis`
+#         # Save to file to cache in case we crash:
+#         leave_one_out_surprise_result_pickle_path = output_data_folder.joinpath(f'leave_one_out_surprise_results{cache_suffix}.pkl').resolve()
+#         print(f'leave_one_out_surprise_result_pickle_path: {leave_one_out_surprise_result_pickle_path}')
+#         saveData(leave_one_out_surprise_result_pickle_path, (active_filter_epochs, original_1D_decoder, all_included_filter_epochs_decoder_result, 
+#                                                             flat_all_epochs_measured_cell_spike_counts, flat_all_epochs_measured_cell_firing_rates, 
+#                                                             flat_all_epochs_decoded_epoch_time_bins, flat_all_epochs_computed_surprises, flat_all_epochs_computed_expected_cell_firing_rates,
+#                                                             flat_all_epochs_difference_from_expected_cell_spike_counts, flat_all_epochs_difference_from_expected_cell_firing_rates,
+#                                                             all_epochs_decoded_epoch_time_bins_mean, all_epochs_computed_cell_surprises_mean, all_epochs_all_cells_computed_surprises_mean))
 
-    """
-    property: type
+
+# ```
+
+#     """
+#     property: type
     

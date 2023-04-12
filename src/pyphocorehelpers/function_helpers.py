@@ -125,6 +125,8 @@ def function_attributes(short_name=None, tags=None, creation_date=None, input_re
         def _perform_time_dependent_pf_sequential_surprise_computation(computation_result, debug_print=False):
             # function body
     ```
+
+    func.short_name, func.tags, func.creation_date, func.input_requires, func.output_provides, func.uses, func.used_by
     """
     def decorator(func):
         func.short_name = short_name

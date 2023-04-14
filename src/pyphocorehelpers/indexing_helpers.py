@@ -632,7 +632,7 @@ def compute_paginated_grid_config(num_required_subplots, max_num_columns, max_su
         
         
     Example:
-    
+        from pyphocorehelpers.indexing_helpers import compute_paginated_grid_config
         subplot_no_pagination_configuration, included_combined_indicies_pages, page_grid_sizes = compute_paginated_grid_config(nMapsToShow, max_num_columns=subplots.num_columns, max_subplots_per_page=max_subplots_per_page, data_indicies=included_unit_indicies, last_figure_subplots_same_layout=last_figure_subplots_same_layout)
         num_pages = len(included_combined_indicies_pages)
     

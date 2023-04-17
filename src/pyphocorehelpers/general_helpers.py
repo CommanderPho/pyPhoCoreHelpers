@@ -1,4 +1,5 @@
 from typing import Callable, List, Optional, OrderedDict  # for OrderedMeta
+import sys # needed for `is_reloaded_instance`
 from enum import Enum
 from enum import unique # GeneratedClassDefinitionType
 from pyphocorehelpers.DataStructure.enum_helpers import ExtendedEnum # required for GeneratedClassDefinitionType
@@ -1049,3 +1050,61 @@ def convert_unit(size_in_bytes, unit):
 #     """
 #     property: type
     
+
+
+# ==================================================================================================================== #
+# UNTESTED                                                                                                             #
+# ==================================================================================================================== #
+
+# def is_reloaded_instance(obj, classinfo):
+#     """ determines if a class instance is a reloaded instance of a class"""
+#     return isinstance(obj, classinfo) and sys.getrefcount(classinfo) > 1
+
+
+
+# def get_regular_attrs(obj, include_parent=True):
+#     """ Intended to get all of the stored attributes of an object, including those inherited from parent classes, while ignoring @properties and other computed variables
+#     Example:
+#         class ParentClass:
+#             def __init__(self, z):
+#                 self.z = z
+
+#         class MyClass(ParentClass):
+#             def __init__(self, x):
+#                 super().__init__(x+1)
+#                 self.x = x
+#                 self.y = x + 1
+
+#             @property
+#             def computed_prop(self):
+#                 return self.x + self.y
+
+#         obj = MyClass(5)
+#         regular_attrs = get_regular_attrs(obj)
+#         print(regular_attrs)  # Output: ['z', 'x', 'y']
+    
+
+#     ISSUE: returns propery when defined this way
+
+#     @property
+#     def pdf_normalized_tuning_curves(self):
+#         return Ratemap.perform_AOC_normalization(self.tuning_curves)
+
+
+#     Usage:
+#         get_regular_attrs(ratemap_2D, include_parent=False)
+
+#     """
+#     regular_attrs = []
+#     cls = type(obj)
+#     while cls:
+#         for attr in cls.__dict__:
+#             if not callable(getattr(obj, attr)) and not attr.startswith('__'):
+#                 regular_attrs.append(attr)
+#         if not include_parent:
+#             break
+#         cls = cls.__base__
+#     return list(set(regular_attrs))
+
+
+

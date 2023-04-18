@@ -1,6 +1,6 @@
 from collections import namedtuple
 from itertools import islice
-from typing import Optional
+from typing import Callable, Optional
 import numpy as np
 import pandas as pd
 
@@ -247,7 +247,6 @@ def nested_dict_set(dic, key_list, value, create_missing=True):
         d[key_list[-1]] = value
     return dic
 
-
 def flatpaths_to_nested_dicts(flat_paths_form_dict, default_value_override='Test Value', flat_path_delimiter='.', debug_print=False):
     """ Reciprocal of nested_dicts_to_flatpaths(...)
 
@@ -374,6 +373,19 @@ def nested_dicts_to_flatpaths(curr_key, curr_value, max_depth=20, depth=0, flat_
             if debug_print:
                 print(f'NON-terminal item: ({curr_key}, {curr_value})')
             return None
+
+
+def apply_to_dict_values(a_dict: dict, a_callable: Callable, include_condition: Callable = None) -> dict:
+    """ applies the Callable a_callable to the values of a_dict 
+    e.g. 
+
+    from pyphocorehelpers.indexing_helpers import apply_to_dict_values
+    """
+    if include_condition is not None:
+        return {k:a_callable(v) for k, v in a_dict.items() if include_condition(k,v)}
+    else:
+        return {k:a_callable(v) for k, v in a_dict.items()}
+
 
 # ==================================================================================================================== #
 # Pandas Dataframes                                                                                                    #

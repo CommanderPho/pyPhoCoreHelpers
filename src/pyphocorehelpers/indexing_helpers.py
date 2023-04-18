@@ -387,6 +387,19 @@ def apply_to_dict_values(a_dict: dict, a_callable: Callable, include_condition: 
         return {k:a_callable(v) for k, v in a_dict.items()}
 
 
+
+
+def safe_np_vstack(arr):
+    """ a version of np.vstack that doesn't throw a ValueError on empty lists
+        from pyphocorehelpers.indexing_helpers import safe_np_vstack
+
+    """
+    if len(arr)>0:
+        return np.vstack(arr) # without this check np.vstack throws `ValueError: need at least one array to concatenate` for empty lists
+    else:
+        return np.array(arr) # ChatGPT suggests returning np.empty((0, 0))  # Create an empty array with shape (0, 0)
+
+
 # ==================================================================================================================== #
 # Pandas Dataframes                                                                                                    #
 # ==================================================================================================================== #

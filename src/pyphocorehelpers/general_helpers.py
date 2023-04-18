@@ -8,7 +8,7 @@ import re # for CodeConversion
 import numpy as np # for CodeConversion
 import pandas as pd
 from neuropy.utils.dynamic_container import overriding_dict_with # required for safely_accepts_kwargs
-from pyphocorehelpers.print_helpers import strip_type_str_to_classname # used to convert dict to class with types
+
 
 
 class OrderedMeta(type):
@@ -375,6 +375,7 @@ class CodeConversion(object):
         """ Uses `strip_type_str_to_classname(a_type) to find the best type-string representation.
 
         """
+        from pyphocorehelpers.print_helpers import strip_type_str_to_classname # used to convert dict to class with types
         out_extracted_typestring = strip_type_str_to_classname(a_type_str=a_type)
         if out_extracted_typestring in keep_generic_types:
             # If the parsed typestring is in the ignored type-string list, keep the generic type_name instead of this one.

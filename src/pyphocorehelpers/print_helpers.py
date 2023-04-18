@@ -25,7 +25,7 @@ import logging
 import objsize # python -m pip install objsize==0.6.1
 
 from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters # for CapturedException
-
+# from pyphocorehelpers.function_helpers import function_attributes # # function_attributes causes circular import issue :[
 
 
 
@@ -278,6 +278,47 @@ class DocumentationFilePrinter(object):
         key_color = ANSI_COLOR_STRINGS.OKBLUE
         variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA # converts to greyscale for printing better
         return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}"
+
+
+
+# ==================================================================================================================== #
+# HTML Formatted Text                                                                                                  #
+# ==================================================================================================================== #
+
+# function_attributes causes circular import issue :[
+# @function_attributes(short_name='generate_html_string', tags=['html','format','text','labels','title','pyqtgraph'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-04-18 14:50')
+def generate_html_string(input_str, color=None, font_size=None, bold=False, italic=False):
+    """Generate an HTML string for use in a pyqtgraph label or title from an input string with optional formatting options.
+    
+    Args:
+        input_str (str): The input string.
+        color (str, optional): The color of the text. Defaults to None.
+        font_size (str, optional): The font size of the text. Defaults to None.
+        bold (bool, optional): Whether the text should be bold. Defaults to False.
+        italic (bool, optional): Whether the text should be italic. Defaults to False.
+    
+    Returns:
+        str: The HTML string.
+
+    Usage:
+        from pyphocorehelpers.print_helpers import generate_html_string
+        i_str = generate_html_string('i', color='white', bold=True)
+        j_str = generate_html_string('j', color='red', bold=True)
+        title_str = generate_html_string(f'JSD(p_x_given_n, pf[{i_str}]) - JSD(p_x_given_n, pf[{j_str}]) where {j_str} non-firing')
+        win.setTitle(title_str)
+
+        >> 'JSD(p_x_given_n, pf[<b><span style="color:white;">i</span></b>]) - JSD(p_x_given_n, pf[<b><span style="color:red;">j</span></b>]) where <b><span style="color:red;">j</span></b> non-firing'
+    """
+    html_str = input_str
+    if color:
+        html_str = f'<span style="color:{color};">{html_str}</span>'
+    if font_size:
+        html_str = f'<font size="{font_size}">{html_str}</font>'
+    if bold:
+        html_str = f'<b>{html_str}</b>'
+    if italic:
+        html_str = f'<i>{html_str}</i>'
+    return html_str
 
 
 
@@ -810,9 +851,6 @@ class TypePrintMode(ExtendedEnum):
         """
         return curr_str.rsplit('.', 1)[-1] # 
 
-
-
-
 def strip_type_str_to_classname(a_type_str):
     """ Extracts the class string out of the string returned by type(an_obj) 
     a_type_str: a string returned by type(an_obj) in the form of ["<class 'tuple'>", "<class 'int'>", "<class 'float'>", "<class 'numpy.ndarray'>", "<class 'pandas.core.series.Series'>", "<class 'pandas.core.frame.DataFrame'>", "<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>", "<class 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters'>"]
@@ -826,8 +864,6 @@ def strip_type_str_to_classname(a_type_str):
 
     """
     return TypePrintMode._convert_FULL_TYPE_STR_to_FQDN(a_type_str)
-
-
 
 def safe_get_variable_shape(a_value):
     """ generally and safely tries several methods of determining a_value's shape 

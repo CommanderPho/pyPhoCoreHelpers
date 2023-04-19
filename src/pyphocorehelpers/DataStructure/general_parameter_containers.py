@@ -1,7 +1,4 @@
-    
-from pyphocorehelpers.general_helpers import OrderedMeta
-from pyphocorehelpers.print_helpers import SimplePrintable, PrettyPrintable, iPythonKeyCompletingMixin
-
+from pyphocorehelpers.print_helpers import iPythonKeyCompletingMixin
 from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters
 
 class VisualizationParameters(iPythonKeyCompletingMixin, DynamicParameters):        
@@ -12,6 +9,7 @@ class VisualizationParameters(iPythonKeyCompletingMixin, DynamicParameters):
 class DebugHelper(iPythonKeyCompletingMixin, DynamicParameters):
     def __init__(self, name, **kwargs) -> None:
         super(DebugHelper, self).__init__(name=name, **kwargs)
+
 
 class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
     def __init__(self, name, **kwargs) -> None:

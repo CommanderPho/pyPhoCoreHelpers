@@ -79,7 +79,7 @@ def inspect_callable_arguments(a_callable: Callable, debug_print=False):
     return full_fn_spec, positional_args_names, kwargs_names, default_kwargs_dict
 
 def safely_accepts_kwargs(fn):
-    """ builds a wrapped version of fn that only takes the kwargs that it can use, and shrugs the rest off 
+    """ builds a wrapped version of fn that only takes the kwargs that it can use, and shrugs the rest off (without any warning that they're unused, making it a bit dangerous)
     Can be used as a decorator to make any function gracefully accept unhandled kwargs
 
     Can be used to conceptually "splat" a configuration dictionary of properties against a function that only uses a subset of them, such as might need to be done for plotting, etc)
@@ -985,7 +985,7 @@ class SIZE_UNIT(Enum):
     MB = 3
     GB = 4
    
-def convert_unit(size_in_bytes, unit):
+def convert_unit(size_in_bytes, unit: SIZE_UNIT):
     """ Convert the size from bytes to other units like KB, MB or GB"""
     if unit == SIZE_UNIT.KB:
         return size_in_bytes/1024

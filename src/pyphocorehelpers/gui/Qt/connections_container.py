@@ -5,7 +5,7 @@ from pyphocorehelpers.print_helpers import SimplePrintable, PrettyPrintable, iPy
 from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters
 
 class ConnectionsContainer(iPythonKeyCompletingMixin, DynamicParameters):
-    """ holdsd references to connections and allows batch disconnection for specific signals """
+    """ holds references to connections and allows batch disconnection for specific signals """
     def __init__(self, **kwargs) -> None:
         super(ConnectionsContainer, self).__init__(**kwargs)
     

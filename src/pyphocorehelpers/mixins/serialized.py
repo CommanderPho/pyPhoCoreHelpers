@@ -2,20 +2,11 @@
 # Safelist (Allowlist) and Blocklist
 
 
-
-class SerializedAttributesSpecifyingClass:
-    """ Implements a classmethod that returns a list of serialized_keys, allowing the implementor to specify which keys will be serialized/deserialized. 
-    
-        Useful for ignoring computed values, etc.
-    """
-    @classmethod
-    def serialized_keys(cls):
-        raise NotImplementedError
-
-
 class SerializedAttributesAllowBlockSpecifyingClass:
     """ 2023-04-14 - Implements two potential classmethods that returns an allowlist or denylist of serialized_keys, allowing the implementor to specify which keys will be serialized/deserialized. 
         Useful for ignoring computed values, etc.
+
+        Aims to completely replace `SerializedAttributesSpecifyingClass`
 
         from pyphocorehelpers.mixins.serialized import SerializedAttributesAllowBlockSpecifyingClass
     """
@@ -41,6 +32,18 @@ class SerializedAttributesAllowBlockSpecifyingClass:
         for a_blocked_key in cls.serialized_key_blocklist:
             state_dict.pop(a_blocked_key)
         return state_dict
+
+
+    # @classmethod
+    # def serialized_keys(cls):
+    #     """ Allows overriding to directly specify the keys to be serialized, or allowing them to be created from `serialized_key_allowlist` and `serialized_key_blocklist` """
+    #     included_keys = []
+    #     if cls.serialized_key_allowlist is not None:
+    #         # Only use the allow list
+    #         included_keys.extend(cls.serialized_key_allowlist)
+    #     else:
+    #         # no allowlist specified
+    #         state = cls.serialization_perform_drop_blocklist(self.__dict__.copy())
 
 
     def to_dict(self):

@@ -115,18 +115,26 @@ def add_method(cls):
 # ==================================================================================================================== #
 # Function Attributes Decorators                                                                                       #
 # ==================================================================================================================== #
-def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None, uses=None, used_by=None):
+
+_custom_function_metadata_attribute_names = dict(short_name=None, tags=None, creation_date=None,
+                                         input_requires=None, output_provides=None,
+                                         uses=None, used_by=None,
+                                         related_items=None, # references to items related to this definition
+)
+
+
+def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None, uses=None, used_by=None, related_items=None):
     """Adds function attributes to a function or class
 
     ```python
         from pyphocorehelpers.function_helpers import function_attributes
 
-        @function_attributes(short_name='pf_dt_sequential_surprise', tags=['tag1','tag2'], input_requires=[], output_provides=[], uses=[], used_by=[])
+        @function_attributes(short_name='pf_dt_sequential_surprise', tags=['tag1','tag2'], input_requires=[], output_provides=[], uses=[], used_by=[], related_items=[])
         def _perform_time_dependent_pf_sequential_surprise_computation(computation_result, debug_print=False):
             # function body
     ```
 
-    func.short_name, func.tags, func.creation_date, func.input_requires, func.output_provides, func.uses, func.used_by
+    func.short_name, func.tags, func.creation_date, func.input_requires, func.output_provides, func.uses, func.used_by, func.related_items
     """
     def decorator(func):
         func.short_name = short_name
@@ -136,32 +144,13 @@ def function_attributes(short_name=None, tags=None, creation_date=None, input_re
         func.output_provides = output_provides
         func.uses = uses
         func.used_by = used_by
+        func.related_items = related_items
         return func
     return decorator
 
 
 
-# ==================================================================================================================== #
-# Documentation Decorators                                                                                             #
-# ==================================================================================================================== #
-def documentation_tags(func, *tags):
-    """Adds documentations tags toa  function or class
 
-    Usage:
-        from pyphocorehelpers.function_helpers import documentation_tags
-        @documentation_tags('tag1', 'tag2')
-        def my_function():
-            ...
-
-        Access via:
-            my_function.tags
-
-    """
-    @wraps(func)
-    def decorator(func):
-        func.tags = tags
-        return func
-    return decorator
 
 
 

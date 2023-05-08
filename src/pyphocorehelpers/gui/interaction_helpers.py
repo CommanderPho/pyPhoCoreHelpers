@@ -1,6 +1,9 @@
 from typing import Callable
 import numpy as np
+from pyphocorehelpers.programming_helpers import metadata_attributes
+from pyphocorehelpers.function_helpers import function_attributes
 
+@metadata_attributes(short_name=None, tags=['callback', 'sequence'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-05-08 14:51', related_items=[])
 class CallbackSequence:
     """ Helper class to call a list of callbacks with the same argument sequentally """
     def __init__(self, callbacks_list, is_debug=False):
@@ -14,6 +17,7 @@ class CallbackSequence:
       
  
 
+@metadata_attributes(short_name=None, tags=['callback', 'sequence', 'wrapper'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-05-08 14:51', related_items=[])
 class CallbackWrapper(object):
     """ A simple wrapper class to handle defining separate user-provided setup(...), update(...) functions
     

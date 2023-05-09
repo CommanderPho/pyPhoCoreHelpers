@@ -796,6 +796,9 @@ def build_spanning_grid_matrix(x_values, y_values, debug_print=False):
 class Paginator:
     """ helper that allows easily creating paginated data either for batch or realtime usage. 
 
+    Independent of any plotting technology. Just meant to hold and paginate the data.
+    
+    
     TODO 2023-05-02 - See also:
     ## paginated outputs for shared cells
     included_unit_indicies_pages = [[curr_included_unit_index for (a_linear_index, curr_row, curr_col, curr_included_unit_index) in v] for page_idx, v in enumerate(included_combined_indicies_pages)] # a list of length `num_pages` containing up to 10 items

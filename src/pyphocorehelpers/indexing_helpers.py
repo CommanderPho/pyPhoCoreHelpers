@@ -388,6 +388,26 @@ def apply_to_dict_values(a_dict: dict, a_callable: Callable, include_condition: 
 
 
 
+# ==================================================================================================================== #
+# Numpy NDArrays                                                                                                       #
+# ==================================================================================================================== #
+
+@function_attributes(short_name=None, tags=['numpy', 'safe', 'indexing','list'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-05-08 20:06', related_items=[])
+def safe_numpy_index(arr, idxs: np.ndarray):
+    """ tries to prevent erros when arr is a list and idxs is a numpy array. """
+    try:
+        return arr[idxs] # works for arr: np.ndarray and idxs: np.ndarray
+    except TypeError as e:
+        # "TypeError: only integer scalar arrays can be converted to a scalar index"
+        # Occurs when arr is list and idxs: np.ndarray
+        if isinstance(arr, list):
+            return [arr[i] for i in idxs] # returns a list object
+        else:
+            print(f"NotImplementedError: type(arr): {type(arr)}, type(idxs): {type(idxs)}")
+            raise NotImplementedError
+    except Exception as e:
+        raise e
+        
 
 def safe_np_vstack(arr):
     """ a version of np.vstack that doesn't throw a ValueError on empty lists

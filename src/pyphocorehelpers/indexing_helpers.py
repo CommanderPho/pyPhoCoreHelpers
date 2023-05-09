@@ -404,7 +404,7 @@ def apply_to_dict_values(a_dict: dict, a_callable: Callable, include_condition: 
 
 @function_attributes(short_name=None, tags=['numpy', 'safe', 'indexing','list'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-05-08 20:06', related_items=[])
 def safe_numpy_index(arr, idxs: np.ndarray):
-    """ tries to prevent erros when arr is a list and idxs is a numpy array. """
+    """ tries to prevent errors when arr is a list and idxs is a numpy array. """
     try:
         return arr[idxs] # works for arr: np.ndarray and idxs: np.ndarray
     except TypeError as e:

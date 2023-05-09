@@ -37,6 +37,29 @@ def safe_len(v):
         # raise e
         print(e)
         return None
+    
+
+def safe_find_index_in_list(a_list, a_search_obj):
+	""" tries to find the index of `a_search_obj` in the list `a_list` 
+	If found, returns the index
+	If not found, returns None (instead of throwing a ValueError which is the default)
+	
+	Example:
+		an_ax = plots.axs[2]
+		safe_find_index_in_list(plots.axs, an_ax)
+		# list(plots.axs).index(an_ax)
+	"""
+	if not isinstance(a_list, list):
+		a_list = list(a_list) # convert to list
+	try:
+		return a_list.index(a_search_obj)
+	except ValueError as e:
+		# Item not found
+		return None
+	except Exception as e:
+		raise e
+
+
 
 def is_consecutive_no_gaps(arr, enable_debug_print=False):
     """ Checks whether a passed array/list is a series of ascending indicies without gaps
@@ -765,7 +788,9 @@ def build_spanning_grid_matrix(x_values, y_values, debug_print=False):
     return all_entries_matrix, flat_all_entries_matrix, original_data_shape
 
 
-
+# ==================================================================================================================== #
+# Pages/Pagination                                                                                                     #
+# ==================================================================================================================== #
 
 @define(slots=False)
 class Paginator:
@@ -825,6 +850,9 @@ class Paginator:
         nItemsToShow  = len(sequencesToShow[0])
         subplot_no_pagination_configuration, included_combined_indicies_pages, page_grid_sizes = compute_paginated_grid_config(nItemsToShow, max_num_columns=max_num_columns, max_subplots_per_page=max_subplots_per_page, data_indicies=data_indicies, last_figure_subplots_same_layout=last_figure_subplots_same_layout)
         num_pages = len(included_combined_indicies_pages)
+        
+        # Build a reverse index from (page_idx: int, a_linear_index: int) -> data_index: int
+
         return cls(sequencesToShow=sequencesToShow, subplot_no_pagination_configuration=subplot_no_pagination_configuration, included_combined_indicies_pages=included_combined_indicies_pages, page_grid_sizes=page_grid_sizes, nItemsToShow=nItemsToShow, num_pages=num_pages)
 
 

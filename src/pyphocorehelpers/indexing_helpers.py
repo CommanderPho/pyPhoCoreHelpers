@@ -28,6 +28,15 @@ def safe_get(list, index, fallback_value):
         return fallback_value
 
 
+def safe_len(v):
+    """ 2023-05-08 - tries to return the length of v if possible, otherwise returns None """
+    try:
+        return len(v)
+    except Exception as e:
+        # raise e
+        print(e)
+        return None
+
 def is_consecutive_no_gaps(arr, enable_debug_print=False):
     """ Checks whether a passed array/list is a series of ascending indicies without gaps
     

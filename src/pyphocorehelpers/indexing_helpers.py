@@ -794,7 +794,7 @@ def build_spanning_grid_matrix(x_values, y_values, debug_print=False):
 
 @define(slots=False)
 class Paginator:
-    """ helper that allows easily creating paginated data either for batch or realtime usage. 
+    """ 2023-05-02 - helper that allows easily creating paginated data either for batch or realtime usage. 
 
     Independent of any plotting technology. Just meant to hold and paginate the data.
     

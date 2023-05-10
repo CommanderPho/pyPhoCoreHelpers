@@ -69,3 +69,91 @@ def metadata_attributes(short_name=None, tags=None, creation_date=None, input_re
         return func
     return decorator
 
+
+import inspect
+
+class IPythonHelpers:
+    """ various helpers useful in jupyter-lab notebooks and IPython """
+    
+    @classmethod
+    def _subfn_helper_get_name(cls, lst=[]):
+        local_vars = inspect.currentframe().f_back.f_locals.items()
+        for i in local_vars:
+            lst.append(i)
+        return dict(lst)
+
+    @classmethod
+    def _helper_get_global_dict(cls):
+        ## Globals method only works when defined in notebook.
+        # g = globals()
+        
+
+        ## Inspect stack approach:
+        # caller_frame = inspect.stack()[1]
+        # caller_module = inspect.getmodule(caller_frame[0])
+        # g = caller_module.__dict__
+        # # return [name for name, entry in caller_module.__dict__.items() ]
+
+        g = cls._subfn_helper_get_name()
+
+        return g
+
+    @classmethod
+    def cell_vars(cls, get_globals_fn=None, offset=0):
+        """ Captures a dictionary containing all assigned variables from the notebook cell it's used in.
+        
+        Arguments:
+            get_globals_fn: Callable - required for use in a Jupyter Notebook to access the correct globals (see ISSUE 2023-05-10
+
+
+        Source:    
+            https://stackoverflow.com/questions/46824287/print-all-variables-defined-in-one-jupyter-cell
+            BenedictWilkins
+            answered Jun 12, 2020 at 15:55
+        
+        Usage:
+            from pyphocorehelpers.programming_helpers import IPythonHelpers
+            
+            a = 1
+            b = 2
+            c = 3
+
+            captured_cell_vars = IPythonHelpers.cell_vars(lambda: globals())
+
+            >> {'a': 1, 'b': 2, 'c': 3}
+            
+            
+        SOLVED ISSUE 2023-05-10 - Doesn't currently work when imported into the notebook because globals() accesses the code's calling context (this module) and not the notebook.
+            See discussion here: https://stackoverflow.com/questions/61125218/python-calling-a-module-function-which-uses-globals-but-it-only-pulls-global
+            https://stackoverflow.com/a/1095621/5646962
+            
+            Tangentially relevent:
+                https://stackoverflow.com/questions/37718907/variable-explorer-in-jupyter-notebook
+                
+            Alternative approaches:
+                https://stackoverflow.com/questions/27952428/programmatically-get-current-ipython-notebook-cell-output/27952661#27952661
+                
+                
+        """
+        from ipywidgets import get_ipython # required for IPythonHelpers.cell_vars
+        import io
+        from contextlib import redirect_stdout
+
+        ipy = get_ipython()
+        out = io.StringIO()
+
+        with redirect_stdout(out):
+            # ipy.magic("history {0}".format(ipy.execution_count - offset)) # depricated since IPython 0.13
+            ipy.run_line_magic("history", format(ipy.execution_count - offset))
+
+        #process each line...
+        x = out.getvalue().replace(" ", "").split("\n")
+        x = [a.split("=")[0] for a in x if "=" in a] #all of the variables in the cell
+        
+        if get_globals_fn is None:
+            g = cls._helper_get_global_dict()
+        else:
+            g = get_globals_fn()
+
+        result = {k:g[k] for k in x if k in g}
+        return result

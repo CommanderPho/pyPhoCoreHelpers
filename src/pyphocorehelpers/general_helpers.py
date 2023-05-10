@@ -295,6 +295,25 @@ class CodeConversion(object):
     _types_replace_dict = {'numpy.':'np.', 'pandas.':'pd.'}
     _inverse_types_replace_dict = {v:k for k,v in _types_replace_dict.items()}
 
+
+    _general_find_replace_dict = {'pd.core.frame.DataFrame':'pd.DataFrame'}
+
+
+    @classmethod
+    def apply_find_replace(cls, find_replace_dict: dict, target_str: str):
+        """ returns the target_str after applying each find/replace pair in find_replace_dict to it. 
+
+        Usage:
+
+            cls.apply_find_replace(find_replace_dict=cls._general_find_replace_dict, target_str=)
+        """
+        if find_replace_dict is None:
+            find_replace_dict = cls._general_find_replace_dict # get default
+        for find_txt, replace_txt in find_replace_dict.items():
+            target_str = target_str.replace(find_txt, replace_txt)
+        return target_str
+
+
     @classmethod
     def _stripComments(cls, code):
         code = str(code)
@@ -576,6 +595,9 @@ class CodeConversion(object):
                         if (import_statement is not None) and (import_statement not in needed_import_statements):
                             needed_import_statements.append(import_statement)
 
+
+                    # Apply the find/replace dict to fix issues like '' being output 
+                    relative_types_dict = {k:cls.apply_find_replace(find_replace_dict=cls._general_find_replace_dict, target_str=v) for k,v in relative_types_dict.items()}
                     
                     member_properties_code_str = '\n'.join([f"{indent_character}{output_variable_prefix}{k}: {v}" for k,v in relative_types_dict.items()])
                 else:

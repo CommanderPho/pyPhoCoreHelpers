@@ -516,6 +516,10 @@ class CodeConversion(object):
         """
         needed_import_statements = []
         target_dict = cls._try_parse_to_dictionary_if_needed(target_dict=target_dict) # Ensure a valid dictionary is provided or can be built
+
+        if class_definition_mode is None:
+            class_definition_mode =  GeneratedClassDefinitionType.ATTRS_CLASS # Default to an ATTRS_CLASS as of 2023-05-10
+            
         if class_definition_mode is not None and isinstance(class_definition_mode, GeneratedClassDefinitionType):
             # generated class definition type provided to shortcut the settings
             print(f'WARNING: class_definition_mode ({class_definition_mode}) was provided, overriding the `class_decorators`,  `include_init_fcn`, `include_properties_defns` settings!')

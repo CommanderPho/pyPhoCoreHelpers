@@ -54,3 +54,6 @@ MANIFEST
 **/__pycache__
 desktop.ini
 *.sha256
+src/cscope.files
+src/cscope.out
+src/myproject.db

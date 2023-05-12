@@ -102,6 +102,8 @@ class IPythonHelpers:
     def cell_vars(cls, get_globals_fn=None, offset=0):
         """ Captures a dictionary containing all assigned variables from the notebook cell it's used in.
         
+        NOTE: You MUST call it with `captured_cell_vars = IPythonHelpers.cell_vars(lambda: globals())` if you want to access it in a notebook cell.
+        
         Arguments:
             get_globals_fn: Callable - required for use in a Jupyter Notebook to access the correct globals (see ISSUE 2023-05-10
 

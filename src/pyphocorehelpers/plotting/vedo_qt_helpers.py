@@ -52,11 +52,13 @@ class MainVedoPlottingWindow(Qt.QMainWindow):
     def onKeypress(self, evt):
         printc("You have pressed key:", evt.keyPressed, c='b')
 
+
     @Qt.pyqtSlot()
     def onClick(self):
         printc("..calling onClick")
         self.plt.actors[0].color('red').rotateZ(40)
         self.plt.interactor.Render()
+
 
     def onClose(self):
         #Disable the interactor before closing to prevent it

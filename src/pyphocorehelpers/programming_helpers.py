@@ -159,3 +159,88 @@ class IPythonHelpers:
 
         result = {k:g[k] for k in x if k in g}
         return result
+
+
+
+
+from enum import Enum
+import re
+
+
+# 	def transform_dict_literal_to_constructor(dict_literal):
+# 		# Regex pattern to match key-value pairs in dictionary literal syntax
+# 		pattern = r"'(\w+)':([^,}]+)"
+
+# 		# Find all matches of key-value pairs
+# 		matches = re.findall(pattern, dict_literal)
+
+# 		# Construct the transformed dictionary using dict() constructor syntax
+# 		transformed_dict = "dict("
+# 		for match in matches:
+# 			key = match[0]
+# 			value = match[1]
+# 			transformed_dict += f"{key}={value},"
+
+# 		transformed_dict = transformed_dict.rstrip(",")  # Remove trailing comma
+# 		transformed_dict += ")"
+
+
+class PythonDictionaryDefinitionFormat(Enum):
+    """Enumeration for Python dictionary definition formats.
+    TODO 2023-05-16: UNTESTED, UNUSED
+    Goal: Transform code between Python's dictionary literal format:
+        
+        dictionary literal format:  {'require_intersecting_epoch':session.ripple, 'min_epoch_included_duration': 0.06, 'max_epoch_included_duration': None, 'maximum_speed_thresh': None, 'min_inclusion_fr_active_thresh': 0.01, 'min_num_unique_aclu_inclusions': 3}
+
+        dict constructor format:    dict(require_intersecting_epoch=session.ripple, min_epoch_included_duration=0.06, max_epoch_included_duration=None, maximum_speed_thresh=None, min_inclusion_fr_active_thresh=0.01, min_num_unique_aclu_inclusions=3)
+
+    
+        from pyphocorehelpers.programming_helpers import PythonDictionaryDefinitionFormat
+        input_str = "{'require_intersecting_epoch':session.ripple, 'min_epoch_included_duration': 0.06, 'max_epoch_included_duration': None, 'maximum_speed_thresh': None, 'min_inclusion_fr_active_thresh': 0.01, 'min_num_unique_aclu_inclusions': 3}"
+        format_detected = PythonDictionaryDefinitionFormat.DICTIONARY_LITERAL
+
+        converted_str = PythonDictionaryDefinitionFormat.convert_format(input_str, PythonDictionaryDefinitionFormat.DICT_CONSTRUCTOR)
+        print(converted_str)
+        # Output: dict(require_intersecting_epoch=session.ripple, min_epoch_included_duration=0.06, max_epoch_included_duration=None, maximum_speed_thresh=None, min_inclusion_fr_active_thresh=0.01, min_num_unique_aclu_inclusions=3)
+
+    """
+    
+    DICTIONARY_LITERAL = "dictionary_literal"
+    DICT_CONSTRUCTOR = "dict_constructor"
+    
+    @staticmethod
+    def convert_format(input_str, target_format):
+        """Converts the input string to the target format."""
+        
+        if target_format == PythonDictionaryDefinitionFormat.DICTIONARY_LITERAL:
+            # Convert from dict() constructor to dictionary literal
+            pattern = r"(\w+)=(\S+)"
+            transformed_str = "{"
+            for match in re.finditer(pattern, input_str):
+                key = match.group(1)
+                value = match.group(2)
+                transformed_str += f"'{key}':{value}, "
+            transformed_str = transformed_str.rstrip(", ")
+            transformed_str += "}"
+            return transformed_str
+        
+        elif target_format == PythonDictionaryDefinitionFormat.DICT_CONSTRUCTOR:
+            # Convert from dictionary literal to dict() constructor
+            pattern = r"'(\w+)':([^,}]+)"
+            transformed_str = "dict("
+            for match in re.finditer(pattern, input_str):
+                key = match.group(1)
+                value = match.group(2)
+                transformed_str += f"{key}={value}, "
+            transformed_str = transformed_str.rstrip(", ")
+            transformed_str += ")"
+            return transformed_str
+        
+        else:
+            raise ValueError("Invalid target format specified.")
+
+
+
+
+
+

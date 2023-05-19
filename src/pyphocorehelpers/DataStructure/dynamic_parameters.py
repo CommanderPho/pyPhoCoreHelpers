@@ -18,7 +18,9 @@ class DynamicParameters(DiffableObject, MutableMapping):
 
     TODO: Observed Issues:
     1. calling .copy() on this object doesn't work, KeyError: 'copy'
-    
+    2. pickling sometimes fails, KeyError: 'mro' - SOLUTION: Interestingly this only seems to happen if the top-level item to pickle is a DynamicParameters. Calling .to_dict() and then pickling works even if it has many nested children that are DynamicParameters
+        FAILS with KeyError 'mro': `saveData(global_computation_results_pickle_path, (curr_active_pipeline.global_computation_results))`
+        WORKS: `saveData(global_computation_results_pickle_path, (curr_active_pipeline.global_computation_results.to_dict()))`
     """
     debug_enabled = False
     outcome_on_item_not_found = None

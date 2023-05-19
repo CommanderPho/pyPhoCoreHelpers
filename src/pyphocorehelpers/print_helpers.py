@@ -501,15 +501,16 @@ def print_object_memory_usage(obj, enable_print=True):
 def print_filesystem_file_size(file_path, enable_print=True):
     """ prints the size of the file represented by the passed in path (if it exists) in MB (Megabytes)
     Usage:
-        print_object_memory_usage(curr_bapun_pipeline.sess)
+        from pyphocorehelpers.print_helpers import print_filesystem_file_size
+        print_filesystem_file_size(global_computation_results_pickle_path)
     """
     if not isinstance(file_path, Path):
         file_path = Path(file_path)
     size_bytes = file_path.stat().st_size # Output is in bytes.
     size_MB = size_bytes/(1024*1024)
     if enable_print:
-        file_size_string_MB = f'{size_MB} MB'
-        print(f'filesize of {str(file_path)}: {file_size_string_MB}')
+        file_size_string_MB = f'{size_MB:0.6f} MB'
+        print(f'file size of {str(file_path)}: {file_size_string_MB}')
     return size_MB
 
 

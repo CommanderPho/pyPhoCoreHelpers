@@ -939,7 +939,7 @@ class CodeConversion(object):
         """
         if len(args) == 0:
             # default mode, length of arguments is zero
-            pass
+            replacement_wrapped_undefined_variable_dict = {} # TODO: unknown if right, but works around undefined `replacement_wrapped_undefined_variable_dict` when there are only kwargs
         else:
             # check for string input mode:
             assert len(args) == 1, f"only string-represented kwargs are allowed as a non-keyword argument, but args: {args} (with length {len(args)} instead of 1) were passed."

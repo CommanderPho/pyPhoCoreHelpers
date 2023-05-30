@@ -1,7 +1,7 @@
 from pyphocorehelpers.print_helpers import iPythonKeyCompletingMixin
 from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters
 
-class VisualizationParameters(iPythonKeyCompletingMixin, DynamicParameters):        
+class VisualizationParameters(iPythonKeyCompletingMixin, DynamicParameters):
     def __init__(self, name, **kwargs) -> None:
         super(VisualizationParameters, self).__init__(name=name, **kwargs)
     

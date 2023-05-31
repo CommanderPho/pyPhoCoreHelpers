@@ -200,4 +200,24 @@ def find_ranges_in_window(epoch_starts, epoch_ends, active_window):
     return is_range_in_window, included_epoch_indicies, included_epoch_starts, included_epoch_ends, included_epoch_is_truncated
     
     
+# @function_attributes(short_name=None, tags=['map','values','transform'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-05-31 16:53', related_items=[])
+def map_value(value, from_range: tuple[float, float], to_range: tuple[float, float]):
+    """ Maps values from a range `from_low_high_tuple`: (a, b) to a new range `to_low_high_tuple`: (A, B). Similar to arduino's `map(value, fromLow, fromHigh, toLow, toHigh)` function
     
+    Usage:
+        from pyphocorehelpers.geometry_helpers import map_value
+        track_change_mapped_idx = map_value(track_change_time, (Flat_epoch_time_bins_mean[0], Flat_epoch_time_bins_mean[-1]), (0, (num_epochs-1)))
+        track_change_mapped_idx
+        
+    Example 2: Defining Shortcut mapping
+        map_value_time_to_epoch_idx_space = lambda v: map_value(v, (Flat_epoch_time_bins_mean[0], Flat_epoch_time_bins_mean[-1]), (0, (num_epochs-1))) # same map
+
+    """
+    # Calculate the ratio of the input value relative to the input range
+    from_low, from_high = from_range
+    to_low, to_high = to_range
+    ratio = (value - from_low) / (from_high - from_low)
+    # Map the ratio to the output range
+    mapped_value = to_low + (to_high - to_low) * ratio
+    # Return the mapped value
+    return mapped_value

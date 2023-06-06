@@ -452,6 +452,16 @@ def safe_np_vstack(arr):
     else:
         return np.array(arr) # ChatGPT suggests returning np.empty((0, 0))  # Create an empty array with shape (0, 0)
 
+def safe_np_hstack(arr):
+    """ a version of np.hstack that doesn't throw a ValueError on empty lists
+        from pyphocorehelpers.indexing_helpers import safe_np_hstack
+
+    """
+    if len(arr)>0:
+        return np.hstack(arr) # without this check np.vstack throws `ValueError: need at least one array to concatenate` for empty lists
+    else:
+        return np.array(arr) # ChatGPT suggests returning np.empty((0, 0))  # Create an empty array with shape (0, 0)
+    
 
 # ==================================================================================================================== #
 # Pandas Dataframes                                                                                                    #

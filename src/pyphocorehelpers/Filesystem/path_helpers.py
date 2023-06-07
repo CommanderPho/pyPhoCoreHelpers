@@ -6,6 +6,8 @@ import shutil # for _backup_extant_file(...)
 from datetime import datetime
 import pandas as pd
 from pyphocorehelpers.function_helpers import function_attributes
+from pyphocorehelpers.programming_helpers import metadata_attributes
+
 
 def build_unique_filename(file_to_save_path, additional_postfix_extension=None):
     """ builds a unique filename for the file to be saved at file_to_save_path.
@@ -166,4 +168,39 @@ def get_file_metadata(paths) -> pd.DataFrame:
     df = pd.DataFrame(metadata)
     return df
 
+
+
+@metadata_attributes(short_name=None, tags=['filesystem', 'helper', 'list'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-06-07 16:55', related_items=[])
+class FileList:
+    """ helpers for manipulating lists of files.
+    Usage:
+        from pyphocorehelpers.Filesystem.path_helpers import FileList
+    """
+    @staticmethod
+    def excluding_pattern(paths, exclusion_pattern):
+        return [str(path) for path in paths if not str(path).match(exclusion_pattern)]
+
+    @staticmethod
+    def from_set(*args) -> list[list[Path]]:
+        if len(args) == 1:
+            return [[Path(path) for path in a_list] for a_list in args][0]
+        else:
+            return [[Path(path) for path in a_list] for a_list in args]
+        
+    @staticmethod
+    def to_set(*args) -> list[set[str]]:
+        if len(args) == 1:
+            return [set(str(path) for path in a_list) for a_list in args][0] # get the item so a raw `set` is returned instead of a list[set] with a single item
+        else:
+            return [set(str(path) for path in a_list) for a_list in args]
+
+    @classmethod
+    def subtract(cls, lhs, rhs) -> list[Path]:
+        """ 
+        
+        Example:
+            non_primary_desired_files = FileList.subtract(found_any_pickle_files, (found_default_session_pickle_files + found_global_computation_results_files))
+        
+        """
+        return cls.from_set(cls.to_set(lhs) - cls.to_set(rhs))
 

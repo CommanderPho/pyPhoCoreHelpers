@@ -33,7 +33,7 @@ class DynamicParameters(DiffableObject, MutableMapping):
     def __getitem__(self, key):
         if DynamicParameters.debug_enabled:
             print(f'DynamicParameters.__getitem__(self, key): key {key}')
-        return self._mapping[key]
+        return self._mapping[key] #@IgnoreException
 
     def __delitem__(self, key):
         if DynamicParameters.debug_enabled:

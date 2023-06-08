@@ -953,7 +953,7 @@ def convert_unit(size_in_bytes, unit: SIZE_UNIT):
 #         Combines the code to perform this common procedure in a concise structure instead of requiring it to be spread out over several places.
 
 
-#     Example 0: from `pyphoplacecellanalysis.General.Batch.NonInteractiveWrapper.batch_extended_computations`
+#     Example 0: from `pyphoplacecellanalysis.General.Batch.NonInteractiveProcessing.batch_extended_computations`
 
 # ```python
 #         try:

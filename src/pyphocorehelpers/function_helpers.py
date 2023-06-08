@@ -123,7 +123,27 @@ _custom_function_metadata_attribute_names = dict(short_name=None, tags=None, cre
 )
 
 
-def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None, uses=None, used_by=None, related_items=None):
+def global_function(is_global:bool=True):
+    """Adds function attributes to a function that marks it as global
+
+    ```python
+        from pyphocorehelpers.function_helpers import global_function
+
+        @global_function()
+        def _perform_time_dependent_pf_sequential_surprise_computation(computation_result, debug_print=False):
+            # function body
+    ```
+
+    func.is_global
+    """
+    def decorator(func):
+        func.is_global = is_global
+        return func
+    return decorator
+
+
+
+def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None, uses=None, used_by=None, related_items=None, conforms_to=None, is_global:bool=False):
     """Adds function attributes to a function or class
 
     ```python
@@ -134,7 +154,7 @@ def function_attributes(short_name=None, tags=None, creation_date=None, input_re
             # function body
     ```
 
-    func.short_name, func.tags, func.creation_date, func.input_requires, func.output_provides, func.uses, func.used_by, func.related_items
+    func.short_name, func.tags, func.creation_date, func.input_requires, func.output_provides, func.uses, func.used_by, func.related_items, func.conforms_to, func.is_global
     """
     def decorator(func):
         func.short_name = short_name
@@ -145,6 +165,8 @@ def function_attributes(short_name=None, tags=None, creation_date=None, input_re
         func.uses = uses
         func.used_by = used_by
         func.related_items = related_items
+        func.conforms_to = conforms_to
+        func.is_global = is_global
         return func
     return decorator
 

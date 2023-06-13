@@ -9,8 +9,10 @@ class MatplotlibRenderPlots(RenderPlots):
 	2023-05-30 - Updated to replace subplots.
 	
 	"""
-	def __init__(self, name='MatplotlibRenderPlots', figures=[], axes=[], **kwargs):
-		super(MatplotlibRenderPlots, self).__init__(name, figures = figures, axes=axes, **kwargs)
+	_display_library:str = 'matplotlib'
+	
+	def __init__(self, name='MatplotlibRenderPlots', figures=[], axes=[], context=None, **kwargs):
+		super(MatplotlibRenderPlots, self).__init__(name, figures = figures, axes=axes, context=context, **kwargs)
 		
 	@classmethod
 	def init_subplots(cls, *args, **kwargs):

@@ -10,10 +10,21 @@ class DebugHelper(iPythonKeyCompletingMixin, DynamicParameters):
     def __init__(self, name, **kwargs) -> None:
         super(DebugHelper, self).__init__(name=name, **kwargs)
 
-
+#TODO 2023-06-13 10:59: - [ ] Convert to an attrs-based class instead of inheriting from DynamicParameters
+# @attrs.define(slots=False)
 class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
-    def __init__(self, name, **kwargs) -> None:
-        super(RenderPlots, self).__init__(name=name, **kwargs)
+    _display_library:str = 'unknown'
+    def __init__(self, name, context=None, **kwargs) -> None:
+        super(RenderPlots, self).__init__(name=name, context=context, **kwargs)
+    # Display Library Test Functions _____________________________________________________________________________________ #
+    @classmethod
+    def is_matplotlib(cls):
+        """Whether the display library is matplotlib."""
+        return cls._display_library == 'matplotlib'
+    @classmethod
+    def is_pyqtgraph(cls):
+        """Whether the display library is pyqtgraph."""
+        return cls._display_library == 'pyqtgraph'
 
 
 class RenderPlotsData(iPythonKeyCompletingMixin, DynamicParameters):

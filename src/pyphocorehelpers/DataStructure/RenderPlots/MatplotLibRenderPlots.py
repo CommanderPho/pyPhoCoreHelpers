@@ -1,4 +1,4 @@
-from pyphocorehelpers.DataStructure.general_parameter_containers import VisualizationParameters, RenderPlotsData, RenderPlots
+from pyphocorehelpers.DataStructure.general_parameter_containers import RenderPlots
 
 
 class MatplotlibRenderPlots(RenderPlots):

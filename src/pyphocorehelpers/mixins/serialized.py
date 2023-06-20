@@ -28,6 +28,7 @@ class SerializedAttributesAllowBlockSpecifyingClass:
     @classmethod
     def serialization_perform_drop_blocklist(cls, state_dict:dict) -> dict:
         """ drops the attributes specified in `serialized_key_blocklist` from the state_dict (which can come from self.__dict__) and returns the resultant dict. """
+        state_dict = state_dict.copy()
         assert cls.serialized_key_allowlist is None, f"If `serialized_key_allowlist` is specified, this variable will be ignored. serialized_key_allowlist: {cls.serialized_key_allowlist}"
         for a_blocked_key in cls.serialized_key_blocklist:
             state_dict.pop(a_blocked_key)

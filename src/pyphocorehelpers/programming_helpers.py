@@ -11,7 +11,7 @@ from functools import wraps
 # ==================================================================================================================== #
 
 def documentation_tags(func, *tags):
-    """Adds documentations tags toa  function or class
+    """Adds documentations tags to a function or class
 
     Usage:
         from pyphocorehelpers.programming_helpers import documentation_tags

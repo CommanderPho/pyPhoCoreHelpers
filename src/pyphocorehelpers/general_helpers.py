@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from typing import Callable, List, Optional, OrderedDict  # for OrderedMeta
 import sys # needed for `is_reloaded_instance`
 from enum import Enum
@@ -940,6 +941,33 @@ def convert_unit(size_in_bytes, unit: SIZE_UNIT):
         return size_in_bytes
 
    
+# @metadata_attributes(short_name=None, tags=['contextmanager'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-07-05 19:02', related_items=[])
+@contextmanager
+def disable_function_context(obj, fn_name: str):
+    """ Disables a function within a context manager
+
+
+    https://stackoverflow.com/questions/10388411/possible-to-globally-replace-a-function-with-a-context-manager-in-python
+
+    Could be used for plt.show().
+    ```python
+    
+    from pyphocorehelpers.general_helpers import disable_function_context
+    import matplotlib.pyplot as plt
+    with disable_function_context(plt, "show"):
+        run_me(x)
+    ```
+
+    
+
+    """
+    temp = getattr(obj, fn_name)
+    setattr(obj, fn_name, lambda: None)
+    yield
+    setattr(obj, fn_name, temp)
+    
+
+
 # from dataclasses import dataclass
 
 

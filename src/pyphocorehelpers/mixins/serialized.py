@@ -1,4 +1,4 @@
-
+from copy import deepcopy
 # Safelist (Allowlist) and Blocklist
 
 
@@ -28,9 +28,10 @@ class SerializedAttributesAllowBlockSpecifyingClass:
     @classmethod
     def serialization_perform_drop_blocklist(cls, state_dict:dict) -> dict:
         """ drops the attributes specified in `serialized_key_blocklist` from the state_dict (which can come from self.__dict__) and returns the resultant dict. """
+        # state_dict = deepcopy(state_dict)
         state_dict = state_dict.copy()
-        assert cls.serialized_key_allowlist is None, f"If `serialized_key_allowlist` is specified, this variable will be ignored. serialized_key_allowlist: {cls.serialized_key_allowlist}"
-        for a_blocked_key in cls.serialized_key_blocklist:
+        assert cls.serialized_key_allowlist() is None, f"If `serialized_key_allowlist` is specified, this variable will be ignored. serialized_key_allowlist: {cls.serialized_key_allowlist()}"
+        for a_blocked_key in cls.serialized_key_blocklist():
             state_dict.pop(a_blocked_key)
         return state_dict
 
@@ -48,14 +49,14 @@ class SerializedAttributesAllowBlockSpecifyingClass:
 
 
     def to_dict(self):
-        if self.serialized_key_allowlist is not None:
+        if self.serialized_key_allowlist() is not None:
             # Only use the allow list
             state = {}
-            for an_included_key in self.serialized_key_allowlist:
+            for an_included_key in self.serialized_key_allowlist():
                 state[an_included_key] = self.__dict__[an_included_key]
         else:
             # no allowlist specified
-            state = self.serialization_perform_drop_blocklist(self.__dict__.copy())
+            state = self.serialization_perform_drop_blocklist(deepcopy(self.__dict__))
 
         return state
 

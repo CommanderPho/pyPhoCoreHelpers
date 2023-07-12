@@ -204,3 +204,24 @@ class FileList:
         """
         return cls.from_set(cls.to_set(lhs) - cls.to_set(rhs))
 
+
+
+
+def convert_filelist_to_new_parent(filelist_source: List[Path], original_parent_path: Path = Path(r'/media/MAX/cloud/turbo/Data'), dest_parent_path: Path = Path(r'/media/MAX/Data')) -> List[Path]:
+    """ Converts a list of file paths from their current parent, specified by `original_parent_path`, to their new parent `dest_parent_path` 
+
+    Usage:
+        from pyphocorehelpers.Filesystem.path_helpers import convert_filelist_to_new_parent
+        source_parent_path = Path(r'/media/MAX/cloud/turbo/Data')
+        dest_parent_path = Path(r'/media/MAX/Data')
+        # # Build the destination filelist from the source_filelist and the two paths:
+        filelist_dest = convert_filelist_to_new_parent(filelist_source, original_parent_path=source_parent_path, dest_parent_path=dest_parent_path)
+        filelist_dest
+    """
+    filelist_dest = []
+    for path in filelist_source:
+        relative_path = str(path.relative_to(original_parent_path))
+        new_path = Path(dest_parent_path) / relative_path
+        filelist_dest.append(new_path)
+    return filelist_dest
+

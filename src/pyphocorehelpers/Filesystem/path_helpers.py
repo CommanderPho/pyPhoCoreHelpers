@@ -220,12 +220,16 @@ def convert_filelist_to_new_parent(filelist_source: List[Path], original_parent_
         filelist_dest = convert_filelist_to_new_parent(filelist_source, original_parent_path=source_parent_path, dest_parent_path=dest_parent_path)
         filelist_dest
     """
-    filelist_dest = []
-    for path in filelist_source:
-        relative_path = str(path.relative_to(original_parent_path))
-        new_path = Path(dest_parent_path) / relative_path
-        filelist_dest.append(new_path)
-    return filelist_dest
+    if original_parent_path.resolve() == dest_parent_path.resolve():
+        print('WARNING: convert_filelist_to_new_parent(...): no difference between original_parent_path and dest_parent_path.')
+        return filelist_source
+    else:
+        filelist_dest = []
+        for path in filelist_source:
+            relative_path = str(path.relative_to(original_parent_path))
+            new_path = Path(dest_parent_path) / relative_path
+            filelist_dest.append(new_path)
+        return filelist_dest
 
 @function_attributes(short_name=None, tags=['path', 'root', 'search'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-07-13 14:39', related_items=[])
 def find_matching_parent_path(known_paths: List[Path], target_path: Path) -> Optional[Path]:

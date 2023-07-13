@@ -3,7 +3,7 @@ import sys
 from contextlib import contextmanager
 import pathlib
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import shutil # for _backup_extant_file(...)
 from datetime import datetime
 import pandas as pd
@@ -227,6 +227,26 @@ def convert_filelist_to_new_parent(filelist_source: List[Path], original_parent_
         filelist_dest.append(new_path)
     return filelist_dest
 
+@function_attributes(short_name=None, tags=['path', 'root', 'search'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-07-13 14:39', related_items=[])
+def find_matching_parent_path(known_paths: List[Path], target_path: Path) -> Optional[Path]:
+    """ returns the matching parent path in known_paths that is a parent of target_path, otherwise returns None if no match is found. 
+
+    Usage:
+        from pyphocorehelpers.Filesystem.path_helpers import find_matching_parent_path
+
+        known_global_data_root_parent_paths = [Path(r'W:\Data'), Path(r'/media/MAX/Data'), Path(r'/Volumes/MoverNew/data'), Path(r'/home/halechr/turbo/Data'), Path(r'/nfs/turbo/umms-kdiba/Data')]
+        prev_global_data_root_parent_path = find_matching_parent_path(known_global_data_root_parent_paths, curr_filelist[0]) # TODO: assumes all have the same root, which is a valid assumption so far. ## prev_global_data_root_parent_path should contain the matching path from the list.
+        assert prev_global_data_root_parent_path is not None, f"No matching root parent path could be found!!"
+        new_session_batch_basedirs = convert_filelist_to_new_parent(curr_filelist, original_parent_path=prev_global_data_root_parent_path, dest_parent_path=desired_global_data_root_parent_path)
+    """
+    target_path = target_path.resolve()
+    for path in known_paths:
+        if target_path.is_relative_to(path.resolve()):
+            return path
+    return None
+
+
+
 @metadata_attributes(short_name=None, tags=['pathlib', 'path', 'Windows', 'platform_specific', 'workaround', 'PosixPath', 'posix', 'unpickling', 'pickle', 'loading'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-07-13 13:56', related_items=[])
 @contextmanager
 def set_posix_windows():
@@ -245,3 +265,4 @@ def set_posix_windows():
     finally:
         pathlib.PosixPath = posix_backup
         
+

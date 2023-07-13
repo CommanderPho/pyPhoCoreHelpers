@@ -1,5 +1,7 @@
 import os
 import sys
+from contextlib import contextmanager
+import pathlib
 from pathlib import Path
 from typing import List
 import shutil # for _backup_extant_file(...)
@@ -225,3 +227,21 @@ def convert_filelist_to_new_parent(filelist_source: List[Path], original_parent_
         filelist_dest.append(new_path)
     return filelist_dest
 
+@metadata_attributes(short_name=None, tags=['pathlib', 'path', 'Windows', 'platform_specific', 'workaround', 'PosixPath', 'posix', 'unpickling', 'pickle', 'loading'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-07-13 13:56', related_items=[])
+@contextmanager
+def set_posix_windows():
+    """ Prevents errors unpickling POSIX Paths on Windows that were previously pickled on Unix/Linux systems
+    
+    Usage:
+        from pyphocorehelpers.Filesystem.path_helpers import set_posix_windows
+        with set_posix_windows():
+            global_batch_run = BatchRun.try_init_from_file(global_data_root_parent_path, active_global_batch_result_filename=active_global_batch_result_filename,
+                                    skip_root_path_conversion=True, debug_print=debug_print) # on_needs_create_callback_fn=run_diba_batch
+    """
+    posix_backup = pathlib.PosixPath
+    try:
+        pathlib.PosixPath = pathlib.WindowsPath
+        yield
+    finally:
+        pathlib.PosixPath = posix_backup
+        

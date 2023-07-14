@@ -19,7 +19,7 @@ handsdown = "^2.0.1"
 importlib-metadata = "^6.0.0"
 
 [tool.poetry.group.accel.dependencies]
-numba = "^0.56.4"
+numba = {version = "^0.56.4", optional = true}
 
 [tool.poetry.group.viz.dependencies]
 pyvista = "^0.38.0"
@@ -28,12 +28,16 @@ vedo = "^2023.4.3"
 hdf5plugin = "^4.1.1"
 silx = "^1.1.2"
 vtk = "^9.2.5"
-PyQt5Singleton = "^0.1"
-QtPy = "^2.1.0"
-PyQt5-sip = "^12.11.1"
+PyQt5Singleton = { version = "^0.1", optional = true}
+QtPy = { version = "^2.1.0", optional = true}
+PyQt5-sip = { version = "^12.11.1", optional = true}
 
 [tool.poetry.group.remote.dependencies]
 neuropy = {path = "../NeuroPy", develop=true}
+
+[tool.poetry.extras]
+accel = ["numba"]
+vizqt = ["PyQt5Singleton", "QtPy", "PyQt5-sip"]
 
 
 [build-system]

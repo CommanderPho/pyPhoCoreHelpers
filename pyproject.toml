@@ -13,6 +13,7 @@ h5py = "^3.8.0"
 numpy = "^1.23.2"
 pandas = "^1.5.1"
 ansi2html = "^1.8.0"
+handsdown = "^2.0.1"
 
 [tool.poetry.group.dev.dependencies]
 importlib-metadata = "^6.0.0"

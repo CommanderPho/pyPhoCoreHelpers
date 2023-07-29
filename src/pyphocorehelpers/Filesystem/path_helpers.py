@@ -1,5 +1,6 @@
 import os
 import sys
+import platform
 from contextlib import contextmanager
 import pathlib
 from pathlib import Path
@@ -262,11 +263,13 @@ def set_posix_windows():
             global_batch_run = BatchRun.try_init_from_file(global_data_root_parent_path, active_global_batch_result_filename=active_global_batch_result_filename,
                                     skip_root_path_conversion=True, debug_print=debug_print) # on_needs_create_callback_fn=run_diba_batch
     """
-    posix_backup = pathlib.PosixPath
-    try:
-        pathlib.PosixPath = pathlib.WindowsPath
-        yield
-    finally:
-        pathlib.PosixPath = posix_backup
-        
+    if platform.system() == 'Windows':
+        posix_backup = pathlib.PosixPath
+        try:
+            pathlib.PosixPath = pathlib.WindowsPath
+            yield
+        finally:
+            pathlib.PosixPath = posix_backup
+            
+
 

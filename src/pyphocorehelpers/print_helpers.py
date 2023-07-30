@@ -129,7 +129,7 @@ class ANSI_COLOR_STRINGS:
     UNDERLINE = '\033[4m'
 
 
-class ANSI_Coloring(object):
+class ANSI_Coloring:
     """docstring for ANSI_Coloring."""
     def __init__(self, arg):
         super(ANSI_Coloring, self).__init__()
@@ -153,7 +153,7 @@ from ansi2html import Ansi2HTMLConverter # used by DocumentationFilePrinter to b
 from pathlib import Path
 from pyphocorehelpers.Filesystem.open_in_system_file_manager import reveal_in_system_file_manager # used by DocumentationFilePrinter to showing the output files
 
-class DocumentationFilePrinter(object):
+class DocumentationFilePrinter:
     """ Used to print and save readable data-structure documentation (in both plain and rich text) by wrapping `print_keys_if_possible(...)
     
         Usage:
@@ -206,7 +206,6 @@ class DocumentationFilePrinter(object):
                 doc_printer = DocumentationFilePrinter(doc_output_parent_folder=Path('C:/Users/pho/repos/PhoPy3DPositionAnalysis2021/EXTERNAL/DEVELOPER_NOTES/DataStructureDocumentation'), doc_name='ComputationResult')
                 doc_printer.save_documentation('ComputationResult', curr_active_pipeline.computation_results['maze1'], non_expanded_item_keys=['_reverse_cellID_index_map'])
 
-                
         """
         ## Load both plaintext and rich-text output into dp.md_string, dp.ansi_string, and dp.html_string:
         if 'custom_item_formatter' in kwargs:
@@ -217,8 +216,7 @@ class DocumentationFilePrinter(object):
             custom_plain_text_formatter = self._custom_plain_text_formatter
         if custom_rich_text_formatter is None:
             custom_rich_text_formatter = self._custom_rich_text_formatter
-            
-        
+
         # Plaintext version:
         with io.StringIO() as buf, redirect_stdout(buf):
             print(self.doc_header_string)
@@ -241,8 +239,7 @@ class DocumentationFilePrinter(object):
             print(self.ansi_string)
         
     def write_to_files(self):
-        ## Write variables out to files:
-
+        """Write variables out to files"""
         # Write plaintext version to file:
         with open(self.output_md_file, 'w') as f:
             f.write(self.md_string)
@@ -254,7 +251,6 @@ class DocumentationFilePrinter(object):
         print(f"wrote to '{str(self.output_md_file)}' & '{str(self.output_html_file)}'.")
 
     def reveal_output_files_in_system_file_manager(self):
-        # reveal_in_system_file_manager(self.doc_output_parent_folder)
         reveal_in_system_file_manager(self.output_html_file)
 
 
@@ -265,7 +261,6 @@ class DocumentationFilePrinter(object):
     @classmethod
     def _default_rich_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
         """ formats using ANSI_Coloring for rich colored output """
-        # return f"{depth_string}- {bcolors.OKBLUE}{curr_key}{bcolors.ENDC}: {bcolors.OKGREEN}{type_name}{bcolors.ENDC}{(bcolors.WARNING + ' (children omitted)' + bcolors.ENDC) if is_omitted_from_expansion else ''}"
         key_color = ANSI_COLOR_STRINGS.OKBLUE
         variable_type_color = ANSI_COLOR_STRINGS.LIGHTGREEN # looks better on screen
         # variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA # converts to greyscale for printing better
@@ -274,7 +269,6 @@ class DocumentationFilePrinter(object):
     @classmethod
     def _default_rich_text_greyscale_print_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
         """ formats using ANSI_Coloring for rich colored output """
-        # return f"{depth_string}- {bcolors.OKBLUE}{curr_key}{bcolors.ENDC}: {bcolors.OKGREEN}{type_name}{bcolors.ENDC}{(bcolors.WARNING + ' (children omitted)' + bcolors.ENDC) if is_omitted_from_expansion else ''}"
         key_color = ANSI_COLOR_STRINGS.OKBLUE
         variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA # converts to greyscale for printing better
         return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}"
@@ -529,7 +523,6 @@ def debug_print(*args, **kwargs):
     out_string = '\n'.join(out_strings)
     print(out_string)
     
-
 def print_callexp(*args, **kwargs):
     """ DOES NOT WORK FROM Jupyter-lab notebook, untested in general.
     https://stackoverflow.com/questions/28244921/how-can-i-get-the-calling-expression-of-a-function-in-python?noredirect=1&lq=1
@@ -784,7 +777,6 @@ def dbg_dump(*args, dumpopt_stream=sys.stderr, dumpopt_forcename=True, dumpopt_p
     else:
         return output.rstrip()
     
-
 
 # ==================================================================================================================== #
 # Category: Structural Overview/Outline:                                                                               #

@@ -1,8 +1,5 @@
-
-import collections
 from collections.abc import MutableMapping
 from pyphocorehelpers.mixins.diffable import DiffableObject
-
 
 class DynamicParameters(DiffableObject, MutableMapping):
     """ A class that permits flexible prototyping of parameters and data needed for computations, while still allowing development-time guidance on available members.
@@ -176,24 +173,12 @@ class DynamicParameters(DiffableObject, MutableMapping):
             return new
         except Exception as e:
             raise e
-
     
     @classmethod
     def init_from_object(cls, an_object):
         # test to see if the object is dict-backed:
         obj_dict_rep = an_object.__dict__
         return cls.init_from_dict(obj_dict_rep)
-    
-    
-    # ## For serialization/pickling:
-    # def __getstate__(self):
-    #     return self.to_dict()
-    #     # return self.father, self.var1
-
-    # def __setstate__(self, state):
-    #     return self.init_from_dict(state)
-    #     # self.father, self.var1 = state
-    
     
     ## For serialization/pickling:
     def __getstate__(self):

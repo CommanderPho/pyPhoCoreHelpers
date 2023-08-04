@@ -864,8 +864,6 @@ def safe_get_variable_shape(a_value):
     assert safe_get_variable_shape(active_one_step_decoder.time_bin_size) is None
     assert isinstance(safe_get_variable_shape(active_one_step_decoder.spikes_df), tuple)
     assert isinstance(safe_get_variable_shape(active_one_step_decoder.F), tuple)
-
-    
     """
     try:
         value_shape = np.shape(a_value)
@@ -934,18 +932,13 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
                 - K: <class 'numpy.float64'>
                 - V: <class 'float'>
                 - sigma_t_all: <class 'numpy.ndarray'> - (59, 21)
-                - flat_sigma_t_all: <class 'numpy.ndarray'> - (1239,)
-                - C: <class 'float'>
-                - k: <class 'float'>
                 - all_x: <class 'numpy.ndarray'> - (59, 21, 2)
                 - flat_all_x: <class 'list'>
                 - original_all_x_shape: <class 'tuple'>
                 - flat_p_x_given_n_and_x_prev: <class 'numpy.ndarray'> - (1239, 1717)
                 - p_x_given_n_and_x_prev: <class 'numpy.ndarray'> - (59, 21, 1717)
-                - most_likely_position_indicies: <class 'numpy.ndarray'> - (2, 1717)
                 - most_likely_positions: <class 'numpy.ndarray'> - (2, 1717)
                 - all_scaling_factors_k: <class 'numpy.ndarray'> - (1717,)
-                - most_likely_position_flat_indicies: <class 'numpy.ndarray'> - (1717,)
             - extended_stats: <class 'dict'>
                 - time_binned_positioned_resampler: <class 'pandas.core.resample.TimedeltaIndexResampler'>
                 - time_binned_position_df: <class 'pandas.core.frame.DataFrame'> - (1717, 18)
@@ -964,9 +957,10 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
                 - all_pairwise_overlaps: <class 'numpy.ndarray'> - (741, 59, 21)
         
         ## Defining custom formatting functions:
-        def _format_curr_value(depth_string, curr_key, type_string, type_name):
-            return f"{depth_string}['{curr_key}']: {type_name}"                
-        print_keys_if_possible('active_firing_rate_trends', active_firing_rate_trends, custom_item_formatter=_format_curr_value)
+            def _format_curr_value(depth_string, curr_key, type_string, type_name):
+                return f"{depth_string}['{curr_key}']: {type_name}"                
+        
+            print_keys_if_possible('active_firing_rate_trends', active_firing_rate_trends, custom_item_formatter=_format_curr_value)
         
             ['active_firing_rate_trends']: pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters
                 ['time_bin_size_seconds']: float
@@ -998,7 +992,6 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
     if (depth >= _GLOBAL_MAX_DEPTH):
         print(f'OVERFLOW AT DEPTH {_GLOBAL_MAX_DEPTH}!')
         raise OverflowError
-        # return None # overflow detection
     elif (depth > max_depth):
         # print(f'finished at DEPTH {depth} with max_depth: {max_depth}!')
         return None

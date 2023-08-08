@@ -172,6 +172,15 @@ def get_file_metadata(paths) -> pd.DataFrame:
     return df
 
 
+def save_filelist_to_text_file(hdf5_output_paths: List[Path], filelist_path: Path, debug_print:bool=False):
+    _out_string = '\n'.join([str(a_file) for a_file in hdf5_output_paths])
+    if debug_print:
+        print(f'{_out_string}')
+        print(f'saving out to "{filelist_path}"...')
+    with open(filelist_path, 'w') as f:
+        f.write(_out_string)
+    return _out_string, filelist_path
+
 
 @metadata_attributes(short_name=None, tags=['filesystem', 'helper', 'list'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-06-07 16:55', related_items=[])
 class FileList:
@@ -206,6 +215,10 @@ class FileList:
         
         """
         return cls.from_set(cls.to_set(lhs) - cls.to_set(rhs))
+
+    @classmethod
+    def save_to_text_file(cls, paths, save_path: Path):
+        return save_filelist_to_text_file(paths, filelist_path=save_path, debug_print=False)[1] # only return the path it was saved to
 
 
 

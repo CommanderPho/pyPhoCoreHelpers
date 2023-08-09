@@ -1,4 +1,4 @@
-from typing import List, Optional, OrderedDict  # for OrderedMeta
+from typing import List, Tuple, Dict, Optional, OrderedDict  # for OrderedMeta
 from datetime import datetime # for `get_now_day_str`
 import time # for `get_now_time_str`, `get_now_time_precise_str`
 import numpy as np
@@ -14,6 +14,7 @@ import ast
 import site # Required for StackTraceFormatting
 from os.path import join, abspath # Required for StackTraceFormatting
 from traceback import extract_tb, format_list, format_exception_only # Required for StackTraceFormatting
+from attrs import define, field, Factory
 
 import re ## required for strip_type_str_to_classname(...)
 
@@ -1209,20 +1210,53 @@ def document_active_variables(params, include_explicit_values=False, enable_prin
 # Exceptions and Error Handling                                                                                        #
 # ==================================================================================================================== #
 
-class CapturedException(DynamicParameters):
+
+@define(slots=False, repr=False)
+class CapturedException:
+    """ Formats a captured exception in a try/catch block
+
+    Usage:
+        from pyphocorehelpers.print_helpers import CapturedException
+
+        # ...
+
+        try:
+            # *SOMETHING*
+        except Exception as e:
+            ## can fail here before callback function is even called.
+            exception_info = sys.exc_info()
+            an_error = CapturedException(e, exception_info, curr_active_pipeline)
+            print(f'exception occured: {an_error}')
+            if fail_on_exception:
+                raise e
+
+    """
+    exc: BaseException
+    exc_info: Tuple
+    captured_result_state: Optional[object]
     """ An exception and its related info/context during the process of executing composed functions with error handling."""
     
     def __repr__(self):
         # Don't print out captured_result_state (as it's huge and clogs the console)
         return f'!! {self.exc} ::::: {self.exc_info}'
-        # return super().__repr__()
+
+
+
+
+# class CapturedException(DynamicParameters):
+#     """ An exception and its related info/context during the process of executing composed functions with error handling."""
+    
+#     def __repr__(self):
+#         # Don't print out captured_result_state (as it's huge and clogs the console)
+#         return f'!! {self.exc} ::::: {self.exc_info}'
+#         # return super().__repr__()
 
     
-    def __init__(self, exc, exc_info, captured_result_state):
-        super(CapturedException, self).__init__(exc=exc, exc_info=exc_info, captured_result_state=captured_result_state)
-        # self.exc = exc
-        # self.exc_info = exc_info
-        # self.captured_result_state = captured_result_state
+#     def __init__(self, exc, exc_info, captured_result_state):
+#         super(CapturedException, self).__init__(exc=exc, exc_info=exc_info, captured_result_state=captured_result_state)
+#         # self.exc = exc
+#         # self.exc_info = exc_info
+#         # self.captured_result_state = captured_result_state
 
 
     

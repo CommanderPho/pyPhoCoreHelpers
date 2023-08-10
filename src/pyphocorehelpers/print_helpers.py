@@ -1,3 +1,4 @@
+import socket # for getting hostname
 from typing import List, Tuple, Dict, Optional, OrderedDict  # for OrderedMeta
 from datetime import datetime # for `get_now_day_str`
 import time # for `get_now_time_str`, `get_now_time_precise_str`
@@ -1445,3 +1446,13 @@ class StackTraceFormatting(object):
 
 # sys.excepthook = StackTraceFormatting.restore_default()
 # # sys.excepthook = StackTraceFormatting.shadow('~\miniconda3\envs\phoviz_ultimate\lib\site-packages')
+
+
+
+
+def get_system_hostname(enable_print:bool=False) -> str:
+    hostname = socket.gethostname()
+    if enable_print:
+        print(f"Hostname: {hostname}") # Hostname: LNX00052
+    return hostname
+

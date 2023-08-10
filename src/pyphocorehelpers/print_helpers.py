@@ -1224,17 +1224,17 @@ class CapturedException:
         try:
             # *SOMETHING*
         except Exception as e:
-            ## can fail here before callback function is even called.
             exception_info = sys.exc_info()
-            an_error = CapturedException(e, exception_info, curr_active_pipeline)
-            print(f'exception occured: {an_error}')
+            e = CapturedException(e, exception_info)
+            print(f'exception occured: {e}')
             if fail_on_exception:
                 raise e
 
     """
-    exc: BaseException
-    exc_info: Tuple
-    captured_result_state: Optional[object]
+    exc: BaseException = field()
+    exc_info: Tuple = field()
+    captured_result_state: Optional[object] = field(default=None) # additional state that you might want for debugging, but usually None
+    
     """ An exception and its related info/context during the process of executing composed functions with error handling."""
     
     def __repr__(self):

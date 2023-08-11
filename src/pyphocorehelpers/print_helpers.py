@@ -100,7 +100,24 @@ class WrappingMessagePrinter(object):
         else:
             if enable_print:
                 print(f'{begin_string}...', end=begin_line_ending)
-            
+
+
+def custom_tree_formatter(depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+    """ For use with `print_keys_if_possible` to render a neat and pretty tree
+
+        from pyphocorehelpers.print_helpers import custom_tree_formatter
+        print_keys_if_possible("sess.config.preprocessing_parameters", preprocessing_parameters_dict, custom_item_formatter=custom_tree_formatter)
+
+    """
+    prefix = '├── ' if depth_string else ''
+    link_char = '│   ' if depth_string else '    '
+    depth_string_with_link = depth_string + link_char
+    formatted_string = f"{depth_string_with_link}{prefix}{curr_key}: {type_name}"
+    if is_omitted_from_expansion:
+        formatted_string += ' (children omitted)'
+    return formatted_string
+
+
 # ==================================================================================================================== #
 # Category: Colored (ANSI-Formatted) Outputs:                                                                          #
 # ==================================================================================================================== #
@@ -259,7 +276,9 @@ class DocumentationFilePrinter:
     # private methods ____________________________________________________________________________________________________ #
     @classmethod
     def _default_plain_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
-        return f"{depth_string}- {curr_key}: {type_name}{' (children omitted)' if is_omitted_from_expansion else ''}"
+        # return f"{depth_string}- {curr_key}: {type_name}{' (children omitted)' if is_omitted_from_expansion else ''}"
+        return custom_tree_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=type_name, is_omitted_from_expansion=is_omitted_from_expansion)
+    
     @classmethod
     def _default_rich_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
         """ formats using ANSI_Coloring for rich colored output """
@@ -1473,20 +1492,7 @@ def get_system_hostname(enable_print:bool=False) -> str:
 # Tree/Hierarchy Renderers and Previewers                                                                              #
 # ==================================================================================================================== #
 
-def custom_tree_formatter(depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
-    """ For use with `print_keys_if_possible` to render a neat and pretty tree
 
-        from pyphocorehelpers.print_helpers import custom_tree_formatter
-        print_keys_if_possible("sess.config.preprocessing_parameters", preprocessing_parameters_dict, custom_item_formatter=custom_tree_formatter)
-
-    """
-    prefix = '├── ' if depth_string else ''
-    link_char = '│   ' if depth_string else '    '
-    depth_string_with_link = depth_string + link_char
-    formatted_string = f"{depth_string_with_link}{prefix}{curr_key}: {type_name}"
-    if is_omitted_from_expansion:
-        formatted_string += ' (children omitted)'
-    return formatted_string
 
 
 

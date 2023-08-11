@@ -1029,10 +1029,22 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         else:
             # Print the current item first:
             # See if the curr_value has .items() or not.
-            if not omit_curr_item_print:
-                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
-                print(curr_item_str)
-                
+
+            # Check if all values are scalar types
+            if isinstance(curr_value, dict) and all(isinstance(v, (int, float, str, bool)) for v in curr_value.values()):
+                if not omit_curr_item_print:
+                    # Get value type since they're all the same
+                    # dict_values_type_string:str = str(type(list(curr_value.values())[0]))
+                    curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=True) + f"(all scalar values) - size: {len(curr_value)}"
+                    print(curr_item_str)
+                return  # Return early, don't print individual items
+            else:
+                # Typical case where we can't proclude expansion.
+                if not omit_curr_item_print:
+                    curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
+                    print(curr_item_str)
+
+
             # Then recurrsively try to expand the item if possible:
             try:
                 for (curr_child_key, curr_child_value) in curr_value.items():
@@ -1448,11 +1460,66 @@ class StackTraceFormatting(object):
 # # sys.excepthook = StackTraceFormatting.shadow('~\miniconda3\envs\phoviz_ultimate\lib\site-packages')
 
 
-
-
 def get_system_hostname(enable_print:bool=False) -> str:
     hostname = socket.gethostname()
     if enable_print:
         print(f"Hostname: {hostname}") # Hostname: LNX00052
     return hostname
+
+
+
+
+# ==================================================================================================================== #
+# Tree/Hierarchy Renderers and Previewers                                                                              #
+# ==================================================================================================================== #
+
+def custom_tree_formatter(depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+    """ For use with `print_keys_if_possible` to render a neat and pretty tree
+
+        from pyphocorehelpers.print_helpers import custom_tree_formatter
+        print_keys_if_possible("sess.config.preprocessing_parameters", preprocessing_parameters_dict, custom_item_formatter=custom_tree_formatter)
+
+    """
+    prefix = '├── ' if depth_string else ''
+    link_char = '│   ' if depth_string else '    '
+    depth_string_with_link = depth_string + link_char
+    formatted_string = f"{depth_string_with_link}{prefix}{curr_key}: {type_name}"
+    if is_omitted_from_expansion:
+        formatted_string += ' (children omitted)'
+    return formatted_string
+
+
+
+import ipytree as ipyt
+from IPython.display import display
+
+def build_tree(node, value, max_depth=20, depth=0):
+    """ 
+        import ipytree as ipyt
+        from IPython.display import display
+        from pyphocorehelpers.print_helpers import build_tree
+
+        # Assume curr_computations_results is the root of the data structure you want to explore
+        root_data = a_sess_config.preprocessing_parameters
+        root_node = ipyt.Node('sess.config')
+        build_tree(root_node, root_data)
+
+        tree = ipyt.Tree()
+        tree.add_node(root_node)
+        display(tree)
+    """
+    if depth > max_depth:
+        return
+
+    if isinstance(value, dict):
+        for key, child_value in value.items():
+            child_node = ipyt.Node(key)
+            node.add_node(child_node)
+            build_tree(child_node, child_value, max_depth=max_depth, depth=depth+1)
+    else:
+        node.add_node(ipyt.Node(str(value)))
+
+
+
+
 

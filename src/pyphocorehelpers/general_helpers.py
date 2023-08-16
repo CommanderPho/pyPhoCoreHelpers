@@ -541,7 +541,7 @@ class CodeConversion(object):
             import_statements_block = '\n'.join(needed_import_statements)
             class_header_code_str=f"{import_statements_block}\n{class_header_code_str}" # prepend the imports
 
-        code_str = f"\n{class_header_code_str}{member_properties_code_str}{init_fcn_code_str}{post_class_spacing}" # add comment above code
+        code_str: str = f"\n{class_header_code_str}{member_properties_code_str}{init_fcn_code_str}{post_class_spacing}" # add comment above code
 
         if copy_to_clipboard:
             df = pd.DataFrame([code_str])

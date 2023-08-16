@@ -102,7 +102,7 @@ class WrappingMessagePrinter(object):
                 print(f'{begin_string}...', end=begin_line_ending)
 
 
-def custom_tree_formatter(depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+def custom_tree_formatter(depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False) -> str:
     """ For use with `print_keys_if_possible` to render a neat and pretty tree
 
         from pyphocorehelpers.print_helpers import custom_tree_formatter
@@ -1021,9 +1021,9 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         depth_string = '\t' * depth
         curr_value_type = type(curr_value)
         curr_value_type_string = str(curr_value_type) # string like "<class 'numpy.ndarray'>"
-        curr_value_type_name = strip_type_str_to_classname(curr_value_type_string) # string like "numpy.ndarray"
+        curr_value_type_name: str = strip_type_str_to_classname(curr_value_type_string) # string like "numpy.ndarray"
         
-        is_non_expanded_item = curr_key in (non_expanded_item_keys or [])
+        is_non_expanded_item: bool = curr_key in (non_expanded_item_keys or [])
 
         if custom_item_formatter is None:
             # Define default print format function if no custom one is provided:

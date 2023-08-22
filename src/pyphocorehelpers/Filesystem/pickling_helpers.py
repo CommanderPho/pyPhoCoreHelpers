@@ -12,47 +12,22 @@ move_modules_list = {'pyphoplacecellanalysis.General.Batch.PhoDiba2023Paper.Sing
     }
 
 
-# class CustomUnpickler(pickle.Unpickler):
-#     """python's Unpickler extended to interpreter sessions and more types"""
-#     from .settings import settings
-#     _session = False
-
-#     def find_class(self, module, name):
-#         if (module, name) == ('__builtin__', '__main__'):
-#             return self._main.__dict__ #XXX: above set w/save_module_dict
-#         elif (module, name) == ('__builtin__', 'NoneType'):
-#             return type(None) #XXX: special case: NoneType missing
-#         if module == 'dill.dill': module = 'dill._dill'
-#         return pickle.Unpickler.find_class(self, module, name)
-
-#     def __init__(self, *args, **kwds):
-#         settings = pickle.Pickler.settings
-#         _ignore = kwds.pop('ignore', None)
-#         pickle.Unpickler.__init__(self, *args, **kwds)
-#         self._main = _main_module
-#         self._ignore = settings['ignore'] if _ignore is None else _ignore
-
-
 class RenameUnpickler(pickle.Unpickler):
 	""" 
+	# global_move_modules_list: Dict[str, str] - a dict with keys equal to the old full path to a class and values equal to the updated (replacement) full path to the class. Used to update the path to class definitions for loading previously pickled results after refactoring.
+		Example: 	{'pyphoplacecellanalysis.General.Batch.PhoDiba2023Paper.SingleBarResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.SingleBarResult',
+					'pyphoplacecellanalysis.General.Batch.PhoDiba2023Paper.InstantaneousSpikeRateGroupsComputation':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.InstantaneousSpikeRateGroupsComputation',
+					}
 
-	from pyphocorehelpers.Filesystem.pickling_helpers import RenameUnpickler
-	RenameUnpickler.move_modules_list = {'pyphoplacecellanalysis.General.Batch.PhoDiba2023Paper.SingleBarResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.SingleBarResult',
-	'pyphoplacecellanalysis.General.Batch.PhoDiba2023Paper.InstantaneousSpikeRateGroupsComputation':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.InstantaneousSpikeRateGroupsComputation',
-	}
+	
+		
+	Usage:
+		from pyphocorehelpers.Filesystem.pickling_helpers import RenameUnpickler, renamed_load
+	
 
-
-	pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.InstantaneousSpikeRateGroupsComputation
-
-	{'pyphoplacecellanalysis.General.Batch.PhoDiba2023Paper.SingleBarResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.SingleBarResult',
-	'pyphoplacecellanalysis.General.Batch.PhoDiba2023Paper.InstantaneousSpikeRateGroupsComputation':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.InstantaneousSpikeRateGroupsComputation',
-	}
-
-
-	kwargs = {}
 	pkl_path = curr_active_pipeline.global_computation_results_pickle_path
 	with open(pkl_path, 'rb') as dbfile:
-		# db = pickle.load(dbfile, **kwargs)
+		# db = pickle.load(dbfile, **kwargs) # replace previous ` pickle.load(dbfile, **kwargs)` calls with `db = renamed_load(dbfile, **kwargs)`
 		db = renamed_load(dbfile, **kwargs)
 		
 	"""
@@ -77,13 +52,13 @@ class RenameUnpickler(pickle.Unpickler):
 		assert _move_modules_list is not None
 		self._move_modules_list = _move_modules_list
 
-def renamed_load(file_obj, **kwargs):
+def renamed_load(file_obj, move_modules_list:Dict=None, **kwargs):
 	""" from pyphocorehelpers.Filesystem.pickling_helpers import renamed_load """
-	return RenameUnpickler(file_obj, **kwargs).load()
+	return RenameUnpickler(file_obj, move_modules_list=move_modules_list, **kwargs).load()
 
-# def renamed_loads(pickled_bytes):
-#     file_obj = io.BytesIO(pickled_bytes)
-#     return renamed_load(file_obj)
+def renamed_loads(pickled_bytes):
+    file_obj = io.BytesIO(pickled_bytes)
+    return renamed_load(file_obj)
 
 
 

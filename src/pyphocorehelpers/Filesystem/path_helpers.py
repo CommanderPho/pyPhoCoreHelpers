@@ -1,5 +1,3 @@
-import os
-import sys
 import platform
 from contextlib import contextmanager
 import pathlib
@@ -7,7 +5,6 @@ from pathlib import Path
 from typing import List, Optional
 import shutil # for _backup_extant_file(...)
 from datetime import datetime
-import pandas as pd
 from pyphocorehelpers.function_helpers import function_attributes
 from pyphocorehelpers.programming_helpers import metadata_attributes
 
@@ -144,32 +141,6 @@ def print_data_files_list_as_array(filenames_list):
     print(f'filenames_list_str: [{filenames_list_str}]')
     # for a_path in filenames_list:
     #     print(f'{str(a_path)}')
-
-
-
-@function_attributes(short_name=None, tags=['filesystem','metadata','creation_time','modification_time','datetime','files'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-06-07 02:16', related_items=[])
-def get_file_metadata(paths) -> pd.DataFrame:
-    """
-    Get the metadata (modification time, creation time, and file size) for each file specified by a list of pathlib.Path objects.
-    :param paths: A list of pathlib.Path objects representing the file paths.
-    :return: A pandas DataFrame with columns for path, modification time, creation time, and file size.
-    """
-    metadata = []
-
-    for path in paths:
-        if path.is_file():
-            modified_time = os.path.getmtime(path)
-            created_time = os.path.getctime(path)
-            file_size = os.path.getsize(path) / (1024 ** 3)  # Convert to GB
-            metadata.append({
-                'path': str(path),
-                'modification_time': datetime.fromtimestamp(modified_time),
-                'creation_time': datetime.fromtimestamp(created_time),
-                'file_size': file_size
-            })
-
-    df = pd.DataFrame(metadata)
-    return df
 
 
 def save_filelist_to_text_file(hdf5_output_paths: List[Path], filelist_path: Path, debug_print:bool=False):

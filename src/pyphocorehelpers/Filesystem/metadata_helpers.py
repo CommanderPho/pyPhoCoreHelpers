@@ -1,9 +1,10 @@
 import os
 from datetime import datetime
+from typing import Dict, Optional
 
 import pandas as pd
 
-from function_helpers import function_attributes
+from pyphocorehelpers.function_helpers import function_attributes
 
 
 class FilesystemMetadata:
@@ -40,9 +41,18 @@ class FilesystemMetadata:
         return (os.path.getsize(file_path) / (1024 ** 3))  # Convert to GB
 
 
+def get_file_metadata(path, round_size_decimals:int=2) -> Optional[Dict]:
+    if not path.is_file():
+        return None
+
+    modified_time = os.path.getmtime(path)
+    created_time = os.path.getctime(path)
+    file_size = round((os.path.getsize(path) / (1024 ** 3)), ndigits=round_size_decimals)  # Convert to GB
+    return {'path': str(path), 'modification_time': datetime.fromtimestamp(modified_time), 'creation_time': datetime.fromtimestamp(created_time), 'file_size': file_size}
+            
 
 @function_attributes(short_name=None, tags=['filesystem','metadata','creation_time','modification_time','datetime','files'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-06-07 02:16', related_items=[])
-def get_file_metadata(paths) -> pd.DataFrame:
+def get_files_metadata(paths) -> pd.DataFrame:
     """
     Get the metadata (modification time, creation time, and file size) for each file specified by a list of pathlib.Path objects.
     :param paths: A list of pathlib.Path objects representing the file paths.
@@ -61,6 +71,9 @@ def get_file_metadata(paths) -> pd.DataFrame:
                 'creation_time': datetime.fromtimestamp(created_time),
                 'file_size': file_size
             })
-
+            
     df = pd.DataFrame(metadata)
+    df.style.format("{:.1f}") # suppresses scientific notation display only for this dataframe. Alternatively: pd.options.display.float_format = '{:.2f}'.format
+    df['file_size'] = df['file_size'].round(decimals=2)
+    
     return df

@@ -6,6 +6,7 @@ from typing import List, Dict
 # import pickle
 # import dill
 import dill as pickle
+import pandas as pd
 
 move_modules_list = {'pyphoplacecellanalysis.General.Batch.PhoDiba2023Paper.SingleBarResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.SingleBarResult',
     'pyphoplacecellanalysis.General.Batch.PhoDiba2023Paper.InstantaneousSpikeRateGroupsComputation':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.InstantaneousSpikeRateGroupsComputation',
@@ -40,6 +41,12 @@ class RenameUnpickler(pickle.Unpickler):
 		if found_full_replacement_name is not None:
 			found_full_replacement_module, found_full_replacement_import_name = found_full_replacement_name.rsplit('.', 1)
 			renamed_module = found_full_replacement_module
+			
+		# Pandas 1.5.* -> 2.0.* pickle compatibility:
+		# after upgrading Pandas from 1.5.* -> 2.0.* I was getting `ModuleNotFoundError: No module named 'pandas.core.indexes.numeric'` when trying to unpickle the pipeline.
+		key = (module, name)
+		renamed_module, name = self._pandas_rename_map.get(key, key)
+	
 		return super(RenameUnpickler, self).find_class(renamed_module, name)
 
 	def __init__(self, *args, **kwds):
@@ -51,6 +58,7 @@ class RenameUnpickler(pickle.Unpickler):
 		# self._move_modules_list = settings['move_modules_list'] if _move_modules_list is None else _move_modules_list
 		assert _move_modules_list is not None
 		self._move_modules_list = _move_modules_list
+		self._pandas_rename_map = pd.compat.pickle_compat._class_locations_map
 
 def renamed_load(file_obj, move_modules_list:Dict=None, **kwargs):
 	""" from pyphocorehelpers.Filesystem.pickling_helpers import renamed_load """

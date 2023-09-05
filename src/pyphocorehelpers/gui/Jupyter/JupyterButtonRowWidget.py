@@ -1,3 +1,4 @@
+from typing import Optional, List, Dict
 import ipywidgets as widgets
 from IPython.display import display
 
@@ -22,18 +23,30 @@ class JupyterButtonRowWidget:
 
 	
 	"""
-	button_list: list
+	button_list: List
+	root_widget: Optional[widgets.HBox]
 
-	def __init__(self, button_defns):
+	def __init__(self, button_defns, defer_display:bool=False):
 		self.button_list = []
+		self.root_widget = None
+		## Build the widget:
+		self.build_widget(button_defns)
+		# Display if needed
+		if not defer_display:
+			self.display_buttons()
+
+	def build_widget(self, button_defns):
 		## builds the buttons from the definitions:
+		self.button_list = []
+		
+
 		for (a_label, a_fn) in button_defns:
 			a_btn = widgets.Button(description=a_label)
 			a_btn.on_click(a_fn)
 			self.button_list.append(a_btn)
-
-		self.display_buttons()
+		self.root_widget = widgets.HBox(self.button_list)
+		
 
 	def display_buttons(self):
-		hbox = widgets.HBox(self.button_list)
-		display(hbox)
+		assert self.root_widget is not None
+		display(self.root_widget)

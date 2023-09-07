@@ -4,10 +4,14 @@ from sys import platform
 from warnings import warn
 if platform == "linux" or platform == "linux2":
     # linux
-    pass
+     def reveal_in_linux_file_manager(path: str) -> None:
+        subprocess.run(['xdg-open', path])
+        
 elif platform == "darwin":
     # OS X
-    pass
+    def reveal_in_mac_file_manager(path: str) -> None:
+        subprocess.run(['open', path])
+
 elif platform == "win32":
     # Windows...
     FILEBROWSER_PATH = os.path.join(os.getenv('WINDIR'), 'explorer.exe')
@@ -32,15 +36,14 @@ def reveal_in_system_file_manager(path):
     """
     if platform == "win32":
         reveal_in_windows_explorer(path)
-        return
     elif platform == "linux" or platform == "linux2":
         # linux
-        pass
+        reveal_in_linux_file_manager(path)
     elif platform == "darwin":
         # OS X
-        pass
-    
-    warn('reveal_in_system_file_manager(...) is currently not supported on platform "{platform}", known supported platforms: ["Windows"]')
+        reveal_in_mac_file_manager(path)
+    else:
+        warn('reveal_in_system_file_manager(...) is currently not supported on platform "{platform}", known supported platforms: ["Windows"]')
         
 ## Now you can see the current PDF output result by:
 # reveal_in_windows_explorer(curr_pdf_save_path)

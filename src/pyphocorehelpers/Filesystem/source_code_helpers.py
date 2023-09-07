@@ -3,6 +3,10 @@ import sys
 import pathlib
 import re
 import hashlib # for hashing pyproject.toml files and seeing if they changed
+import inspect
+from typing import Optional, List, Dict, Callable
+from attrs import define, field
+from urllib.parse import urlencode, quote
 
 """
 from pyphocorehelpers.Filesystem.source_code_helpers import replace_text_in_file # for finding .whl file after building binary repo
@@ -129,4 +133,89 @@ def did_file_hash_change(file_path):
 
     return did_file_change
 
+
+@define(slots=False)
+class VSCodeLinkGenerator:
+    """ builds a clickable VSCode link to a specific function 
+        Like 'vscode://file/home/halechr/repos/pyPhoPlaceCellAnalysis/src/pyphoplacecellanalysis/GUI/PyVista/InteractivePlotter/Mixins/LapsVisualizationMixin.py:60'
+        
+    Usage:
+        from pyphocorehelpers.Filesystem.source_code_helpers import VSCodeLinkGenerator
+        
+        example_function = curr_active_pipeline.registered_display_function_dict['_display_long_and_short_stacked_epoch_slices']
+        example_function
+
+    
+    ## Testing with workspace root:
+        link_generator = VSCodeLinkGenerator(func_obj=example_function, workspace_root='/home/halechr/repos/Spike3D/EXTERNAL/VSCode_Workspaces', use_relative_path=True) # , workspace_root='/path/to/workspace/root'
+        link_text: str = link_generator.generate_link()
+        print(f'link_text: {link_text}')
+
+        link_generator.link_widget()
+        
+    """
+    func_obj: Callable
+    workspace_root: Optional[str] = None  # Root directory of your workspace
+    include_column: bool = False  # Include column number in the link
+    markdown: bool = False  # Generate markdown link
+    use_relative_path: bool = False
+    new_window: bool = False  # Open in new window or not
+    
+
+    def generate_link(self) -> str:
+        source_info = inspect.getsourcelines(self.func_obj)
+        start_line = source_info[1]
+        file_path = inspect.getsourcefile(self.func_obj)
+        
+        if not file_path:
+            raise Exception("Function source file could not be determined.")
+        
+        if self.use_relative_path:
+            assert self.workspace_root is not None, "No workspace root provided."
+                
+            relative_path = os.path.relpath(file_path, self.workspace_root)
+            active_path = relative_path
+        else:
+            active_path = file_path
+
+        query = urlencode({'newWindow': 'true' if self.new_window else 'false'})
+        url = f"vscode://file{active_path}:{start_line}?{query}"
+        
+        if self.include_column:
+            url += ":1"  # Assuming column 1 since we are linking to the function definition
+            
+        output = f"[{active_path}:{start_line}]({url})" if self.markdown else url
+        
+        return output
+    
+    def link_widget(self):
+        from ipywidgets import widgets
+        return widgets.HTML(value=f'<a href="{self.generate_link()}" target="_blank">Go to function definition</a>')
+
+
+@define(slots=False)
+class FunctionLinkGenerator:
+    """ 
+    # Assuming the base URL of the Git repository is 'https://github.com/your_username/your_repository'
+    link_generator = FunctionLinkGenerator(func_obj=example_function, base_url='https://github.com/your_username/your_repository')
+    link_generator.generate_link()
+
+    """
+    func_obj: Callable
+    base_url: str  # Base URL of the repository
+    
+    def generate_link(self) -> str:
+        source_info = inspect.getsourcelines(self.func_obj)
+        start_line = source_info[1]
+        end_line = start_line + len(source_info[0]) - 1
+        file_path = inspect.getsourcefile(self.func_obj)
+        
+        # If the file path is relative, adjust according to your setup
+        url = f"{self.base_url}/blob/main/{quote(file_path)}#L{start_line}-L{end_line}"
+        return url
+    
+    def link_widget(self):
+        from ipywidgets import widgets
+        link_html = f'<a href="{self.generate_link()}" target="_blank">Go to function definition</a>'    
+        return widgets.HTML(value=link_html)
 

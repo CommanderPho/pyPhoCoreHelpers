@@ -1,4 +1,8 @@
+"""
 
+You can use `pd.describe_option()` to see the various customization options you can set for pandas
+
+"""
 
 
 
@@ -40,7 +44,7 @@ def set_pho_pandas_display_preferences(is_concise=True):
         pd.set_option('display.max_rows', 50)
     else:
         pd.set_option('display.min_rows', None)
-        pd.set_option('display.max_rows', 30)
+        pd.set_option('display.max_rows', 12)
 
     
     

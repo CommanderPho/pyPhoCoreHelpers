@@ -219,3 +219,40 @@ class FunctionLinkGenerator:
         link_html = f'<a href="{self.generate_link()}" target="_blank">Go to function definition</a>'    
         return widgets.HTML(value=link_html)
 
+
+""" Pending usages of VSCodeLinkGenerator and FunctionLinkGenerator 
+
+from pyphocorehelpers.Filesystem.source_code_helpers import VSCodeLinkGenerator
+from pyphocorehelpers.Filesystem.source_code_helpers import FunctionLinkGenerator
+from ipywidgets import widgets, HBox, VBox
+from ipywidgets import widgets
+
+@define(slots=False)
+class DictionaryTableDisplay:
+    data_dict: dict
+    workspace_root: str
+    
+    def display_table(self):
+        df = pd.DataFrame.from_dict(self.data_dict, orient='index', columns=['Value'])
+        df['Function'] = None
+
+        link_generator = VSCodeLinkGenerator(None, workspace_root=self.workspace_root)
+        
+        for key, value in self.data_dict.items():
+            if callable(value):
+                link_generator.func_obj = value
+                # url = link_generator.generate_link()
+                url = link_generator.generate_link()
+                button_html = f'<button onclick="window.open(\'{url}\', \'_blank\')">Go to Function</button>'
+                df.at[key, 'Function'] = button_html
+                
+        display_widget = widgets.Output()
+        with display_widget:
+            display(df.to_html(escape=False))
+        
+        return display_widget
+
+# Assuming the root directory of your workspace is '/path/to/workspace/root'
+table_display = DictionaryTableDisplay(data_dict=curr_active_pipeline.registered_display_function_dict, workspace_root='/home/halechr/repos')
+table_display.display_table()
+"""

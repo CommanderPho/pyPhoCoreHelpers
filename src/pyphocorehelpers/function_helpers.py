@@ -120,6 +120,7 @@ _custom_function_metadata_attribute_names = dict(short_name=None, tags=None, cre
                                          input_requires=None, output_provides=None,
                                          uses=None, used_by=None,
                                          related_items=None, # references to items related to this definition
+                                         conforms_to=None, is_global=False, validate_computation_test=None
 )
 
 

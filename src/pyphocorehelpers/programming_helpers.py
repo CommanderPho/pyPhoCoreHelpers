@@ -2,8 +2,9 @@
 # date: 2023-05-08 14:21:48
 # purpose: Created to support programming and consolidation of programming-related helpers into a single location. Previously all were scattered around the various other helpers.
 
-
+from typing import Optional, List, Dict
 from functools import wraps
+import pandas as pd
 # from pyphocorehelpers.function_helpers import function_attributes, _custom_function_metadata_attribute_names
 
 # ==================================================================================================================== #
@@ -69,6 +70,104 @@ def metadata_attributes(short_name=None, tags=None, creation_date=None, input_re
         return func
     return decorator
 
+
+# ==================================================================================================================== #
+# Function and Class Metadata Accessors                                                                                #
+# ==================================================================================================================== #
+
+
+def build_metadata_property_reverse_search_map(a_fn_dict, a_metadata_property_name='short_name'):
+	"""allows lookup of key into the original dict via a specific value of a specified property
+	Usage:
+        from pyphocorehelpers.programming_helpers import build_metadata_property_reverse_search_map
+		short_name_reverse_lookup_map = build_metadata_property_reverse_search_map(curr_active_pipeline.registered_merged_computation_function_dict, a_metadata_property_name='short_name')
+		short_name_search_value = 'long_short_fr_indicies_analyses'
+		short_name_reverse_lookup_map[short_name_search_value] # '_perform_long_short_firing_rate_analyses'
+	"""
+	metadata_property_reverse_search_map = {getattr(a_fn, a_metadata_property_name, None):a_name for a_name, a_fn in a_fn_dict.items() if getattr(a_fn, a_metadata_property_name, None)}
+	return metadata_property_reverse_search_map
+
+
+def build_fn_properties_dict(a_fn_dict, included_attribute_names_list:Optional[List]=None, private_attribute_names_list:List[str]=['__name__', '__doc__'], debug_print:bool=False) -> Dict:
+    """ Given a dictionary of functions tries to extract the metadata
+
+    from pyphocorehelpers.programming_helpers import build_fn_properties_dict
+
+    Example: Merged Functions:
+        computation_fn_dict = curr_active_pipeline.registered_merged_computation_function_dict
+        computation_fn_metadata_dict = build_fn_properties_dict(curr_active_pipeline.registered_merged_computation_function_dict, ['__name__', 'short_name'], private_attribute_names_list=[])
+        computation_fn_metadata_dict
+    """
+    data_dict = {}
+    for a_name, a_fn in a_fn_dict.items():
+        if debug_print:
+            print(f'a_name: {a_name}')
+            # , '__annotations__', '__class__', '__closure__', '__code__', '__module__', '__qualname__', '__sizeof__', '__str__', '__subclasshook__']
+        if included_attribute_names_list is None:
+            all_public_fn_attribute_names = [a_name for a_name in dir(a_fn) if (not a_name.startswith('_'))] # enumerate all non-private (starting with a '_' character) members
+        else:
+            # include only the items
+            all_public_fn_attribute_names = [a_name for a_name in dir(a_fn) if (not a_name.startswith('_')) and (a_name in included_attribute_names_list)] # enumerate all non-private (starting with a '_' character) members
+            
+        all_fn_attribute_names = all_public_fn_attribute_names + private_attribute_names_list
+        all_fn_attribute_values = [a_fn.__getattribute__(a_name) for a_name in all_fn_attribute_names]
+        if debug_print:
+            print(f'\t{all_fn_attribute_names}')	
+            print(f'\t{all_fn_attribute_values}')
+
+        a_fn_metadata_dict = dict(zip(all_fn_attribute_names, all_fn_attribute_values))
+        data_dict[a_name] = a_fn_metadata_dict
+        
+    return data_dict
+
+
+
+def build_fn_properties_df(a_fn_dict, included_attribute_names_list:Optional[List]=None, private_attribute_names_list:List[str]=['__name__', '__doc__'], debug_print:bool=False) -> pd.DataFrame:
+    """ Given a dictionary of functions tries to extract the metadata
+
+    from pyphocorehelpers.programming_helpers import build_fn_properties_df
+
+    Usage Examples:
+        display_fn_dict = curr_active_pipeline.registered_display_function_dict
+        display_fn_df = build_fn_properties_df(display_fn_dict)
+        display_fn_df
+
+    Example 2: Global Computation Functions
+        global_computation_fn_dict = curr_active_pipeline.registered_global_computation_function_dict
+        global_computation_fn_df = build_fn_properties_df(global_computation_fn_dict)
+        global_computation_fn_df
+
+    Example 3: Merged Functions:
+        computation_fn_dict = curr_active_pipeline.registered_merged_computation_function_dict
+        computation_fn_df = build_fn_properties_df(computation_fn_dict)
+        computation_fn_df
+    """
+    data = []
+    for a_name, a_fn in a_fn_dict.items():
+        # print(f'\t{dir(a_fn)}') # ['__annotations__', '__call__', '__class__', '__closure__', '__code__', '__defaults__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__get__', '__getattribute__', '__globals__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__kwdefaults__', '__le__', '__lt__', '__module__', '__name__', '__ne__', '__new__', '__qualname__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', 'conforms_to', 'creation_date', 'input_requires', 'is_global', 'output_provides', 'related_items', 'short_name', 'tags', 'used_by', 'uses', 'validate_computation_test']
+        # ['conforms_to', 'creation_date', 'input_requires', 'is_global', 'output_provides', 'related_items', 'short_name', 'tags', 'used_by', 'uses', 'validate_computation_test']
+        if debug_print:
+            print(f'a_name: {a_name}')
+        if included_attribute_names_list is None:
+            all_public_fn_attribute_names = [a_name for a_name in dir(a_fn) if (not a_name.startswith('_'))] # enumerate all non-private (starting with a '_' character) members
+        else:
+            # include only the items
+            all_public_fn_attribute_names = [a_name for a_name in dir(a_fn) if (not a_name.startswith('_')) and (a_name in included_attribute_names_list)] # enumerate all non-private (starting with a '_' character) members
+        all_fn_attribute_names = all_public_fn_attribute_names + private_attribute_names_list
+        all_fn_attribute_values = [a_fn.__getattribute__(a_name) for a_name in all_fn_attribute_names]
+        if debug_print:
+            print(f'\t{all_fn_attribute_names}')	
+            print(f'\t{all_fn_attribute_values}')
+
+        a_fn_metadata_dict = dict(zip(all_fn_attribute_names, all_fn_attribute_values))
+        data.append(a_fn_metadata_dict)
+
+    df = pd.DataFrame.from_dict(data)
+    # long_name_column = df.pop('__name__')
+    return df
+            
+        
+            
 
 import inspect
 

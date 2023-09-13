@@ -31,6 +31,22 @@ def bounds_midpoint(arr):
     min_x, max_x, min_y, max_y = arr
     return [(min_x + max_x)/2.0, (min_y + max_y)/2.0]
 
+def point_tuple_mid_point(*args):
+    """ returns the center of either a two-element (min, max) tuple or two explicit min, max arguments
+    Usage:
+        from pyphocorehelpers.geometry_helpers import point_tuple_mid_point
+        grid_bin_bounds_center_point = (point_tuple_mid_point(grid_bin_bounds[0]), point_tuple_mid_point(grid_bin_bounds[1]))
+        grid_bin_bounds_center_point
+    """
+    if len(args) == 1:
+        assert len(args[0]) == 2, f"args[0] should be a two element tuple"
+        x_min, x_max = args[0]
+    else:
+        assert len(args) == 2, f"args should be xmin, xmax"
+        x_min, x_max = args
+    return x_min + ((x_max - x_min)/2.0)
+
+
 
 ## General data tools:
 def min_max_1d(data):

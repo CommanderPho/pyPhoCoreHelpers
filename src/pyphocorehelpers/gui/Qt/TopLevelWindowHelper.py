@@ -1,5 +1,5 @@
 from indexed import IndexedOrderedDict
-
+from qtpy.QtWidgets import QWidget # for `print_widget_hierarchy`
 
 class TopLevelWindowHelper:
     """ Not quite finished, but tools to interact with the active QtWidgets and QWindows at the top-level
@@ -46,3 +46,16 @@ class TopLevelWindowHelper:
         """
         children = app.findChildren(searchType)
         return children
+
+
+
+
+def print_widget_hierarchy(widget: QWidget, indent: str = ""):
+    """ from pyphocorehelpers.gui.Qt.TopLevelWindowHelper import print_widget_hierarchy
+    
+    """
+    print(f"{indent}{widget.objectName()} ({widget.__class__.__name__})")
+    for child in widget.children():
+        if isinstance(child, QWidget):
+            print_widget_hierarchy(child, indent=indent + "  ")
+            

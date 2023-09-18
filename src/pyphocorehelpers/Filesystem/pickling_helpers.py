@@ -32,8 +32,8 @@ class RenameUnpickler(pickle.Unpickler):
 		db = renamed_load(dbfile, **kwargs)
 		
 	"""
-	def find_class(self, module, name):
-		original_full_name = '.'.join((module, name))
+	def find_class(self, module:str, name:str):
+		original_full_name:str = '.'.join((module, name))
 		renamed_module = module
 		assert self._move_modules_list is not None
 		
@@ -44,8 +44,9 @@ class RenameUnpickler(pickle.Unpickler):
 			
 		# Pandas 1.5.* -> 2.0.* pickle compatibility:
 		# after upgrading Pandas from 1.5.* -> 2.0.* I was getting `ModuleNotFoundError: No module named 'pandas.core.indexes.numeric'` when trying to unpickle the pipeline.
-		key = (module, name)
-		renamed_module, name = self._pandas_rename_map.get(key, key)
+		if module.startswith('pandas.'):
+			key = (module, name)
+			renamed_module, name = self._pandas_rename_map.get(key, key)
 	
 		return super(RenameUnpickler, self).find_class(renamed_module, name)
 

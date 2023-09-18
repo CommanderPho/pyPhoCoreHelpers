@@ -39,12 +39,14 @@ def set_pho_pandas_display_preferences(is_concise=True):
     # pd.set_option('display.max_rows', None)  # or 1000
     # pd.set_option('display.max_colwidth', -1)  # or 199
     # pd.set_option('display.width', 1000)
+    pd.set_option('display.max_columns', 256) # maximum number of columns to display
     if not is_concise:
         pd.set_option('display.min_rows', 30)
         pd.set_option('display.max_rows', 50)
     else:
         pd.set_option('display.min_rows', None)
         pd.set_option('display.max_rows', 12)
+
 
     
     

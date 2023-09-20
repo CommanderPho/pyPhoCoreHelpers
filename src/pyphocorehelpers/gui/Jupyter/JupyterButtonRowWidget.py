@@ -38,8 +38,6 @@ class JupyterButtonRowWidget:
 	def build_widget(self, button_defns):
 		## builds the buttons from the definitions:
 		self.button_list = []
-		
-
 		for (a_label, a_fn) in button_defns:
 			a_btn = widgets.Button(description=a_label)
 			a_btn.on_click(a_fn)

@@ -35,6 +35,28 @@ def build_adjusted_color(color: QColor, hue_shift=0.0, saturation_scale=1.0, val
     return curr_color_copy
 
 
+def hexArgb_to_hexRGBA(hex_Argb_str:str) -> str:
+	""" converts a hexArgb string such as one output by `pen.color().name(QtGui.QColor.HexArgb)` to a regular hex_RGBA string like would be used for matplotlib.
+	
+	'#0b0049ff'
+	
+	QColor.HexArgb: '#AARRGGBB' A “#” character followed by four two-digit hexadecimal numbers (i.e. #AARRGGBB).
+	Output Format (HexRGBA): '#RRGGBBAA'
+	
+	Usage:
+        from pyphocorehelpers.gui.Qt.color_helpers import hexArgb_to_hexRGBA
+		pen=pg.mkPen('#0b0049')
+		hex_Argb_str:str = pen.color().name(QtGui.QColor.HexArgb) # '#ff0b0049'
+		hex_RGBA_str = hexArgb_to_hexRGBA(hex_Argb_str)
+		hex_RGBA_str # '#0b0049ff'
+
+	"""
+	hex_rgb_str_part = hex_Argb_str[3:] # get the rgb characters
+	hex_alpha_str_part: str = hex_Argb_str[1:3] # get the "alpha" components
+	hex_RGBA_str: str = f"#{hex_rgb_str_part}{hex_alpha_str_part}"
+	return hex_RGBA_str
+
+
 def convert_pen_brush_to_matplot_kwargs(pen, brush) -> Dict:
 	""" converts a pyqtgraph (pen: QPen, brush: QBrush) combination into matplotlib kwargs dict 
      Usage:
@@ -44,6 +66,6 @@ def convert_pen_brush_to_matplot_kwargs(pen, brush) -> Dict:
         matplotlib_rect_kwargs
 
      """
-	return dict(linewidth=pen.widthF(), edgecolor=pen.color().name(QtGui.QColor.HexRgb), facecolor=brush.color().name(QtGui.QColor.HexRgb), alpha=brush.color().alphaF())
+	return dict(linewidth=pen.widthF(), edgecolor=hexArgb_to_hexRGBA(pen.color().name(QtGui.QColor.HexArgb)), facecolor=hexArgb_to_hexRGBA(brush.color().name(QtGui.QColor.HexArgb)))
 
 

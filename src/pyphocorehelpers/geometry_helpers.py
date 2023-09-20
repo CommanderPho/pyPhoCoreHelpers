@@ -1,4 +1,5 @@
 import numpy as np
+from attrs import astuple, define, field, Factory
 
 from pyphocorehelpers.DataStructure.data_structure_builders import Width_Height_Tuple, cartesian_product
 
@@ -45,7 +46,6 @@ def point_tuple_mid_point(*args):
         assert len(args) == 2, f"args should be xmin, xmax"
         x_min, x_max = args
     return x_min + ((x_max - x_min)/2.0)
-
 
 
 ## General data tools:
@@ -152,7 +152,63 @@ def compute_data_aspect_ratio(xbin, ybin, sorted_inputs=True):
     
     aspect_ratio = width / height
     return aspect_ratio, Width_Height_Tuple(width, height)
+
+
+
+
+@define(slots=False)
+class BoundsRect:
+    """ Kinda overkill. Represents a boundary rectangle.
     
+    from pyphocorehelpers.geometry_helpers import BoundsRect
+    
+    grid_bin_bounds = BoundsRect.init_from_grid_bin_bounds(global_pf2D.config.grid_bin_bounds)
+    grid_bin_bounds
+
+    """
+    xmin: float
+    xmax: float
+    ymin:float
+    ymax: float
+    
+    @property
+    def size(self):
+        return (abs(self.xmax - self.xmin), abs(self.ymax - self.ymin))
+    
+    @property
+    def extents(self):
+        return [self.xmin, self.xmax, self.ymin, self.ymax]
+    
+    @property
+    def range_pairs(self):
+        """ ((x, x2), (y, y2)) = grid_bin_bounds """
+        return ((self.xmin, self.xmax), (self.ymin, self.ymax))
+    
+    @property
+    def corner_points(self):
+        return corner_points_from_extents(self.extents)
+    
+    @property
+    def relative_midpoint(self):
+        return tuple(np.array(self.size)/2.0)
+        # return bounds_midpoint(astuple(self))
+
+    @property
+    def center_point(self):
+        return tuple(np.array(self.relative_midpoint) + np.array([self.xmin, self.ymin])) 
+
+    @classmethod
+    def init_from_grid_bin_bounds(cls, grid_bin_bounds):
+        assert len(grid_bin_bounds) == 2
+        return cls(*grid_bin_bounds[0], *grid_bin_bounds[1])
+     
+
+    def __iter__(self):
+        """ allows unpacking """
+        for value in self.range_pairs:
+            yield value
+
+
 
 
 def find_ranges_in_window(epoch_starts, epoch_ends, active_window):
@@ -215,7 +271,7 @@ def find_ranges_in_window(epoch_starts, epoch_ends, active_window):
             
     return is_range_in_window, included_epoch_indicies, included_epoch_starts, included_epoch_ends, included_epoch_is_truncated
     
-    
+
 # @function_attributes(short_name=None, tags=['map','values','transform'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-05-31 16:53', related_items=[])
 def map_value(value, from_range: tuple[float, float], to_range: tuple[float, float]):
     """ Maps values from a range `from_low_high_tuple`: (a, b) to a new range `to_low_high_tuple`: (A, B). Similar to arduino's `map(value, fromLow, fromHigh, toLow, toHigh)` function

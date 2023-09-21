@@ -13,10 +13,10 @@ from PyQt5.QtCore import Qt, QPoint, QRect, QObject, QEvent, pyqtSignal, pyqtSlo
 
 
 def pyqtExceptionPrintingSlot(*args):
-	""" replacement for @QtCore.Slot(...) that enables printing exceptions intead of failing silently!
-	Very useful!
+    """ replacement for @QtCore.Slot(...) that enables printing exceptions intead of failing silently!
+    Very useful!
 
-	from pyphocorehelpers.gui.Qt.ExceptionPrintingSlot import pyqtExceptionPrintingSlot
+    from pyphocorehelpers.gui.Qt.ExceptionPrintingSlot import pyqtExceptionPrintingSlot
     @pyqtExceptionPrintingSlot(object)
     def on_tree_item_double_clicked(self, item, column):
         print(f"Item double-clicked: {item}, column: {column}\n\t", item.text(column))
@@ -28,10 +28,10 @@ def pyqtExceptionPrintingSlot(*args):
         return a_fn_handle()
 
 
-	"""
+    """
     if len(args) == 0 or isinstance(args[0], types.FunctionType):
         args = []
-    @QtCore.pyqtSlot(*args)
+    @pyqtSlot(*args)
     def slotdecorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):

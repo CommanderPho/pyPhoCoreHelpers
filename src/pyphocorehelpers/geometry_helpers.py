@@ -48,6 +48,24 @@ def point_tuple_mid_point(*args):
     return x_min + ((x_max - x_min)/2.0)
 
 
+def is_point_in_rect(test_point, rect) -> bool:
+    """ Tests if test_point is within or on the boundary of `rect`
+        test_point is (x, y) with y being optional.
+        rect is specified as (rx, ry, rw, rh, *optional_ignored_extras)
+
+    Usage:
+        from pyphocorehelpers.geometry_helpers import is_point_in_rect
+    """
+    x, y = test_point
+    rx, ry, rw, rh, *display_args = rect
+    x_satisfied = rx <= x <= rx + rw
+    if y is None:
+        return x_satisfied
+    else:
+        y_satisfied = ry <= y <= ry + rh
+        return (x_satisfied and y_satisfied)
+
+
 ## General data tools:
 def min_max_1d(data):
     return np.nanmin(data), np.nanmax(data)
@@ -208,6 +226,8 @@ class BoundsRect:
         for value in self.range_pairs:
             yield value
 
+    def contains_point(test_point) -> bool:
+        return is_point_in_rect(test_point, self.extents)
 
 
 

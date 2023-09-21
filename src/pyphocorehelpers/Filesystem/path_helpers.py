@@ -1,10 +1,13 @@
+import os
+import sys
+import shutil # for _backup_extant_file(...)
 import platform
 from contextlib import contextmanager
 import pathlib
 from pathlib import Path
 from typing import List, Optional
-import shutil # for _backup_extant_file(...)
-from datetime import datetime
+from datetime import datetime, timedelta
+from pyphocorehelpers.Filesystem.metadata_helpers import FilesystemMetadata
 from pyphocorehelpers.function_helpers import function_attributes
 from pyphocorehelpers.programming_helpers import metadata_attributes
 
@@ -255,5 +258,140 @@ def set_posix_windows():
         finally:
             pathlib.PosixPath = posix_backup
             
+# ==================================================================================================================== #
+# 2023-09-21 - Generating Copydicts to Move files and preserve hierarchies                                             #
+# ==================================================================================================================== #
+""" Usage example 2023-09-21 - Mirror Slow Data files to much faster SSD on Linux Workstation:
 
+Usage:
+    from datetime import datetime, timedelta
+    from pyphocorehelpers.Filesystem.metadata_helpers import FilesystemMetadata, get_file_metadata
+    from pyphocorehelpers.Filesystem.path_helpers import discover_data_files, generate_copydict, copy_movedict, copy_file
+
+
+    source_data_root = Path(r'/media/MAX/Data')
+    dest_data_root = Path(r'/home/halechr/FastData')
+    assert source_data_root.exists(), f"source_data_root: {source_data_root} does not exist! Is the right computer's config commented out above?"
+    assert dest_data_root.exists(), f"dest_data_root: {dest_data_root} does not exist! Is the right computer's config commented out above?"
+
+    oldest_modified_date = (datetime.now() - timedelta(days=5))
+
+    # Find the files and build the movedicts:
+    found_session_pickle_files = discover_data_files(source_data_root, glob_pattern='loadedSessPickle.pkl', recursive=True)
+    found_global_computation_results_files = discover_data_files(source_data_root, glob_pattern=f'output/{completed_global_computations_filename}', recursive=True)
+    file_movedict_session_pickle_files = generate_copydict(source_data_root, dest_data_root, found_files=found_session_pickle_files, only_files_newer_than=oldest_modified_date)
+    file_movedict_global_computation_results_pickle_files = generate_copydict(source_data_root, dest_data_root, found_files=found_global_computation_results_files, only_files_newer_than=oldest_modified_date)
+
+    ### Actually perform copy operations. This will take a while
+    moved_files_dict_session_pickle_files = copy_movedict(file_movedict_session_pickle_files)
+    moved_files_dict_global_computation_results_pickle_files = copy_movedict(file_movedict_global_computation_results_pickle_files)
+
+"""
+
+def copy_file(src_path: str, dest_path: str):
+    """
+        Copy a file from src_path to dest_path, creating any intermediate directories as needed.
+        
+    Usage:
+        from pyphocorehelpers.Filesystem.path_helpers import copy_file
+        
+    """
+    if not isinstance(dest_path, Path):
+         dest_path = Path(dest_path).resolve()
+
+    # Create intermediate directories if they don't exist
+    dest_directory = dest_path.parent
+    dest_directory.mkdir(parents=True, exist_ok=True)
+
+    # Copy the file
+    shutil.copy(src_path, str(dest_path))
+
+    return dest_path
+
+
+def copy_recursive(source_base_path, target_base_path):
+    """ 
+    Copy a directory tree from one location to another. This differs from shutil.copytree() that it does not
+    require the target destination to not exist. This will copy the contents of one directory in to another
+    existing directory without complaining.
+    It will create directories if needed, but notify they already existed.
+    If will overwrite files if they exist, but notify that they already existed.
+    :param source_base_path: Directory
+    :param target_base_path:
+    :return: None
+    
+    Source: https://gist.github.com/NanoDano/32bb3ba25b2bd5cdf192542660ac4de0
+    
+    Usage:
+    
+        from pyphocorehelpers.Filesystem.path_helpers import copy_recursive
+    
+    """
+    if not Path(target_base_path).exists():
+        Path(target_base_path).mkdir()    
+    if not Path(source_base_path).is_dir() or not Path(target_base_path).is_dir():
+        raise Exception("Source and destination directory and not both directories.\nSource: %s\nTarget: %s" % ( source_base_path, target_base_path))
+    for item in os.listdir(source_base_path):
+        # Directory
+        if os.path.isdir(os.path.join(source_base_path, item)):
+            # Create destination directory if needed
+            new_target_dir = os.path.join(target_base_path, item)
+            try:
+                os.mkdir(new_target_dir)
+            except OSError:
+                sys.stderr.write("WARNING: Directory already exists:\t%s\n" % new_target_dir)
+
+            # Recurse
+            new_source_dir = os.path.join(source_base_path, item)
+            copy_recursive(new_source_dir, new_target_dir)
+        # File
+        else:
+            # Copy file over
+            source_name = os.path.join(source_base_path, item)
+            target_name = os.path.join(target_base_path, item)
+            if Path(target_name).is_file():
+                sys.stderr.write("WARNING: Overwriting existing file:\t%s\n" % target_name)
+            shutil.copy(source_name, target_name)
+            
+
+def generate_copydict(source_data_root, dest_data_root, found_files: list, only_files_newer_than: Optional[datetime]=None):
+	""" builds a list of files to copy by filtering the found files by their modified date, and then building the destination list using `dest_data_root` 
+			Compiles these values into a dict where <key: old_file_path, value: new_file_path>
+	"""
+	# Only get files newer than date
+	if only_files_newer_than is None:
+		oldest_modified_date = datetime.now() - timedelta(days=5) # newer than 5 days ago
+	else: 
+		oldest_modified_date = only_files_newer_than
+
+	recently_modified_source_filelist = [a_file for a_file in found_files if (FilesystemMetadata.get_last_modified_time(a_file)>oldest_modified_date)]
+
+	# Build the destination filelist from the source_filelist and the two paths:
+	filelist_dest = convert_filelist_to_new_parent(recently_modified_source_filelist, original_parent_path=source_data_root, dest_parent_path=dest_data_root)
+	return dict(zip(recently_modified_source_filelist, filelist_dest))
+
+
+def copy_movedict(file_movedict: dict, print_progress:bool=True) -> dict:
+	""" copies each file in file_movedict from its key -> value, creating any intermediate directories as needed.
+	
+	"""
+	## Perform the copy creating any intermediate directories as needed
+	num_files_to_copy: int = len(file_movedict)
+	moved_files_dict = {}
+	for i, (src_file, dest_file) in enumerate(file_movedict.items()):
+		if print_progress:
+			print(f'copying "{src_file}"\n\t\t -> "{dest_file}"...')
+		_out_path = copy_file(src_file, dest_file)
+		moved_files_dict[src_file] = _out_path
+		if print_progress:
+			print(f'done.')
+	if print_progress:
+		print(f'done copying {len(moved_files_dict)} of {num_files_to_copy} files.')
+	return moved_files_dict
+
+def copy_files(filelist_source: list, filelist_dest: list) -> dict:
+	""" copies each file from `filelist_source` to its corresponding destination in `filelist_dest`, creating any intermediate directories as needed.
+	
+	"""
+	return copy_movedict(dict(zip(filelist_source, filelist_dest)))
 

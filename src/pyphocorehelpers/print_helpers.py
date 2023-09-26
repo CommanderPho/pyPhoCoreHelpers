@@ -260,7 +260,7 @@ class DocumentationFilePrinter:
     def write_to_files(self):
         """Write variables out to files"""
         # Write plaintext version to file:
-        with open(self.output_md_file, 'w') as f:
+        with open(self.output_md_file, 'w', encoding='utf-8') as f:
             f.write(self.md_string)
         
         # Write html version to file:

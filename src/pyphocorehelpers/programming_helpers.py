@@ -2,6 +2,7 @@
 # date: 2023-05-08 14:21:48
 # purpose: Created to support programming and consolidation of programming-related helpers into a single location. Previously all were scattered around the various other helpers.
 
+import contextlib
 from typing import Optional, List, Dict
 from functools import wraps
 import pandas as pd
@@ -342,4 +343,48 @@ class PythonDictionaryDefinitionFormat(Enum):
 
 
 
+
+@contextlib.contextmanager
+def disable_function_context(obj, fn_name: str):
+    """ Disables a function within a context manager
+
+    https://stackoverflow.com/questions/10388411/possible-to-globally-replace-a-function-with-a-context-manager-in-python
+
+    Could be used for plt.show().
+    ```python
+    
+    from pyphocorehelpers.programming_helpers import override_function_context
+    
+    with disable_function_context(plt, "show"):
+        run_me(x)
+    
+    """
+    temp = getattr(obj, fn_name)
+    setattr(obj, fn_name, lambda: None)
+    yield
+    setattr(obj, fn_name, temp)
+    
+
+
+
+@contextlib.contextmanager
+def override_function_context(obj, fn_name: str, override_defn):
+    """ Overrides a function's definition with a different one within a context manager
+
+    https://stackoverflow.com/questions/10388411/possible-to-globally-replace-a-function-with-a-context-manager-in-python
+
+    Could be used for plt.show().
+    ```python
+    
+    from pyphocorehelpers.programming_helpers import override_function_context
+    
+    with override_function_context(plt, "show", custom_print):
+        run_me(x)
+    
+    """
+    temp = getattr(obj, fn_name)
+    setattr(obj, fn_name, override_defn)
+    yield
+    setattr(obj, fn_name, temp)
+    
 

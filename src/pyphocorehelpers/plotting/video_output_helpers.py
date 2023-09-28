@@ -20,7 +20,10 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
     Usage:
 
         from pyphocorehelpers.plotting.video_output_helpers import save_array_as_video
-
+        
+        video_out_path = save_array_as_video(array=active_relative_entropy_results['snapshot_occupancy_weighted_tuning_maps'], video_filename='output/videos/snapshot_occupancy_weighted_tuning_maps.avi', isColor=False)
+        print(f'video_out_path: {video_out_path}')
+        reveal_in_system_file_manager(video_out_path)
     """
     gray_frames = cv2.normalize(array, None, 255, 0, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U) # same size as array
     if debug_print:

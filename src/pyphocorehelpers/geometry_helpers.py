@@ -103,7 +103,7 @@ def compute_data_extent(xpoints, *other_1d_series):
         extent[curr_start_idx+1] = curr_xmax
     return extent
 
-def corner_points_from_extents(extents):
+def corner_points_from_extents(extents, debug_print=False):
     """  Gets the corner points of the bounding shape specified by extents.
     Usage:
         xmin=23.923329354140844, xmax=263.92332935414083, ymin=123.85967782096927, ymax=153.85967782096927
@@ -139,7 +139,8 @@ def corner_points_from_extents(extents):
     dim_data = int(num_extents / 2)
     
     extent_pairs_list = [list([extents[2*i], extents[(2*i) + 1]]) for i in np.arange(dim_data)]
-    print(f'extent_pairs_list: {extent_pairs_list}')
+    if debug_print:
+        print(f'extent_pairs_list: {extent_pairs_list}')
     points = cartesian_product(extent_pairs_list)
     # TODO: sort by z, y, x
     # np.lexsort(
@@ -219,8 +220,16 @@ class BoundsRect:
     def init_from_grid_bin_bounds(cls, grid_bin_bounds):
         assert len(grid_bin_bounds) == 2
         return cls(*grid_bin_bounds[0], *grid_bin_bounds[1])
+    
+    @classmethod
+    def init_from_x_y_w_h_tuple(cls, x_y_w_h_tuple):
+        assert len(x_y_w_h_tuple) == 4
+        x_min, y_min, w, h = x_y_w_h_tuple
+        assert ((w>=0) and (h>=0)), f"height and width must be a non-negative number!"
+        x_max = x_min + w
+        y_max = y_min + h
+        return cls(x_min, x_max, y_min, y_max)
      
-
     def __iter__(self):
         """ allows unpacking """
         for value in self.range_pairs:

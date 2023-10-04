@@ -486,6 +486,13 @@ def partition(df: pd.DataFrame, partitionColumn: str):
     grouped_df = df.groupby([partitionColumn]) #  Groups on the specified column.
     return unique_values, np.array([grouped_df.get_group(aValue) for aValue in unique_values], dtype=object) # dataframes split for each unique value in the column
 
+def partition_df(df: pd.DataFrame, partitionColumn: str):
+    """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
+    History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
+    """
+    unique_values = np.unique(df[partitionColumn]) # array([ 0,  1,  2,  3,  4,  7, 11, 12, 13, 14])
+    grouped_df = df.groupby([partitionColumn]) #  Groups on the specified column.
+    return unique_values, [grouped_df.get_group(aValue) for aValue in unique_values] # dataframes split for each unique value in the column
 
 
 def find_neighbours(value, df, colname):

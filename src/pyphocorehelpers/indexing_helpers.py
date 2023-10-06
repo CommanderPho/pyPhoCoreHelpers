@@ -189,6 +189,16 @@ def interleave_elements(start_points, end_points, debug_print:bool=False):
     assert np.shape(all_points)[0] == (np.shape(start_points)[0] * 2), f"newly created all_points is not of corrrect size! np.shape(all_points): {np.shape(all_points)}"
     return np.squeeze(all_points)
 
+
+def are_all_equal(arr) -> bool:
+	""" returns True if arr is empty, or if all elements of arr are equal to each other """
+	if len(arr) == 0:
+		return True
+	else:
+		val = arr[0] # get first element
+		return np.all([x == val for x in arr])
+    
+
 # ==================================================================================================================== #
 # Dictionary and Maps                                                                                                  #
 # ==================================================================================================================== #
@@ -518,6 +528,59 @@ def find_neighbours(value, df, colname):
     
     #If the series is already sorted, an efficient method of finding the indexes is by using bisect functions.
  
+
+# Concatenate dataframes
+def simple_merge(*dfs_list, debug_print=False) -> pd.DataFrame:
+	""" naievely merges several dataframes with an equal number of rows (and in the same order) into a single dataframe with all of the unique columns of the individual dfs. Any duplicate columns will be removed.
+
+	Usage:
+		dfs_list = (deepcopy(neuron_identities_table), deepcopy(long_short_fr_indicies_analysis_table), deepcopy(neuron_replay_stats_table))
+		dfs_list = (deepcopy(neuron_identities_table), deepcopy(long_short_fr_indicies_analysis_table), deepcopy(neuron_replay_stats_table))
+		df_combined, dropped_duplicate_columns = simple_merge(*dfs_list, debug_print=False)
+		df_combined
+
+	"""
+	assert are_all_equal([len(x) for x in dfs_list]), f"all dataframes must be the same length but [len(x) for x in dfs_list]: {[len(x) for x in dfs_list]}"
+	df_combined = pd.concat(dfs_list, axis=1)
+	# df_combined = pd.concat([df1, df2, df3], axis=1)
+
+	# Remove duplicate columns if values are the same
+	to_drop = []
+	columns = df_combined.columns
+	for i in range(len(columns)):
+		for j in range(i+1, len(columns)):
+			if columns[i] == columns[j] and df_combined[columns[i]].equals(df_combined[columns[j]]):
+				to_drop.append(columns[j])
+	if debug_print:
+		print(f"to_drop: {to_drop}")
+	df_combined = df_combined.drop(columns=to_drop)
+	# # Handle columns with the same name but conflicting values
+	# # (Here, we're simply renaming them for clarity, you can handle them differently if needed)
+	# for col in to_drop:
+	#     df_combined[col + '_conflict'] = df_combined[col]
+	# print(df_combined)
+	return df_combined, to_drop
+
+
+def join_on_index(*dfs, join_index='aclu', suffixes_list=None) -> pd.DataFrame:
+    """ Joins a series of dataframes on a common index (`join_index`)
+    from pyphocorehelpers.indexing_helpers import join_on_index
+    
+    suffixes_list = (('_lsfria', '_jfra'), ('_jfra', '_lspd'))
+    joined_df = join_on_index(long_short_fr_indicies_df, neuron_replay_stats_df, rate_remapping_df, join_index='aclu', suffixes_list=suffixes_list)
+
+    """
+    if suffixes_list is not None:
+        assert len(suffixes_list) == (len(dfs[1:])), f"{len(suffixes_list)} == {(len(dfs[1:]))}"
+    else:
+        suffixes_list = ('_x', '_y') * len(dfs[1:])
+    joined_df: pd.DataFrame = dfs[0]
+    for df, a_suffix_pair in zip(dfs[1:], suffixes_list):
+        # joined_df = joined_df.join(df, how='inner')
+        joined_df = joined_df.merge(df, on=join_index, how='inner', suffixes=a_suffix_pair)
+    return joined_df
+
+
 # ==================================================================================================================== #
 # Discrete Bins/Binning                                                                                                #
 # ==================================================================================================================== #

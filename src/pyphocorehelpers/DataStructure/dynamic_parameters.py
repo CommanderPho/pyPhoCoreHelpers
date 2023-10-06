@@ -164,7 +164,7 @@ class DynamicParameters(DiffableObject, MutableMapping):
     def init_from_dict(cls, a_dict):
         # NOTE: encounter `TypeError: keywords must be strings` when a_dict has keys other than strings.
         try:
-            return cls(**a_dict) # expand the dict as input args.
+            return cls(**a_dict) # expand the dict as input args.       #@IgnoreException
         except TypeError as e:
             # `TypeError: keywords must be strings` when trying to ** expand a_dict with non-string keys
             new = cls()

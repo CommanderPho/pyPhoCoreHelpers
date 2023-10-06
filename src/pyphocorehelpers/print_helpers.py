@@ -450,7 +450,7 @@ def print_dataframe_memory_usage(df, enable_print=True):
         lap                   3.56 MB
         maze_relative_lap     3.56 MB
         maze_id               3.56 MB
-        cell_type            35.58 MB
+        neuron_type            35.58 MB
         flat_spike_idx        3.56 MB
         x_loaded              7.12 MB
         y_loaded              7.12 MB
@@ -487,7 +487,7 @@ def print_dataframe_memory_usage(df, enable_print=True):
     # lap                   3.56 MB
     # maze_relative_lap     3.56 MB
     # maze_id               3.56 MB
-    # cell_type            35.58 MB
+    # neuron_type            35.58 MB
     # flat_spike_idx        3.56 MB
     # x_loaded              7.12 MB
     # y_loaded              7.12 MB

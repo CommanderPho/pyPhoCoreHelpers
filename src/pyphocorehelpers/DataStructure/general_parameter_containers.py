@@ -1,5 +1,6 @@
 #TODO 2023-06-20 12:16: - [ ] Convert to `SubsettableDictRepresentable`
 # from neuropy.utils.mixins.dict_representable import SubsettableDictRepresentable
+from typing import List, Dict, Optional
 from pyphocorehelpers.print_helpers import iPythonKeyCompletingMixin
 from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters
 
@@ -18,6 +19,15 @@ class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
     _display_library:str = 'unknown'
     def __init__(self, name, context=None, **kwargs) -> None:
         super(RenderPlots, self).__init__(name=name, context=context, **kwargs)
+
+    @classmethod
+    def non_data_keys(cls) -> List[str]:
+        """ a list of the non-user-contributed keys. """
+        return ['name', 'context'] # , '_display_library'
+
+    def data_keys(self):
+        return [k for k in self.keys() if k not in self.non_data_keys] 
+
     # Display Library Test Functions _____________________________________________________________________________________ #
     @classmethod
     def is_matplotlib(cls):

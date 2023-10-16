@@ -5,12 +5,14 @@ import os
 from typing import Optional
 from functools import wraps
 
-from PyQt5 import QtGui, QtWidgets, uic
-from PyQt5.QtWidgets import QMessageBox, QToolTip, QStackedWidget, QHBoxLayout, QVBoxLayout, QSplitter, QFormLayout, QLabel, QFrame, QPushButton, QTableWidget, QTableWidgetItem
-from PyQt5.QtWidgets import QApplication, QFileSystemModel, QTreeView, QWidget, QHeaderView
-from PyQt5.QtGui import QPainter, QBrush, QPen, QColor, QFont, QIcon
-from PyQt5.QtCore import Qt, QPoint, QRect, QObject, QEvent, pyqtSignal, pyqtSlot, QSize, QDir
+from qtpy import QtCore, QtWidgets
 
+
+"""
+@QtCore.Slot(float)
+
+
+"""
 
 def pyqtExceptionPrintingSlot(*args):
     """ replacement for @QtCore.Slot(...) that enables printing exceptions intead of failing silently!
@@ -31,7 +33,7 @@ def pyqtExceptionPrintingSlot(*args):
     """
     if len(args) == 0 or isinstance(args[0], types.FunctionType):
         args = []
-    @pyqtSlot(*args)
+    @QtCore.Slot(*args)
     def slotdecorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):

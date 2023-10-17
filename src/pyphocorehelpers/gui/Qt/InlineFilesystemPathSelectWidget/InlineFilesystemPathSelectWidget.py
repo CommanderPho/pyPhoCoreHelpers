@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from pyphocorehelpers.gui.Qt.InlineFilesystemPathSelectWidget.Uic_AUTOGEN_InlineFilesystemPathSelectBase import Ui_Form
+from pyphocorehelpers.gui.Qt.ExceptionPrintingSlot import pyqtExceptionPrintingSlot
 
 from qtpy import QtCore, QtWidgets
 from qtpy.QtWidgets import QWidget, QStyle
@@ -111,7 +112,7 @@ class InlineFilesystemPathSelectWidget(QWidget):
         if allows_multiple is not None:
             self.allows_multiple = allows_multiple
         
-    @QtCore.Slot()
+    @pyqtExceptionPrintingSlot()
     def selectPathDialog(self, startDir=None):
         if startDir is None:
             startDir = str(self.path)
@@ -176,7 +177,7 @@ class InlineFilesystemPathSelectWidget(QWidget):
 
 
 
-    @QtCore.Slot(str)
+    @pyqtExceptionPrintingSlot(str)
     def onDialogComplete(self, fileName):
         """ called by the spawned dialog when the user makes a selection """
         print(f'onDialogComplete(filename: {fileName})')
@@ -193,7 +194,7 @@ class InlineFilesystemPathSelectWidget(QWidget):
         # Emit changed signal:
         self.sigFileSelectionChanged.emit(str(fileName))
         
-    @QtCore.Slot()
+    @pyqtExceptionPrintingSlot()
     def on_textChanged(self):
         """ called when the path string changes (even during edits) """   
         ## validate the path

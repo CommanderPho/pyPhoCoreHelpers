@@ -7,6 +7,11 @@ from attrs import define, field, Factory
 class ParamToPyQtBinding:
     """ The `param` library allows automatically generating Panel GUIs from Parameterized classes. 
     This class aims to help provide similar automatic generation/bindings for PyQt5 widgets
+    
+    Usage:
+    
+    from pyphocorehelpers.gui.Qt.Param_to_PyQt_Binding import ParamToPyQtBinding
+    
     """
     get_value: Callable = field()
     set_value: Callable = field()

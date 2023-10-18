@@ -43,7 +43,7 @@ def build_adjusted_color(color: QColor, hue_shift=0.0, saturation_scale=1.0, val
 class ColorFormatConverter:
      
     @classmethod
-    def hexArgb_to_hexRGBA(cls, hex_Argb_str:str) -> str:
+    def _hexArgb_to_hexRGBA(cls, hex_Argb_str:str) -> str:
         """ converts a hexArgb string such as one output by `pen.color().name(QtGui.QColor.HexArgb)` to a regular hex_RGBA string like would be used for matplotlib.
         
         '#0b0049ff'
@@ -84,7 +84,7 @@ class ColorFormatConverter:
             if use_HexArgb_instead_of_HexRGBA:
                 return hex_Argb_str
             else:
-                return cls.hexArgb_to_hexRGBA(hex_Argb_str)
+                return cls._hexArgb_to_hexRGBA(hex_Argb_str)
 
     # ==================================================================================================================== #
     # Color NDArray Conversions                                                                                             #
@@ -119,6 +119,6 @@ class ColorFormatConverter:
             matplotlib_rect_kwargs
 
         """
-        return dict(linewidth=pen.widthF(), edgecolor=cls.hexArgb_to_hexRGBA(pen.color().name(QtGui.QColor.HexArgb)), facecolor=cls.hexArgb_to_hexRGBA(brush.color().name(QtGui.QColor.HexArgb)))
+        return dict(linewidth=pen.widthF(), edgecolor=cls._hexArgb_to_hexRGBA(pen.color().name(QtGui.QColor.HexArgb)), facecolor=cls._hexArgb_to_hexRGBA(brush.color().name(QtGui.QColor.HexArgb)))
 
 

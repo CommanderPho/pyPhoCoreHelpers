@@ -1,14 +1,64 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from enum import Enum, auto
 from PyQt5.QtWidgets import QDesktopWidget
 
 
-class WidgetPositioningHelpers:
-    """ Helpers for positioning and aligning Qt windows and widgets """
+# class DesiredWidgetLocation(Enum):
+#     center = auto()
+#     topLeft = auto()
 
+#     lambda x: x.center()
+
+
+class DesiredWidgetLocation(Enum):
+    center = auto()
+    topLeft = auto()
+
+    def get_function(self):
+        if self.name == DesiredWidgetLocation.center.name:
+            return lambda x: x.center()
+        elif self.name == DesiredWidgetLocation.topLeft.name:
+            return lambda x: x.topLeft()
+        else:
+            raise ValueError
+
+    def perform_move(self, desktopRect, widget, debug_print:bool=False):
+        currWindowRect = widget.frameGeometry()     
+        # desired_desktop_point = desired_location.get_function()(desktopRect)
+        if debug_print:
+            print(f'pre-update: currWindowRect: {currWindowRect}')
+
+        if self.name == DesiredWidgetLocation.center.name:
+            currWindowRect.moveCenter(desktopRect.center()) # move topLeft point of currWindowRect
+            widget.move(currWindowRect.center())
+        elif self.name == DesiredWidgetLocation.topLeft.name:
+            currWindowRect.moveTopLeft(desktopRect.topLeft()) # move topLeft point of currWindowRect
+            widget.move(currWindowRect.topLeft())
+            
+        else:
+            print(f'post-update: currWindowRect: {currWindowRect}')
+            print(f'secondary_screen_rect: {desktopRect}') # secondary_screen_rect.topLeft() # PyQt5.QtCore.QPoint(-3440, 0)
+            print(f'widget: {widget}')
+            raise ValueError
+
+        if debug_print:
+            print(f'post-update: currWindowRect: {currWindowRect}')
+            print(f'secondary_screen_rect: {desktopRect}') # secondary_screen_rect.topLeft() # PyQt5.QtCore.QPoint(-3440, 0)
+            print(f'widget: {widget}')
+        return currWindowRect
+
+        
+
+class WidgetPositioningHelpers:
+    """ Helpers for positioning and aligning Qt windows and widgets
+    
+    from pyphocorehelpers.gui.Qt.widget_positioning_helpers import WidgetPositioningHelpers
+    
+    """
     @classmethod
-    def move_widget_to_top_left_corner(cls, widget, screen_index:int=None, debug_print:bool=False):
+    def get_screen_desktopRect(cls, screen_index:int=None, debug_print:bool=False):
         """ Moves a widget's top_left_corner to the top_left_corner of the screen.
         Specifying a screen_index does not work. Only works if screen_index=None
   
@@ -30,20 +80,71 @@ class WidgetPositioningHelpers:
 
         if debug_print:
             print(f'desktopRect: {desktopRect}') # desktopRect: PyQt5.QtCore.QRect(0, 0, 3570, 2120)
-        currWindowRect = widget.frameGeometry()
-        if debug_print:
-            print(f'pre-update: currWindowRect: {currWindowRect}')
-        currWindowRect.moveTopLeft(desktopRect.topLeft()) # move topLeft point of currWindowRect
-        if debug_print:
-            print(f'post-update: currWindowRect: {currWindowRect}')
-        
-        if debug_print:
-            print(f'secondary_screen_rect: {desktopRect}') # secondary_screen_rect.topLeft() # PyQt5.QtCore.QPoint(-3440, 0)
-            print(f'widget: {widget}')
-        
-        # Move to top-left corner of secondary screen:
-        widget.move(currWindowRect.topLeft())  
+        return desktopRect
+    
+    @classmethod
+    def move_widget_to_desired_location(cls, widget, desired_location: DesiredWidgetLocation=DesiredWidgetLocation.center, screen_index:int=None, debug_print:bool=False):
+        """ Moves a widget's top_left_corner to the top_left_corner of the screen.
+        Specifying a screen_index does not work. Only works if screen_index=None
   
+        Examples:
+              WidgetPositioningHelpers.move_widget_to_top_left_corner(spike_raster_plt_3d, screen_index=None, debug_print=True)
+  
+        """
+        desktopRect = cls.get_screen_desktopRect(screen_index=screen_index, debug_print=debug_print)
+        currWindowRect = desired_location.perform_move(desktopRect, widget, debug_print=debug_print)
+
+        # desired_desktop_point = desired_location.get_function()(desktopRect)
+
+        # currWindowRect = widget.frameGeometry()
+        # if debug_print:
+        #     print(f'pre-update: currWindowRect: {currWindowRect}')
+        # currWindowRect.moveTopLeft(desired_desktop_point) # move topLeft point of currWindowRect
+        # if debug_print:
+        #     print(f'post-update: currWindowRect: {currWindowRect}')
+        
+        # if debug_print:
+        #     print(f'secondary_screen_rect: {desktopRect}') # secondary_screen_rect.topLeft() # PyQt5.QtCore.QPoint(-3440, 0)
+        #     print(f'widget: {widget}')
+        
+        # # Move to top-left corner of secondary screen:
+        # widget.move(currWindowRect.topLeft())  
+
+
+    @classmethod
+    def move_widget_to_top_left_corner(cls, widget, **kwargs):
+        """ Moves a widget's top_left_corner to the top_left_corner of the screen.
+        Specifying a screen_index does not work. Only works if screen_index=None
+  
+        Examples:
+              WidgetPositioningHelpers.move_widget_to_top_left_corner(spike_raster_plt_3d, screen_index=None, debug_print=True)
+  
+        """
+        cls.move_widget_to_screen_top_left(widget, **kwargs)
+  
+        
+    @classmethod
+    def move_widget_to_screen_center(cls, a_widget, screen_index:int=None, debug_print:bool=False):
+        """ 
+        move_widget_to_screen_center(placefieldControlsContainerWidget)
+        """
+        # desktopRect = cls.get_screen_desktopRect(screen_index=screen_index, debug_print=debug_print)
+        # currWindowRect = a_widget.frameGeometry()
+        # cp = QDesktopWidget().availableGeometry().center()
+        # currWindowRect.moveCenter(cp)
+        # a_widget.move(currWindowRect.topLeft())
+        cls.move_widget_to_desired_location(a_widget, desired_location=DesiredWidgetLocation.center, screen_index=screen_index, debug_print=debug_print)
+        
+
+    @classmethod
+    def move_widget_to_screen_top_left(cls, a_widget, screen_index:int=None, debug_print:bool=False):
+        """ 
+        move_widget_to_screen_center(placefieldControlsContainerWidget)
+        """
+        cls.move_widget_to_desired_location(a_widget, desired_location=DesiredWidgetLocation.topLeft, screen_index=screen_index, debug_print=debug_print)
+        
+
+        
         
     @classmethod
     def align_3d_and_2d_windows(cls, spike_raster_plt_3d, spike_raster_plt_2d, debug_print=False):

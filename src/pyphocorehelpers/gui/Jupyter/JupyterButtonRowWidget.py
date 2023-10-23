@@ -3,6 +3,27 @@ import ipywidgets as widgets
 from IPython.display import display
 
 
+
+def build_fn_bound_buttons(button_defns, **default_kwargs):
+	""" much simplier version of `JupyterButtonRowWidget` """
+	# default_kwargs = dict(display='flex', flex_flow='column', align_items='stretch', layout=btn_layout)
+	# button_list = []
+	button_dict = {}
+	for (a_label, a_fn, *args) in button_defns:
+		if len(args) > 0:
+			button_kwargs = args[0]
+			# print(f'using provided button_kwargs: {button_kwargs}')
+		else:
+			button_kwargs = default_kwargs
+			
+		a_btn = widgets.Button(description=a_label, **button_kwargs) # , style= {'width': 'initial'}
+		a_btn.on_click(a_fn)
+		# button_list.append(a_btn)
+		button_dict[a_label] = a_btn
+	# return button_list
+	return button_dict
+		
+		
 class JupyterButtonRowWidget:
 	""" Displays a clickable row of buttons in the Jupyter Notebook that perform any function 
 	

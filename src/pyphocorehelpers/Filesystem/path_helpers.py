@@ -6,7 +6,7 @@ import platform
 from contextlib import contextmanager
 import pathlib
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union, Dict
 from datetime import datetime, timedelta
 from pyphocorehelpers.Filesystem.metadata_helpers import FilesystemMetadata
 from pyphocorehelpers.function_helpers import function_attributes

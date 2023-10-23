@@ -98,7 +98,11 @@ class DynamicParameters(DiffableObject, MutableMapping):
                 print(f"DynamicParameters.__getattr__(self, item: {item}) KeyError: Attribute could not be found in dictionary either!\n\t KeyError: {err}")
             # if DynamicParameters.outcome_on_item_not_found:
             # return super(DynamicParameters, self).__setattr__(item, 'orphan')
-            raise
+            if item == '__deepcopy__':
+                # As described here: https://stackoverflow.com/questions/33387801/why-does-deepcopy-fail-with-keyerror-deepcopy-when-copying-custom-objec to enable deepcopy(...) on the object
+                raise AttributeError(item)               
+            else:
+                raise
         # except AttributeError as err:
         #     print(f"AttributeError: {err}")
         #     return super(DynamicParameters, self).__setattr__(item, 'orphan')

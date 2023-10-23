@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 import shutil # for _backup_extant_file(...)
 import platform
 from contextlib import contextmanager
@@ -394,4 +395,56 @@ def copy_files(filelist_source: list, filelist_dest: list) -> dict:
 	
 	"""
 	return copy_movedict(dict(zip(filelist_source, filelist_dest)))
+
+
+
+def _get_platform_str() -> str:
+    """ 
+    
+    Usage:
+        platform = _get_platform_str()
+        if platform == 'darwin':
+            subprocess.call(('open', filename))
+        elif platform in ['win64', 'win32']:
+            os.startfile(filename.replace('/','\\'))
+        elif platform == 'wsl':
+            subprocess.call('cmd.exe /C start'.split() + [filename])
+        else:                                   # linux variants
+            subprocess.call(('xdg-open', filename))
+
+    """
+    if sys.platform == 'linux':
+        try:
+            proc_version = open('/proc/version').read()
+            if 'Microsoft' in proc_version:
+                return 'wsl'
+        except:
+            pass
+    return sys.platform
+
+
+def open_file_with_system_default(filename: Union[Path, str]):
+    """ attempts to open the passed file with the system default application. 
+
+    Credit: https://stackoverflow.com/questions/434597/open-document-with-default-os-application-in-python-both-in-windows-and-mac-os
+
+    Usage:
+        from pyphocorehelpers.Filesystem.path_helpers import open_file_with_system_default
+
+        open_file_with_system_default(r'C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/EXTERNAL/DEVELOPER_NOTES/DataStructureDocumentation/InteractivePlaceCellConfig.html')
+
+    """
+    if isinstance(filename, Path):
+        filename = str(filename.resolve())
+    platform = _get_platform_str()
+    if platform == 'darwin':
+        subprocess.call(('open', filename))
+    elif platform in ['win64', 'win32']:
+        os.startfile(filename.replace('/','\\'))
+    elif platform == 'wsl':
+        subprocess.call('cmd.exe /C start'.split() + [filename])
+    else:                                   
+        # linux variants
+        subprocess.call(('xdg-open', filename))
+
 

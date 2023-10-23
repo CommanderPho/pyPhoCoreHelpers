@@ -257,6 +257,7 @@ class DocumentationFilePrinter:
         if (not skip_print) and self.enable_print:
             print(self.ansi_string)
         
+
     def write_to_files(self):
         """Write variables out to files"""
         # Write plaintext version to file:
@@ -271,6 +272,53 @@ class DocumentationFilePrinter:
 
     def reveal_output_files_in_system_file_manager(self):
         reveal_in_system_file_manager(self.output_html_file)
+
+    # extra methods ______________________________________________________________________________________________________ #
+    def display_widget(self):
+        """ Display an interactive jupyter-widget that allows you to open/reveal the generated files in the fileystem or default system display program. 
+        """
+        import ipywidgets as widgets
+        from IPython.display import display
+        from pyphocorehelpers.gui.Jupyter.JupyterButtonRowWidget import build_fn_bound_buttons, JupyterButtonRowWidget, JupyterButtonColumnWidget
+        from pyphocorehelpers.Filesystem.open_in_system_file_manager import reveal_in_system_file_manager
+        from pyphocorehelpers.Filesystem.path_helpers import open_file_with_system_default
+        
+        btn_layout = widgets.Layout(width='auto', height='40px') #set width and height
+        default_kwargs = dict(display='flex', flex_flow='column', align_items='stretch', layout=btn_layout)
+
+        # Define the set of buttons:
+        # button_defns = [("Documentation Folder", lambda _: reveal_in_system_file_manager(self.doc_output_parent_folder), default_kwargs),
+        #         ("Generated Documentation", lambda _: self.reveal_output_files_in_system_file_manager(), default_kwargs),
+        #         ("Open generated .html Documentation", lambda _: open_file_with_system_default(str(self.output_html_file.resolve())), default_kwargs),
+        #         ("Reveal Generated .html Documentation", lambda _: reveal_in_system_file_manager(self.output_html_file), default_kwargs),
+        #         ("Open generated .md Documentation", lambda _: open_file_with_system_default(str(doc_printer.output_md_file.resolve())), default_kwargs),
+        # 		("Reveal Generated .md Documentation", lambda _: reveal_in_system_file_manager(doc_printer.output_md_file), default_kwargs),
+
+        #         # ("pipeline pickle", lambda _: reveal_in_system_file_manager(curr_active_pipeline.pickle_path)),
+        #         # (".h5 export", lambda _: reveal_in_system_file_manager(curr_active_pipeline.h5_export_path)),
+        #         # ("ViTables .h5 export", lambda _: reveal_in_system_file_manager(curr_active_pipeline.h5_export_path))
+        #     ]
+    
+        _out_row = JupyterButtonRowWidget.init_from_button_defns(button_defns=[("Documentation Folder", lambda _: reveal_in_system_file_manager(self.doc_output_parent_folder), default_kwargs),
+            ("Generated Documentation", lambda _: self.reveal_output_files_in_system_file_manager(), default_kwargs),
+            ])
+
+        _out_row_html = JupyterButtonRowWidget.init_from_button_defns(button_defns=[("Open generated .html Documentation", lambda _: open_file_with_system_default(str(self.output_html_file.resolve())), default_kwargs),
+                ("Reveal Generated .html Documentation", lambda _: reveal_in_system_file_manager(self.output_html_file), default_kwargs),
+            ])
+
+        _out_row_md = JupyterButtonRowWidget.init_from_button_defns(button_defns=[("Open generated .md Documentation", lambda _: open_file_with_system_default(str(self.output_md_file.resolve())), default_kwargs),
+        		("Reveal Generated .md Documentation", lambda _: reveal_in_system_file_manager(self.output_md_file), default_kwargs),
+            ])
+
+        return widgets.VBox([_out_row.root_widget,
+            _out_row_html.root_widget,
+            _out_row_md.root_widget,
+        ])
+
+        # # Create and display the button
+        # return JupyterButtonRowWidget(button_defns=button_defns)
+
 
 
     # private methods ____________________________________________________________________________________________________ #

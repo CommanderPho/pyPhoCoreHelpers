@@ -1,5 +1,5 @@
 import ipywidgets as widgets
-from IPython.core.display import display, HTML
+from IPython.display import display, HTML
 
 def render_colors(color_list):
     """ Renders a simple list of colors for visual previewing

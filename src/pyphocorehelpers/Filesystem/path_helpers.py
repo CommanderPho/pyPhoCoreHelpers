@@ -133,10 +133,18 @@ def quote_wrapped_string(a_str: str, quote_str:str="\"") -> str:
     """ takes a a_str and returns it wrapped in literal quote characters specified by `quote_str`. Defaults to double quotes """
     return f'{quote_str}{a_str}{quote_str}'
 
+def unwrap_quote_wrapped_string(a_quote_wrapped_str: str) -> str:
+    """ inverse of `quote_wrapped_string` """
+    return a_quote_wrapped_str.strip().strip('\"').strip("\'")
+
 
 def quote_wrapped_file_output_path_string(src_file: Path) -> str:
     """ takes a Path and returns its string representation wrapped in double quotes """
     return quote_wrapped_string(f'{str(src_file.resolve())}', quote_str='\"')
+
+def unwrap_quote_wrapped_file_path_string(a_file_str: str) -> str:
+    """ inverse of `quote_wrapped_file_output_path_string` """
+    return unwrap_quote_wrapped_string(a_file_str)
 
 
 @function_attributes(short_name=None, tags=['filesystem','find','search','discover','data','files'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-06-06 20:09', related_items=['discover_data_files'])
@@ -201,6 +209,9 @@ def read_copydict_from_text_file(filelist_path: Path, debug_print:bool=False) ->
     
 
     """
+    # operation_symbol: str = '->'
+    column_separator: str = ', '
+
     file_movedict: Dict[Path,Path] = {}
     assert filelist_path.exists()
     assert filelist_path.is_file()
@@ -209,21 +220,24 @@ def read_copydict_from_text_file(filelist_path: Path, debug_print:bool=False) ->
 
     # _out_string
     assert len(read_lines) > 0
+    ## Read Header:
     header_line = read_lines.pop(0)
-    print(f'header_line: {header_line}')
+    print(f'header_line: {header_line}') # column_separator.join(['src_file', 'operation', '_out_path'])
 
 
     num_file_lines: int = len(read_lines)
     print(f'num_file_lines: {num_file_lines}')
 
-    operation_symbol: str = '->'
-    column_separator: str = ', '
 
-    moved_files_lines = []
-    # Add header:
-    moved_files_lines.append(column_separator.join(['src_file', 'operation', '_out_path']))
     for i, a_line in enumerate(read_lines):
         print(f'a_line[{i}]: {a_line}')
+        a_src_file_str, an_operator_str, an_out_path_str = a_line.split(sep=column_separator, maxsplit=3)
+        an_operator: str = unwrap_quote_wrapped_string(an_operator_str)
+
+        a_src_file: Path = Path(unwrap_quote_wrapped_file_path_string(a_src_file_str)).resolve()
+        an_out_path: Path = Path(unwrap_quote_wrapped_file_path_string(an_out_path_str)).resolve()
+
+        file_movedict[a_src_file] = an_out_path
         # # moved_files_lines.append(column_separator.join((f'\"{str(src_file.resolve())}\"', operation_symbol, quote_wrapped_file_output_path_string(_out_path.resolve()) )))
         # moved_files_lines.append(column_separator.join((quote_wrapped_file_output_path_string(src_file.resolve()), quote_wrapped_string(operation_symbol), quote_wrapped_file_output_path_string(_out_path.resolve()) )))
 

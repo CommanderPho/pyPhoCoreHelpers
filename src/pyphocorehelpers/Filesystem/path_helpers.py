@@ -157,6 +157,34 @@ def save_filelist_to_text_file(hdf5_output_paths: List[Path], filelist_path: Pat
     return _out_string, filelist_path
 
 
+def save_copydict_to_text_file(file_movedict: Dict[Path,Path], filelist_path: Path, debug_print:bool=False):
+    """ 
+
+    from pyphocorehelpers.Filesystem.path_helpers import save_copydict_to_text_file
+    
+
+    """
+    num_files_to_copy: int = len(file_movedict)
+    operation_symbol: str = '->'
+    column_separator: str = ', '
+
+	moved_files_lines = []
+    # Add header:
+    moved_files_lines.append(column_separator.join(['src_file', 'operation', '_out_path']))
+	for i, (src_file, _out_path) in enumerate(file_movedict.items()):
+        moved_files_lines.append(column_separator.join((str(src_file.resolve()), operation_symbol, str(_out_path.resolve()))))
+
+    _out_string: str = '\n'.join(moved_files_lines)
+    if debug_print:
+        print(f'{_out_string}')
+        print(f'saving out to "{filelist_path}"...')
+    with open(filelist_path, 'w') as f:
+        f.write(_out_string)
+    return _out_string, filelist_path
+
+
+
+
 @metadata_attributes(short_name=None, tags=['filesystem', 'helper', 'list'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-06-07 16:55', related_items=[])
 class FileList:
     """ helpers for manipulating lists of files.

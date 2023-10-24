@@ -227,15 +227,18 @@ def read_copydict_from_text_file(filelist_path: Path, debug_print:bool=False) ->
     assert len(read_lines) > 0
     ## Read Header:
     header_line = read_lines.pop(0)
-    print(f'header_line: {header_line}') # column_separator.join(['src_file', 'operation', '_out_path'])
+    if debug_print:
+        print(f'header_line: {header_line}') # column_separator.join(['src_file', 'operation', '_out_path'])
 
 
     num_file_lines: int = len(read_lines)
-    print(f'num_file_lines: {num_file_lines}')
+    if debug_print:
+        print(f'num_file_lines: {num_file_lines}')
 
 
     for i, a_line in enumerate(read_lines):
-        print(f'a_line[{i}]: {a_line}')
+        if debug_print:
+            print(f'a_line[{i}]: {a_line}')
         a_src_file_str, an_operator_str, an_out_path_str = a_line.split(sep=column_separator, maxsplit=3)
         an_operator: str = unwrap_quote_wrapped_string(an_operator_str)
 
@@ -243,13 +246,7 @@ def read_copydict_from_text_file(filelist_path: Path, debug_print:bool=False) ->
         an_out_path: Path = Path(unwrap_quote_wrapped_file_path_string(an_out_path_str)).resolve()
 
         file_movedict[a_src_file] = an_out_path
-        # # moved_files_lines.append(column_separator.join((f'\"{str(src_file.resolve())}\"', operation_symbol, quote_wrapped_file_output_path_string(_out_path.resolve()) )))
-        # moved_files_lines.append(column_separator.join((quote_wrapped_file_output_path_string(src_file.resolve()), quote_wrapped_string(operation_symbol), quote_wrapped_file_output_path_string(_out_path.resolve()) )))
 
-    # _out_string: str = '\n'.join(moved_files_lines)
-    # if debug_print:
-    #     print(f'{_out_string}')
-    #     print(f'saving out to "{filelist_path}"...')
 
     return file_movedict
 

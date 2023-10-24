@@ -168,10 +168,10 @@ def save_copydict_to_text_file(file_movedict: Dict[Path,Path], filelist_path: Pa
     operation_symbol: str = '->'
     column_separator: str = ', '
 
-	moved_files_lines = []
+    moved_files_lines = []
     # Add header:
     moved_files_lines.append(column_separator.join(['src_file', 'operation', '_out_path']))
-	for i, (src_file, _out_path) in enumerate(file_movedict.items()):
+    for i, (src_file, _out_path) in enumerate(file_movedict.items()):
         moved_files_lines.append(column_separator.join((str(src_file.resolve()), operation_symbol, str(_out_path.resolve()))))
 
     _out_string: str = '\n'.join(moved_files_lines)
@@ -384,45 +384,45 @@ def copy_recursive(source_base_path, target_base_path):
             
 
 def generate_copydict(source_data_root, dest_data_root, found_files: list, only_files_newer_than: Optional[datetime]=None):
-	""" builds a list of files to copy by filtering the found files by their modified date, and then building the destination list using `dest_data_root` 
-			Compiles these values into a dict where <key: old_file_path, value: new_file_path>
-	"""
-	# Only get files newer than date
-	if only_files_newer_than is None:
-		oldest_modified_date = datetime.now() - timedelta(days=5) # newer than 5 days ago
-	else: 
-		oldest_modified_date = only_files_newer_than
+    """ builds a list of files to copy by filtering the found files by their modified date, and then building the destination list using `dest_data_root` 
+            Compiles these values into a dict where <key: old_file_path, value: new_file_path>
+    """
+    # Only get files newer than date
+    if only_files_newer_than is None:
+        oldest_modified_date = datetime.now() - timedelta(days=5) # newer than 5 days ago
+    else: 
+        oldest_modified_date = only_files_newer_than
 
-	recently_modified_source_filelist = [a_file for a_file in found_files if (FilesystemMetadata.get_last_modified_time(a_file)>oldest_modified_date)]
+    recently_modified_source_filelist = [a_file for a_file in found_files if (FilesystemMetadata.get_last_modified_time(a_file)>oldest_modified_date)]
 
-	# Build the destination filelist from the source_filelist and the two paths:
-	filelist_dest = convert_filelist_to_new_parent(recently_modified_source_filelist, original_parent_path=source_data_root, dest_parent_path=dest_data_root)
-	return dict(zip(recently_modified_source_filelist, filelist_dest))
+    # Build the destination filelist from the source_filelist and the two paths:
+    filelist_dest = convert_filelist_to_new_parent(recently_modified_source_filelist, original_parent_path=source_data_root, dest_parent_path=dest_data_root)
+    return dict(zip(recently_modified_source_filelist, filelist_dest))
 
 
 def copy_movedict(file_movedict: dict, print_progress:bool=True) -> dict:
-	""" copies each file in file_movedict from its key -> value, creating any intermediate directories as needed.
-	
-	"""
-	## Perform the copy creating any intermediate directories as needed
-	num_files_to_copy: int = len(file_movedict)
-	moved_files_dict = {}
-	for i, (src_file, dest_file) in enumerate(file_movedict.items()):
-		if print_progress:
-			print(f'copying "{src_file}"\n\t\t -> "{dest_file}"...')
-		_out_path = copy_file(src_file, dest_file)
-		moved_files_dict[src_file] = _out_path
-		if print_progress:
-			print(f'done.')
-	if print_progress:
-		print(f'done copying {len(moved_files_dict)} of {num_files_to_copy} files.')
-	return moved_files_dict
+    """ copies each file in file_movedict from its key -> value, creating any intermediate directories as needed.
+    
+    """
+    ## Perform the copy creating any intermediate directories as needed
+    num_files_to_copy: int = len(file_movedict)
+    moved_files_dict = {}
+    for i, (src_file, dest_file) in enumerate(file_movedict.items()):
+        if print_progress:
+            print(f'copying "{src_file}"\n\t\t -> "{dest_file}"...')
+        _out_path = copy_file(src_file, dest_file)
+        moved_files_dict[src_file] = _out_path
+        if print_progress:
+            print(f'done.')
+    if print_progress:
+        print(f'done copying {len(moved_files_dict)} of {num_files_to_copy} files.')
+    return moved_files_dict
 
 def copy_files(filelist_source: list, filelist_dest: list) -> dict:
-	""" copies each file from `filelist_source` to its corresponding destination in `filelist_dest`, creating any intermediate directories as needed.
-	
-	"""
-	return copy_movedict(dict(zip(filelist_source, filelist_dest)))
+    """ copies each file from `filelist_source` to its corresponding destination in `filelist_dest`, creating any intermediate directories as needed.
+    
+    """
+    return copy_movedict(dict(zip(filelist_source, filelist_dest)))
 
 
 

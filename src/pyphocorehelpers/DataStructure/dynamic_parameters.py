@@ -100,7 +100,7 @@ class DynamicParameters(DiffableObject, MutableMapping):
             # return super(DynamicParameters, self).__setattr__(item, 'orphan')
             if item == '__deepcopy__':
                 # As described here: https://stackoverflow.com/questions/33387801/why-does-deepcopy-fail-with-keyerror-deepcopy-when-copying-custom-objec to enable deepcopy(...) on the object
-                raise AttributeError(item)               
+                raise AttributeError(item)      #@IgnoreException               
             else:
                 raise
         # except AttributeError as err:

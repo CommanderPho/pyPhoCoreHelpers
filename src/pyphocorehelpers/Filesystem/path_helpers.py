@@ -202,10 +202,15 @@ def save_copydict_to_text_file(file_movedict: Dict[Path,Path], filelist_path: Pa
     return _out_string, filelist_path
 
 
+def invert_filedict(file_movedict: Dict[Path,Path]) -> Dict[Path,Path]:
+    """ inverts the file_movedict so the src/dest paths are flipped. """
+    return {v:k for k, v in file_movedict.items()}
+
+
 def read_copydict_from_text_file(filelist_path: Path, debug_print:bool=False) -> Dict[Path,Path]:
     """ 
 
-    from pyphocorehelpers.Filesystem.path_helpers import save_copydict_to_text_file
+    from pyphocorehelpers.Filesystem.path_helpers import read_copydict_from_text_file
     
 
     """

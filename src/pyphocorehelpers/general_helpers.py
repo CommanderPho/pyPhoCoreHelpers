@@ -172,11 +172,11 @@ class GeneratedClassDefinitionType(ExtendedEnum):
     # Static properties
     @classmethod
     def decoratorsList(cls):
-        return cls.build_member_value_dict([None,"@dataclass","@define"])
+        return cls.build_member_value_dict([None,"@dataclass","@define(slots=False)"])
 
     @classmethod
     def requiredImportsList(cls):
-        return cls.build_member_value_dict([None,"from dataclasses import dataclass","from attrs import define, field"])
+        return cls.build_member_value_dict([None,"from dataclasses import dataclass","from attrs import define, field, Factory, astuple, asdict"])
 
     @classmethod
     def include_init_fcnList(cls):

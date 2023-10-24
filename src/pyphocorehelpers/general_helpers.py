@@ -192,6 +192,19 @@ class CodeConversion(object):
     """ Converts code (usually passed as text) to various alternative formats to ease development workflows. 
 
 
+    TODO 2023-10-24 - Add Ignored imports:
+    ignored_imports = ['import bool,
+        "import str",
+        "import tuple",
+        "import list",
+        "import dict",
+        ]
+
+    substitution_dict = {'pathlib.WindowsPath':'pathlib.Path',
+    'pathlib.PosixPath':'pathlib.Path'
+    }
+
+
     # Definition Lines: __________________________________________________________________________________________________ #
     ## a multiline string containing lines of valid python code definitions
     test_parameters_defns_code_string = '''

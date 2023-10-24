@@ -129,6 +129,15 @@ def discover_data_files(basedir: Path, glob_pattern='*.mat', recursive=True):
     return found_files # 'RatS-Day5TwoNovel-2020-12-04_07-55-09'
 
 
+def quote_wrapped_string(a_str: str, quote_str:str="\"") -> str:
+    """ takes a a_str and returns it wrapped in literal quote characters specified by `quote_str`. Defaults to double quotes """
+    return f'{quote_str}{a_str}{quote_str}'
+
+
+def quote_wrapped_file_output_path_string(src_file: Path) -> str:
+    """ takes a Path and returns its string representation wrapped in double quotes """
+    return quote_wrapped_string(f'{str(src_file.resolve())}', quote_str='\"')
+
 
 @function_attributes(short_name=None, tags=['filesystem','find','search','discover','data','files'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-06-06 20:09', related_items=['discover_data_files'])
 def print_data_files_list_as_array(filenames_list):
@@ -147,6 +156,7 @@ def print_data_files_list_as_array(filenames_list):
     #     print(f'{str(a_path)}')
 
 
+
 def save_filelist_to_text_file(hdf5_output_paths: List[Path], filelist_path: Path, debug_print:bool=False):
     _out_string = '\n'.join([str(a_file) for a_file in hdf5_output_paths])
     if debug_print:
@@ -155,16 +165,6 @@ def save_filelist_to_text_file(hdf5_output_paths: List[Path], filelist_path: Pat
     with open(filelist_path, 'w') as f:
         f.write(_out_string)
     return _out_string, filelist_path
-
-
-def quote_wrapped_string(a_str: str, quote_str:str="\"") -> str:
-    """ takes a a_str and returns it wrapped in literal quote characters specified by `quote_str`. Defaults to double quotes """
-    return f'{quote_str}{a_str}{quote_str}'
-
-
-def quote_wrapped_file_output_path_string(src_file: Path) -> str:
-    """ takes a Path and returns its string representation wrapped in double quotes """
-    return quote_wrapped_string(f'{str(src_file.resolve())}', quote_str='\"')
 
 
 def save_copydict_to_text_file(file_movedict: Dict[Path,Path], filelist_path: Path, debug_print:bool=False):
@@ -192,6 +192,47 @@ def save_copydict_to_text_file(file_movedict: Dict[Path,Path], filelist_path: Pa
     with open(filelist_path, 'w') as f:
         f.write(_out_string)
     return _out_string, filelist_path
+
+
+def read_copydict_from_text_file(filelist_path: Path, debug_print:bool=False) -> Dict[Path,Path]:
+    """ 
+
+    from pyphocorehelpers.Filesystem.path_helpers import save_copydict_to_text_file
+    
+
+    """
+    file_movedict: Dict[Path,Path] = {}
+    assert filelist_path.exists()
+    assert filelist_path.is_file()
+    with open(filelist_path, 'r') as f:
+        read_lines = f.readlines()
+
+    # _out_string
+    assert len(read_lines) > 0
+    header_line = read_lines.pop(0)
+    print(f'header_line: {header_line}')
+
+
+    num_file_lines: int = len(read_lines)
+    print(f'num_file_lines: {num_file_lines}')
+
+    operation_symbol: str = '->'
+    column_separator: str = ', '
+
+    moved_files_lines = []
+    # Add header:
+    moved_files_lines.append(column_separator.join(['src_file', 'operation', '_out_path']))
+    for i, a_line in enumerate(read_lines):
+        print(f'a_line[{i}]: {a_line}')
+        # # moved_files_lines.append(column_separator.join((f'\"{str(src_file.resolve())}\"', operation_symbol, quote_wrapped_file_output_path_string(_out_path.resolve()) )))
+        # moved_files_lines.append(column_separator.join((quote_wrapped_file_output_path_string(src_file.resolve()), quote_wrapped_string(operation_symbol), quote_wrapped_file_output_path_string(_out_path.resolve()) )))
+
+    # _out_string: str = '\n'.join(moved_files_lines)
+    # if debug_print:
+    #     print(f'{_out_string}')
+    #     print(f'saving out to "{filelist_path}"...')
+
+    return file_movedict
 
 
 

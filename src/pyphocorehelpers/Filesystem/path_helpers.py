@@ -157,6 +157,16 @@ def save_filelist_to_text_file(hdf5_output_paths: List[Path], filelist_path: Pat
     return _out_string, filelist_path
 
 
+def quote_wrapped_string(a_str: str, quote_str:str="\"") -> str:
+    """ takes a a_str and returns it wrapped in literal quote characters specified by `quote_str`. Defaults to double quotes """
+    return f'{quote_str}{a_str}{quote_str}'
+
+
+def quote_wrapped_file_output_path_string(src_file: Path) -> str:
+    """ takes a Path and returns its string representation wrapped in double quotes """
+    return quote_wrapped_string(f'{str(src_file.resolve())}', quote_str='\"')
+
+
 def save_copydict_to_text_file(file_movedict: Dict[Path,Path], filelist_path: Path, debug_print:bool=False):
     """ 
 
@@ -172,7 +182,8 @@ def save_copydict_to_text_file(file_movedict: Dict[Path,Path], filelist_path: Pa
     # Add header:
     moved_files_lines.append(column_separator.join(['src_file', 'operation', '_out_path']))
     for i, (src_file, _out_path) in enumerate(file_movedict.items()):
-        moved_files_lines.append(column_separator.join((str(src_file.resolve()), operation_symbol, str(_out_path.resolve()))))
+        # moved_files_lines.append(column_separator.join((f'\"{str(src_file.resolve())}\"', operation_symbol, quote_wrapped_file_output_path_string(_out_path.resolve()) )))
+        moved_files_lines.append(column_separator.join((quote_wrapped_file_output_path_string(src_file.resolve()), quote_wrapped_string(operation_symbol), quote_wrapped_file_output_path_string(_out_path.resolve()) )))
 
     _out_string: str = '\n'.join(moved_files_lines)
     if debug_print:

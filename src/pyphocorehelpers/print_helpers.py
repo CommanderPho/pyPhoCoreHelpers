@@ -102,20 +102,26 @@ class WrappingMessagePrinter(object):
                 print(f'{begin_string}...', end=begin_line_ending)
 
 
-def custom_tree_formatter(depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False) -> str:
-    """ For use with `print_keys_if_possible` to render a neat and pretty tree
 
-        from pyphocorehelpers.print_helpers import custom_tree_formatter
-        print_keys_if_possible("sess.config.preprocessing_parameters", preprocessing_parameters_dict, custom_item_formatter=custom_tree_formatter)
+class CustomTreeFormatters:
 
-    """
-    prefix = '├── ' if depth_string else ''
-    link_char = '│   ' if depth_string else '    '
-    depth_string_with_link = depth_string + link_char
-    formatted_string = f"{depth_string_with_link}{prefix}{curr_key}: {type_name}"
-    if is_omitted_from_expansion:
-        formatted_string += ' (children omitted)'
-    return formatted_string
+    @classmethod
+    def basic_custom_tree_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False) -> str:
+        """ For use with `print_keys_if_possible` to render a neat and pretty tree
+
+            from pyphocorehelpers.print_helpers import CustomTreeFormatters
+
+            
+            print_keys_if_possible("sess.config.preprocessing_parameters", preprocessing_parameters_dict, custom_item_formatter=CustomTreeFormatters.basic_custom_tree_formatter)
+
+        """
+        prefix = '├── ' if depth_string else ''
+        link_char = '│   ' if depth_string else '    '
+        depth_string_with_link = depth_string + link_char
+        formatted_string = f"{depth_string_with_link}{prefix}{curr_key}: {type_name}"
+        if is_omitted_from_expansion:
+            formatted_string += ' (children omitted)'
+        return formatted_string
 
 
 # ==================================================================================================================== #
@@ -325,7 +331,7 @@ class DocumentationFilePrinter:
     @classmethod
     def _default_plain_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
         # return f"{depth_string}- {curr_key}: {type_name}{' (children omitted)' if is_omitted_from_expansion else ''}"
-        return custom_tree_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=type_name, is_omitted_from_expansion=is_omitted_from_expansion)
+        return CustomTreeFormatters.basic_custom_tree_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=type_name, is_omitted_from_expansion=is_omitted_from_expansion)
     
     @classmethod
     def _default_rich_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):

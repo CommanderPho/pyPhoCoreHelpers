@@ -10,7 +10,14 @@ import numpy as np # for CodeConversion
 import pandas as pd
 from neuropy.utils.dynamic_container import overriding_dict_with # required for safely_accepts_kwargs
 
+"""
 
+## Pho Programming Helpers:
+import inspect
+from pyphocorehelpers.general_helpers import inspect_callable_arguments, get_arguments_as_optional_dict, GeneratedClassDefinitionType, CodeConversion
+from pyphocorehelpers.print_helpers import DocumentationFilePrinter, TypePrintMode, print_keys_if_possible, debug_dump_object_member_shapes, print_value_overview_only, document_active_variables, CapturedException
+
+"""
 
 class OrderedMeta(type):
     """Replaces the inheriting object's dict of attributes with an OrderedDict that preserves enumeration order

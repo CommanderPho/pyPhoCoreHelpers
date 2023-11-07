@@ -2,7 +2,11 @@ from pyphocorehelpers.DataStructure.general_parameter_containers import RenderPl
 from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters
 
 class PyqtgraphRenderPlots(RenderPlots):
-	"""Container for holding and accessing Pyqtgraph-based figures for PyqtgraphRenderPlots."""
+	"""Container for holding and accessing Pyqtgraph-based figures for PyqtgraphRenderPlots.
+
+	from pyphocorehelpers.DataStructure.RenderPlots.PyqtgraphRenderPlots import PyqtgraphRenderPlots
+
+	"""
 	_display_library:str = 'pyqtgraph'
 	
 	def __init__(self, name='PyqtgraphRenderPlots', app=None, parent_root_widget=None, display_outputs=DynamicParameters(), context=None, **kwargs):

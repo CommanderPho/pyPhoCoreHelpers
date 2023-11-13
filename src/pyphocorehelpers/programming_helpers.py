@@ -5,7 +5,12 @@
 import contextlib
 from typing import Optional, List, Dict
 from functools import wraps
+import numpy as np
 import pandas as pd
+import inspect # for IPythonHelpers
+from enum import Enum
+import re
+
 # from pyphocorehelpers.function_helpers import function_attributes, _custom_function_metadata_attribute_names
 
 # ==================================================================================================================== #
@@ -170,7 +175,7 @@ def build_fn_properties_df(a_fn_dict, included_attribute_names_list:Optional[Lis
         
             
 
-import inspect
+
 
 class IPythonHelpers:
     """ various helpers useful in jupyter-lab notebooks and IPython """
@@ -263,8 +268,7 @@ class IPythonHelpers:
 
 
 
-from enum import Enum
-import re
+
 
 
 # 	def transform_dict_literal_to_constructor(dict_literal):
@@ -388,3 +392,45 @@ def override_function_context(obj, fn_name: str, override_defn):
     setattr(obj, fn_name, temp)
     
 
+class MemoryManagement:
+    """ 
+    from pyphocorehelpers.programming_helpers import MemoryManagement
+
+    args = MemoryManagement.deduplicate_memory_references(args)
+
+
+    """
+
+    @classmethod
+    def has_duplicated_memory_references(cls, *args) -> bool:
+        """Check for duplicated memory references in the configs first
+
+        from pyphocorehelpers.programming_helpers import MemoryManagement
+
+
+        MemoryManagement.has_duplicated_memory_references()
+
+
+        """
+        memory_ids = [id(a_config) for a_config in args] # YUP, they're different for odd/even but duplicated for long/short
+        has_duplicated_reference: bool = len(np.unique(memory_ids)) < len(memory_ids)
+        return has_duplicated_reference
+
+    @classmethod
+    def deduplicate_memory_references(cls, *args) -> list:
+        """ Ensures that all entries in the args list point to unique memory addresses, deduplicating them with `deepcopy` if needed. 
+
+        Usage:
+
+            from pyphocorehelpers.programming_helpers import MemoryManagement
+
+            args = MemoryManagement.deduplicate_memory_references(args)
+
+        """
+        has_duplicated_reference: bool = cls.has_duplicated_memory_references(*args)
+        if has_duplicated_reference:
+            de_deuped_args = [deepcopy(v) for v in args]
+            assert not cls.has_duplicated_memory_references(*de_deuped_args), f"duplicate memory references still exist even after de-duplicating with deepcopy!!!"
+            return de_deuped_args
+        else:
+            return args

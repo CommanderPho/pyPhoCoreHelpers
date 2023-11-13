@@ -402,6 +402,19 @@ class MemoryManagement:
     """
 
     @classmethod
+    def print_memory_references(cls, *args) -> bool:
+        """Check for duplicated memory references in the configs first
+
+        from pyphocorehelpers.programming_helpers import MemoryManagement
+
+
+        MemoryManagement.print_memory_references()
+
+
+        """
+        return [id(a_config) for a_config in args] # YUP, they're different for odd/even but duplicated for long/short
+
+    @classmethod
     def has_duplicated_memory_references(cls, *args) -> bool:
         """Check for duplicated memory references in the configs first
 

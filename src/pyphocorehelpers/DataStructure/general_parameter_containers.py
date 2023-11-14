@@ -39,6 +39,14 @@ class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
         return cls._display_library == 'pyqtgraph'
 
 
+
+    # def __add__(self, other):
+    #     if not isinstance(other, CustomDict):
+    #         raise TypeError("Unsupported operand type. The operand must be of type CustomDict.")
+    #     combined_data = {key: self.data.get(key, 0) + other.data.get(key, 0) for key in set(self.data) | set(other.data)}
+    #     return CustomDict(combined_data)
+
+
 class RenderPlotsData(iPythonKeyCompletingMixin, DynamicParameters):
     def __init__(self, name, **kwargs) -> None:
         super(RenderPlotsData, self).__init__(name=name, **kwargs)

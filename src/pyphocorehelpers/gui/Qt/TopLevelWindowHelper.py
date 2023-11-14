@@ -4,6 +4,11 @@ from qtpy.QtWidgets import QWidget # for `print_widget_hierarchy`
 class TopLevelWindowHelper:
     """ Not quite finished, but tools to interact with the active QtWidgets and QWindows at the top-level
     
+    Usage:
+    
+    from pyphocorehelpers.gui.Qt.TopLevelWindowHelper import TopLevelWindowHelper, print_widget_hierarchy
+    
+    
     # app = pg.mkQApp()
     app = pg.mkQApp(spike_raster_window.applicationName) # <PyQt5.QtWidgets.QApplication at 0x1d44a4891f0>
     

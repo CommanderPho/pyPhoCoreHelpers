@@ -1,16 +1,22 @@
 # title: programming_helpers.py
 # date: 2023-05-08 14:21:48
 # purpose: Created to support programming and consolidation of programming-related helpers into a single location. Previously all were scattered around the various other helpers.
-
+import os
+import sys
 import contextlib
-from typing import Optional, List, Dict
+from pathlib import Path
+from typing import Optional, List, Dict, Union
 from functools import wraps
 import numpy as np
 import pandas as pd
 import inspect # for IPythonHelpers
 from enum import Enum
 import re
-
+import ast
+import nbformat
+import IPython
+from IPython.display import display, Javascript
+import json
 # from pyphocorehelpers.function_helpers import function_attributes, _custom_function_metadata_attribute_names
 
 # ==================================================================================================================== #
@@ -173,12 +179,124 @@ def build_fn_properties_df(a_fn_dict, included_attribute_names_list:Optional[Lis
     return df
             
         
+
             
+class CodeParsers:
+    """ 
+    
+    from pyphocorehelpers.programming_helpers import CodeParsers
+    
+    print(extract_variable_names(CodeParsers.code_block))
+    """
+    
+    @classmethod
+    def extract_imported_names(cls, code):
+        tree = ast.parse(code)
+        imported_names = set()
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    imported_names.add(alias.name)
+            elif isinstance(node, ast.ImportFrom):
+                for alias in node.names:
+                    name = alias.name if node.level == 0 else f"{node.module}.{alias.name}"
+                    imported_names.add(name)
+
+        return imported_names
+
+
+    @classmethod
+    def extract_assigned_variable_names(cls, code: str) -> List[str]:
+        """
+        Extracts the names of all assigned variables from the given code block.
+
+        Args:
+        code (str): A string containing the Python code from which to extract variable names.
+
+        Returns:
+        list: A list of variable names assigned in the code.
+        
+        Usage:
+            # # Example usage
+            # print(extract_variable_names(code_block))
+            
+        """
+        tree = ast.parse(code)
+        var_names = set()
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign):
+                for target in node.targets:
+                    # Handle simple assignments
+                    if isinstance(target, ast.Name):
+                        var_names.add(target.id)
+                    # Handle unpacked assignments (e.g., a, b = c, d)
+                    elif isinstance(target, (ast.Tuple, ast.List)):
+                        for elem in target.elts:
+                            if isinstance(elem, ast.Name):
+                                var_names.add(elem.id)
+
+        return list(var_names)
+
+    @classmethod
+    def extract_referenced_names(cls, code: str) -> List[str]:
+        tree = ast.parse(code)
+        names = set()
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+                names.add(node.id)
+
+        return list(names)
+
+    @classmethod
+    def find_input_variables(cls, code: str):
+        assigned_names = set(cls.extract_assigned_variable_names(code))
+        referenced_names = set(cls.extract_referenced_names(code))
+
+        # Input variables are those that are referenced but not assigned within the block
+        input_vars = referenced_names - assigned_names
+        return list(input_vars)
 
 
 
 class IPythonHelpers:
-    """ various helpers useful in jupyter-lab notebooks and IPython """
+    """ various helpers useful in jupyter-lab notebooks and IPython 
+    
+    import IPython
+    from pyphocorehelpers.programming_helpers import IPythonHelpers
+    notebook_name = IPythonHelpers.try_find_notebook_filepath(IPython.extract_module_locals())
+
+    
+    Future Explorations:
+        from ipywidgets import get_ipython # required for IPythonHelpers.cell_vars
+        import io
+        from contextlib import redirect_stdout
+
+        ipy = get_ipython()
+        ipy
+
+        ipy.config
+        {'IPKernelApp': {'ip': '127.0.0.1',
+        'stdin_port': 9018,
+        'control_port': 9016,
+        'hb_port': 9015,
+        'shell_port': 9017,
+        'transport': 'tcp',
+        'iopub_port': 9019,
+        'connection_file': '/home/halechr/.local/share/jupyter/runtime/kernel-v2-11469ce5F9Z6kztRl.json'},
+        'Session': {'signature_scheme': 'hmac-sha256',
+        'key': b'e8f1060a-87a5-4060-9275-77318885dab6'},
+        'Completer': {'use_jedi': False},
+        'IPCompleter': {'use_jedi': False}}
+        
+        # ipy.find_user_code
+        # ipy.get_local_scope
+        # ipy.inspector.class_get_help
+        # ipy.get_ipython()
+
+    """
     
     @classmethod
     def _subfn_helper_get_name(cls, lst=[]):
@@ -202,6 +320,98 @@ class IPythonHelpers:
         g = cls._subfn_helper_get_name()
 
         return g
+
+
+    @classmethod
+    def try_find_notebook_filepath(cls, module_locals=None) -> Optional[str]:
+        """ tries multiple methods to get a Jupyter notebok's filepath
+        Usage:
+            MUST be called like:
+            import IPython
+            from pyphocorehelpers.programming_helpers import IPythonHelpers
+            notebook_name = IPythonHelpers.try_find_notebook_filepath(IPython.extract_module_locals())
+
+        """
+        def _subfn_try_find_notebook_fp_using_javascript() -> Optional[str]:
+            """Return the absolute path of the current Jupyter notebook, e.g., '/path/to/Notebook.ipynb'"""
+            import json
+            import os
+
+            # JavaScript to get the notebook's base URL
+            js = Javascript("""
+            require(["base/js/namespace"], function(Jupyter) {
+                Jupyter.notebook.kernel.execute("notebook_path = '" + 
+                    Jupyter.notebook.notebook_path + "'");
+            });
+            """)
+            display(js)
+
+            # Wait for the Javascript command to complete execution
+            try:
+                notebook_path = globals()['notebook_path']
+                return os.path.join(os.getcwd(), notebook_path)
+            except KeyError:
+                print("Can't find notebook path")
+                return None
+
+
+        def _subfn_try_find_notebook_fp_from_server():
+            """
+            Apparently this only works from if the Jupyter server is open (not in VSCode)
+            
+            notebook_path = _subfn_try_find_notebook_fp_from_server()
+            print(notebook_path)
+            
+            """
+            import requests
+            import json
+            import ipykernel
+            from notebook.notebookapp import list_running_servers
+            kernel_id = re.search('kernel-(.*).json', ipykernel.connect.get_connection_file()).group(1)
+            for server in list_running_servers():
+                response = requests.get(requests.compat.urljoin(server['url'], 'api/sessions'),
+                                        headers={'Authorization': 'token ' + server.get('token', '')})
+                for sess in json.loads(response.text):
+                    if sess['kernel']['id'] == kernel_id:
+                        return os.path.join(server['notebook_dir'], sess['notebook']['path'])
+
+        def _subfn_vscode_jupyter_extract_notebook_path(module_locals=None) -> Optional[str]:
+            """ extracts the path of the currently running jupyter notebook
+            https://stackoverflow.com/a/75683730/9732163
+            Usage:
+                MUST be called like:
+                notebook_name = IPythonHelpers._vscode_jupyter_extract_notebook_path(IPython.extract_module_locals())
+            
+            Returns:
+                'halechr/repos/Spike3D/SCRATCH/2023-11-13 - Programmatic ipynb Processing.ipynb'
+            """
+            assert module_locals is not None, f"Must be called like: `notebook_name = _vscode_jupyter_extract_notebook_path(IPython.extract_module_locals())`"
+            try:
+                return "/".join(module_locals[1]["__vsc_ipynb_file__"].split("/")[-5:])
+            except KeyError:
+                return None
+
+        ## BEGIN FUNCTION BODY:
+        if module_locals is not None:
+            notebook_path = _subfn_vscode_jupyter_extract_notebook_path(module_locals=module_locals)
+            if notebook_path is not None:
+                return notebook_path
+        else:
+            print(f'WARNING: module_locals is None so VSCode method will beskipped! Call like: notebook_name = IPythonHelpers.try_find_notebook_filepath(IPython.extract_module_locals())')	
+        # VSCode version didn't work.
+        notebook_path = _subfn_try_find_notebook_fp_using_javascript()
+        if notebook_path is not None:
+            return notebook_path
+        
+        notebook_path = _subfn_try_find_notebook_fp_from_server()
+        if notebook_path is not None:
+            return notebook_path
+        
+        if notebook_path is None:
+            print(f'WARNING: no method worked!')
+
+        return notebook_path
+
 
     @classmethod
     def cell_vars(cls, get_globals_fn=None, offset=0):
@@ -265,8 +475,28 @@ class IPythonHelpers:
         result = {k:g[k] for k in x if k in g}
         return result
 
+    @classmethod
+    def extract_cells(cls, notebook_path: Union[Path,str]):
+        """ extracts the cells from the provided notebook.
+        # Example usage
+        notebook_path = '../BatchGenerateOutputs_2023-11-13.ipynb'
+        extracted_cells = IPythonHelpers.extract_cells(notebook_path)
+        print(extracted_cells)
 
+        cells_with_tags = []
+        for cell in extracted_cells:
+            cell_content = cell['source']
+            cell_tags = cell['metadata'].get('tags', None)
+            if (cell_tags is not None) and (len(cell_tags) > 0):
+                cells_with_tags.append({'content': cell_content, 'tags': cell_tags})
 
+        cells_with_tags
+        """
+        with open(notebook_path, 'r', encoding='utf-8') as notebook_file:
+            notebook_content = nbformat.read(notebook_file, as_version=4)
+
+        cells = notebook_content['cells']
+        return cells
 
 
 

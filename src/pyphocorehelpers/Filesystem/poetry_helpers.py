@@ -60,8 +60,8 @@ class VersionType(Enum):
 def build_pyproject_toml_file(repo_path, is_release=False, pyproject_final_file_name = 'pyproject.toml', debug_print=False):
     """ Builds the complete final pyproject.toml file from the pyproject_template.toml_template for the current version (release or dev)
 
-    from Spike3D.scripts.setup_dependent_repos import build_pyproject_toml_file
-    build_pyproject_toml_file("C:/Users/pho/repos/Spike3DWorkEnv/pyPhoPlaceCellAnalysis")
+    from Spike3D.scripts.setup_dependent_repos import PoetryHelpers
+    PoetryHelpers.build_pyproject_toml_file("C:/Users/pho/repos/Spike3DWorkEnv/pyPhoPlaceCellAnalysis")
 
     """
     os.chdir(repo_path)

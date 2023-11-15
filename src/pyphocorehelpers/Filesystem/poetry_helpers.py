@@ -57,100 +57,73 @@ class VersionType(Enum):
         else:
             return cls.dev
 
-def build_pyproject_toml_file(repo_path, is_release=False, pyproject_final_file_name = 'pyproject.toml', debug_print=False):
-    """ Builds the complete final pyproject.toml file from the pyproject_template.toml_template for the current version (release or dev)
 
-    from Spike3D.scripts.setup_dependent_repos import PoetryHelpers
-    PoetryHelpers.build_pyproject_toml_file("C:/Users/pho/repos/Spike3DWorkEnv/pyPhoPlaceCellAnalysis")
-
-    """
-    os.chdir(repo_path)
-    curr_version = VersionType.init_from_is_release(is_release)
-    print(f'\t Templating: Building pyproject.toml for {curr_version.name} version in {repo_path}...')
-    remote_dependencies_regex = r"^(\s*\[tool\.poetry\.group\.remote\.dependencies\]\n(?:.+\n)*)\n\[?"
-    # Load the insert text
-    with open(curr_version.pyproject_template_file, 'r') as f:
-        insert_text_str = f.read()
-        
-    if not insert_text_str.startswith('\n'):
-        # Add a leading newline if the loaded text doesn't already have one
-        insert_text_str = '\n' + insert_text_str
-    if not insert_text_str.endswith('\n\n'):
-        # Add a trailing newline if the loaded text doesn't already have one
-        insert_text_str = insert_text_str + '\n'
-    
-    if debug_print:
-        print(insert_text_str)
-    
-    replace_text_in_file(pyproject_final_file_name, remote_dependencies_regex, insert_text_str, debug_print=debug_print)
-    return pyproject_final_file_name
-
-
-def copy_recursive(source_base_path, target_base_path):
+class PoetryHelpers:
     """ 
-    Copy a directory tree from one location to another. This differs from shutil.copytree() that it does not
-    require the target destination to not exist. This will copy the contents of one directory in to another
-    existing directory without complaining.
-    It will create directories if needed, but notify they already existed.
-    If will overwrite files if they exist, but notify that they already existed.
-    :param source_base_path: Directory
-    :param target_base_path:
-    :return: None
-    
-    Source: https://gist.github.com/NanoDano/32bb3ba25b2bd5cdf192542660ac4de0
-    
+    from scripts.helpers.poetry_helpers import PoetryHelpers, VersionType
+
     """
-    if not Path(target_base_path).exists():
-        Path(target_base_path).mkdir()    
-    if not Path(source_base_path).is_dir() or not Path(target_base_path).is_dir():
-        raise Exception("Source and destination directory and not both directories.\nSource: %s\nTarget: %s" % ( source_base_path, target_base_path))
-    for item in os.listdir(source_base_path):
-        # Directory
-        if os.path.isdir(os.path.join(source_base_path, item)):
-            # Create destination directory if needed
-            new_target_dir = os.path.join(target_base_path, item)
-            try:
-                os.mkdir(new_target_dir)
-            except OSError:
-                sys.stderr.write("WARNING: Directory already exists:\t%s\n" % new_target_dir)
+    def build_pyproject_toml_file(repo_path, is_release=False, pyproject_final_file_name = 'pyproject.toml', debug_print=False):
+        """ Builds the complete final pyproject.toml file from the pyproject_template.toml_template for the current version (release or dev)
 
-            # Recurse
-            new_source_dir = os.path.join(source_base_path, item)
-            copy_recursive(new_source_dir, new_target_dir)
-        # File
+        from Spike3D.scripts.setup_dependent_repos import build_pyproject_toml_file
+        build_pyproject_toml_file("C:/Users/pho/repos/Spike3DWorkEnv/pyPhoPlaceCellAnalysis")
+
+        """
+        os.chdir(repo_path)
+        curr_version = VersionType.init_from_is_release(is_release)
+        print(f'\t Templating: Building pyproject.toml for {curr_version.name} version in {repo_path}...')
+        remote_dependencies_regex = r"^(\s*\[tool\.poetry\.group\.remote\.dependencies\]\n(?:.+\n)*)\n\[?"
+        # Load the insert text
+        with open(curr_version.pyproject_template_file, 'r') as f:
+            insert_text_str = f.read()
+            
+        if not insert_text_str.startswith('\n'):
+            # Add a leading newline if the loaded text doesn't already have one
+            insert_text_str = '\n' + insert_text_str
+        if not insert_text_str.endswith('\n\n'):
+            # Add a trailing newline if the loaded text doesn't already have one
+            insert_text_str = insert_text_str + '\n'
+        
+        if debug_print:
+            print(insert_text_str)
+        
+        replace_text_in_file(pyproject_final_file_name, remote_dependencies_regex, insert_text_str, debug_print=debug_print)
+        return pyproject_final_file_name
+
+
+
+
+    @classmethod
+    def get_current_poetry_env(cls, working_dir=None) -> str:
+        if working_dir is not None:
+            curr_env_path = subprocess.check_output([f'poetry env list --full-path --directory={working_dir}'], shell=True)
         else:
-            # Copy file over
-            source_name = os.path.join(source_base_path, item)
-            target_name = os.path.join(target_base_path, item)
-            if Path(target_name).is_file():
-                sys.stderr.write("WARNING: Overwriting existing file:\t%s\n" % target_name)
-            shutil.copy(source_name, target_name)
+            curr_env_path = subprocess.check_output(['poetry env list --full-path'], shell=True) # use the current working directory
+        return curr_env_path
 
 
-def get_current_poetry_env(working_dir=None) -> str:
-    if working_dir is not None:
-        curr_env_path = subprocess.check_output([f'poetry env list --full-path --directory={working_dir}'], shell=True)
-    else:
-        curr_env_path = subprocess.check_output(['poetry env list --full-path'], shell=True) # use the current working directory
-    return curr_env_path
+    def install_ipython_kernel(kernel_name:str="spike3d-poetry"):
+        """ run this to install the kernel for the poetry environment """
+        os.system(f"poetry run ipython kernel install --user --name={kernel_name}") # run this to install the kernel for the poetry environment
 
 
-def install_ipython_kernel(kernel_name:str="spike3d-poetry"):
-    """ run this to install the kernel for the poetry environment """
-    os.system(f"poetry run ipython kernel install --user --name={kernel_name}") # run this to install the kernel for the poetry environment
+    @classmethod
+    def backup_poetry_env(cls):
+        """ backs up the current poetry environment to a zip file and returns the path of the file. """
+        raise NotImplementedError
 
+    @classmethod
+    def duplicate_poetry_env(cls):
+        # Get the path to the current Poetry environment
+        env_path = subprocess.check_output(['poetry', 'env', 'info', '--path']).decode().strip()
 
-def duplicate_poetry_env():
-    # Get the path to the current Poetry environment
-    env_path = subprocess.check_output(['poetry', 'env', 'info', '--path']).decode().strip()
+        # Create a new environment with the same packages as the current environment
+        new_env_path = os.path.join(os.path.dirname(env_path), 'new_env')
+        subprocess.run(['python', '-m', 'venv', new_env_path])
+        subprocess.run([os.path.join(new_env_path, 'bin', 'pip'), 'install', '-r', os.path.join(env_path, 'requirements.txt')])
 
-    # Create a new environment with the same packages as the current environment
-    new_env_path = os.path.join(os.path.dirname(env_path), 'new_env')
-    subprocess.run(['python', '-m', 'venv', new_env_path])
-    subprocess.run([os.path.join(new_env_path, 'bin', 'pip'), 'install', '-r', os.path.join(env_path, 'requirements.txt')])
-
-    return new_env_path
-
+        return new_env_path
 
 
 r""" 

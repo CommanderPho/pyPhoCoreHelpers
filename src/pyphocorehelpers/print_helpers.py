@@ -30,6 +30,27 @@ from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters 
 # from pyphocorehelpers.function_helpers import function_attributes # # function_attributes causes circular import issue :[
 
 
+# @function_attributes(short_name=None, tags=['unused', 'repr', 'str', 'string_representation', 'preview'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-11-28 12:43', related_items=[])
+def truncating_list_repr(items, max_full_display_n_items: int = 1000):
+    """ If length is less than `max_full_display_n_items` return the full list 
+    https://stackoverflow.com/questions/62884503/what-are-the-best-practices-for-repr-with-collection-class-python
+    """
+    if len(items) < max_full_display_n_items:
+        return f"MyCollection({items})"
+    else:
+        # Get the first and last three items
+        items_to_display = items[:3] + items[-3:]
+        # Find the which item has the longest repr
+        max_length_repr = max(items_to_display, key=lambda x: len(repr(x)))
+        # Get the length of the item with the longest repr
+        padding = len(repr(max_length_repr))
+        # Create a list of the reprs of each item and apply the padding
+        values = [repr(item).rjust(padding) for item in items_to_display]
+        # Insert the '...' inbetween the 3rd and 4th item
+        values.insert(3, '...')
+        # Convert the list to a string joined by commas
+        array_as_string = ', '.join(values)
+        return f"MyCollection([{array_as_string}])"
 
 
 class SimplePrintable:

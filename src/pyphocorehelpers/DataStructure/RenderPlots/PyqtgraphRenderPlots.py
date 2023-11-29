@@ -27,7 +27,7 @@ class PyqtgraphRenderPlots(RenderPlots):
 class GenericPyQtGraphContainer:
     """ GenericPyQtGraphContainer holds related plots, their data, and methods that manipulate them in a straightforward way
 
-    from pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.ContainerBased.RankOrderDebugger import GenericPyQtGraphContainer
+    from pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.ContainerBased.RankOrderRastersDebugger import GenericPyQtGraphContainer
 
     """
     name: str = field(default='plot')
@@ -43,7 +43,7 @@ class GenericPyQtGraphContainer:
 class GenericPyQtGraphScatterClicker:
     """ GenericPyQtGraphContainer holds related plots, their data, and methods that manipulate them in a straightforward way
 
-    from pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.ContainerBased.RankOrderDebugger import GenericPyQtGraphScatterClicker
+    from pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.ContainerBased.RankOrderRastersDebugger import GenericPyQtGraphScatterClicker
 
     """
     lastClickedDict: Dict = field(default=Factory(dict))

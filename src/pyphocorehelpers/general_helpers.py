@@ -1,5 +1,6 @@
 from contextlib import contextmanager
-from typing import Callable, List, Optional, OrderedDict  # for OrderedMeta
+from typing import Callable, List, Dict, Tuple, Optional, OrderedDict  # for OrderedMeta
+from collections import namedtuple
 import sys # needed for `is_reloaded_instance`
 from enum import Enum
 from enum import unique # GeneratedClassDefinitionType
@@ -9,6 +10,7 @@ import re # for CodeConversion
 import numpy as np # for CodeConversion
 import pandas as pd
 from neuropy.utils.dynamic_container import overriding_dict_with # required for safely_accepts_kwargs
+
 
 """
 
@@ -48,9 +50,10 @@ class OrderedMeta(type):
         return c
 
 
+FunctionInspectionTuple = namedtuple('FunctionInspectionTuple', ['full_fn_spec', 'positional_args_names', 'kwargs_names', 'default_kwargs_dict'])
 
-def inspect_callable_arguments(a_callable: Callable, debug_print=False):
-    """ Not yet validated/implemented
+def inspect_callable_arguments(a_callable: Callable, debug_print=False) -> FunctionInspectionTuple:
+    """ Inspects a callable's arguments
     Progress:
         import inspect
         from neuropy.plotting.ratemaps import plot_ratemap_1D, plot_ratemap_2D
@@ -84,7 +87,8 @@ def inspect_callable_arguments(a_callable: Callable, debug_print=False):
         print(f'fn_spec_positional_args_list: {positional_args_names}\nfn_spec_kwargs_list: {kwargs_names}')
     default_kwargs_dict = {argname:v for argname, v in zip(kwargs_names, full_fn_spec.defaults)} # {'item1': None, 'item2': '', 'item3': 5.0}
 
-    return full_fn_spec, positional_args_names, kwargs_names, default_kwargs_dict
+    return FunctionInspectionTuple(full_fn_spec=full_fn_spec, positional_args_names=positional_args_names, kwargs_names=kwargs_names, default_kwargs_dict=default_kwargs_dict)
+
 
 def safely_accepts_kwargs(fn):
     """ builds a wrapped version of fn that only takes the kwargs that it can use, and shrugs the rest off (without any warning that they're unused, making it a bit dangerous)

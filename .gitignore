@@ -58,3 +58,5 @@ src/cscope.files
 src/cscope.out
 src/myproject.db
 .sourcery.yaml
+
+src/.myproject.db

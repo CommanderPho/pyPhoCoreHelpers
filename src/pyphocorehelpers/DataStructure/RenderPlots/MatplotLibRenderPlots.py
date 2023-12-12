@@ -1,3 +1,4 @@
+from typing import Optional
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure, FigureBase # FigureBase: both Figure and SubFigure
@@ -21,7 +22,7 @@ class MatplotlibRenderPlots(RenderPlots):
         
 
     @classmethod
-    def init_from_any_objects(cls, *args):
+    def init_from_any_objects(cls, *args, name: Optional[str] = None, **kwargs):
         """ initializes a MatplotlibRenderPlots instance from any list containing Matplotlib objects (figures, axes, artists, contexts, etc).
         
         For the most base functionality we really only need the figures and axes. 
@@ -36,7 +37,7 @@ class MatplotlibRenderPlots(RenderPlots):
             elif isinstance(obj, Axes):
                 axes.append(obj)
             # Add more elif blocks for other types if needed
-        return cls(figures=figures, axes=axes)
+        return cls(name=name, figures=figures, axes=axes)
 
 
     @classmethod

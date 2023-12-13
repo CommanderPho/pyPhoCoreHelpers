@@ -23,6 +23,8 @@ import re ## required for strip_type_str_to_classname(...)
 from pathlib import Path
 import logging
 
+import itertools
+
 # Required for proper print_object_memory_usage
 import objsize # python -m pip install objsize==0.6.1
 
@@ -31,15 +33,20 @@ from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters 
 
 
 # @function_attributes(short_name=None, tags=['unused', 'repr', 'str', 'string_representation', 'preview'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-11-28 12:43', related_items=[])
-def truncating_list_repr(items, max_full_display_n_items: int = 1000):
+def truncating_list_repr(items, max_full_display_n_items: int = 1000, truncated_num_edge_items: int = 3):
     """ If length is less than `max_full_display_n_items` return the full list 
     https://stackoverflow.com/questions/62884503/what-are-the-best-practices-for-repr-with-collection-class-python
     """
     if len(items) < max_full_display_n_items:
-        return f"MyCollection({items})"
+        return f"{items}"
     else:
         # Get the first and last three items
-        items_to_display = items[:3] + items[-3:]
+        if isinstance(items, dict):
+            # Convert the dictionary to a list of tuples (key, value)
+            dict_items = list(items.items())
+            items_to_display = dict_items[:truncated_num_edge_items] + dict_items[-truncated_num_edge_items:]
+        else:
+            items_to_display = items[:truncated_num_edge_items] + items[-truncated_num_edge_items:]
         # Find the which item has the longest repr
         max_length_repr = max(items_to_display, key=lambda x: len(repr(x)))
         # Get the length of the item with the longest repr
@@ -47,10 +54,10 @@ def truncating_list_repr(items, max_full_display_n_items: int = 1000):
         # Create a list of the reprs of each item and apply the padding
         values = [repr(item).rjust(padding) for item in items_to_display]
         # Insert the '...' inbetween the 3rd and 4th item
-        values.insert(3, '...')
+        values.insert(truncated_num_edge_items, '...')
         # Convert the list to a string joined by commas
         array_as_string = ', '.join(values)
-        return f"MyCollection([{array_as_string}])"
+        return f"[{array_as_string}]"
 
 
 class SimplePrintable:

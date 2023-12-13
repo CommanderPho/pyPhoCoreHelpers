@@ -1,34 +1,77 @@
+from typing import Optional
 import ipywidgets as widgets
 from IPython.display import display, HTML
+from pathlib import Path
+
 
 def render_colors(color_list):
     """ Renders a simple list of colors for visual previewing
     Usage:
     
-		from pyphocorehelpers.gui.Jupyter.simple_widgets import render_colors
+        from pyphocorehelpers.gui.Jupyter.simple_widgets import render_colors
 
-		render_colors(color_list)
+        render_colors(color_list)
 
     Advanced Usage:
     
-		# Define the list of colors you want to display
-		# color_list = ['red', 'blue', 'green', '#FFA500', '#800080']
-		color_list = _plot_backup_colors.neuron_colors_hex
+        # Define the list of colors you want to display
+        # color_list = ['red', 'blue', 'green', '#FFA500', '#800080']
+        color_list = _plot_backup_colors.neuron_colors_hex
 
-		# Create a button to trigger the color rendering
-		button = widgets.Button(description="Show Colors")
+        # Create a button to trigger the color rendering
+        button = widgets.Button(description="Show Colors")
 
-		# Define what happens when the button is clicked
-		def on_button_click(b):
-			render_colors(color_list)
+        # Define what happens when the button is clicked
+        def on_button_click(b):
+            render_colors(color_list)
 
-		button.on_click(on_button_click)
+        button.on_click(on_button_click)
 
-		# Display the button
-		button
+        # Display the button
+        button
         
     """
     color_html = ''.join([f'<div style="width:50px; height:50px; background-color:{color}; margin:5px; display:inline-block;"></div>' for color in color_list])
     display(HTML(color_html))
 
 
+def fullwidth_path_widget(a_path, file_name_label: str="session path:"):
+    """ displays a simple file path and a reveal button that shows it. 
+     
+     from pyphocorehelpers.gui.Jupyter.simple_widgets import fullwidth_path_widget
+     
+    """
+    from pyphocorehelpers.Filesystem.path_helpers import open_file_with_system_default
+    from pyphocorehelpers.Filesystem.open_in_system_file_manager import reveal_in_system_file_manager
+
+    has_valid_file = False
+    resolved_path: Optional[Path] = None
+
+    if a_path is None:
+        a_path = "<None>"
+    else:
+        if not isinstance(a_path, str):
+            a_path = str(a_path)       
+        resolved_path = Path(a_path).resolve()             
+        has_valid_file = resolved_path.exists()
+        is_dir = resolved_path.is_dir()
+    
+    
+    left_label = widgets.Label(file_name_label, layout=widgets.Layout(width='auto'))
+    right_label = widgets.Label(a_path, layout=widgets.Layout(width='auto', flex='1 1 auto', margin='2px'))
+
+    actions_button_list = []
+    reveal_button = widgets.Button(description='Reveal', layout=widgets.Layout(flex='0 1 auto', width='auto', margin='1px'), disabled=(not Path(a_path).resolve().exists()), button_style='info', tooltip='Reveal in System Explorer', icon='folder-tree')
+    reveal_button.on_click(lambda _: reveal_in_system_file_manager(a_path))
+    actions_button_list.append(reveal_button)
+
+    if has_valid_file:
+        is_dir = resolved_path.is_dir()
+        if not is_dir:
+            open_button = widgets.Button(description='Open', layout=widgets.Layout(flex='0 1 auto', width='auto', margin='1px'), disabled=((not Path(a_path).resolve().exists()) or ((Path(a_path).resolve().is_dir()))), button_style='info', tooltip='Open with default app', icon='folder-tree')
+            open_button.on_click(lambda _: open_file_with_system_default(a_path))
+            actions_button_list.append(open_button)
+
+    box_layout = widgets.Layout(display='flex', flex_flow='row', align_items='stretch', width='70%')
+    hbox = widgets.Box(children=[left_label, right_label, *actions_button_list], layout=box_layout)
+    return hbox

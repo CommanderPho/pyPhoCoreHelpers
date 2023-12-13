@@ -320,19 +320,8 @@ class DocumentationFilePrinter:
         btn_layout = widgets.Layout(width='auto', height='40px') #set width and height
         default_kwargs = dict(display='flex', flex_flow='column', align_items='stretch', layout=btn_layout)
 
-        # Define the set of buttons:
-        # button_defns = [("Documentation Folder", lambda _: reveal_in_system_file_manager(self.doc_output_parent_folder), default_kwargs),
-        #         ("Generated Documentation", lambda _: self.reveal_output_files_in_system_file_manager(), default_kwargs),
-        #         ("Open generated .html Documentation", lambda _: open_file_with_system_default(str(self.output_html_file.resolve())), default_kwargs),
-        #         ("Reveal Generated .html Documentation", lambda _: reveal_in_system_file_manager(self.output_html_file), default_kwargs),
-        #         ("Open generated .md Documentation", lambda _: open_file_with_system_default(str(doc_printer.output_md_file.resolve())), default_kwargs),
-        # 		("Reveal Generated .md Documentation", lambda _: reveal_in_system_file_manager(doc_printer.output_md_file), default_kwargs),
-
-        #         # ("pipeline pickle", lambda _: reveal_in_system_file_manager(curr_active_pipeline.pickle_path)),
-        #         # (".h5 export", lambda _: reveal_in_system_file_manager(curr_active_pipeline.h5_export_path)),
-        #         # ("ViTables .h5 export", lambda _: reveal_in_system_file_manager(curr_active_pipeline.h5_export_path))
-        #     ]
-    
+        #TODO 2023-12-12 16:43: - [ ] Can potentially replace these complicated definitions with the simplier `fullwidth_path_widget` implementation which contains the two buttons by default
+        # from pyphocorehelpers.gui.Jupyter.simple_widgets import fullwidth_path_widget       
         _out_row = JupyterButtonRowWidget.init_from_button_defns(button_defns=[("Documentation Folder", lambda _: reveal_in_system_file_manager(self.doc_output_parent_folder), default_kwargs),
             ("Generated Documentation", lambda _: self.reveal_output_files_in_system_file_manager(), default_kwargs),
             ])
@@ -350,15 +339,10 @@ class DocumentationFilePrinter:
             _out_row_md.root_widget,
         ])
 
-        # # Create and display the button
-        # return JupyterButtonRowWidget(button_defns=button_defns)
-
-
-
     # private methods ____________________________________________________________________________________________________ #
     @classmethod
     def _default_plain_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
-        # return f"{depth_string}- {curr_key}: {type_name}{' (children omitted)' if is_omitted_from_expansion else ''}"
+        """       """
         return CustomTreeFormatters.basic_custom_tree_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=type_name, is_omitted_from_expansion=is_omitted_from_expansion)
     
     @classmethod
@@ -1126,11 +1110,11 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
             # Objects that are considered list-like are for example Python lists, tuples, sets, NumPy arrays, and Pandas Series.
             if not omit_curr_item_print:
                 curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
-                print(f"{curr_item_str} - {safe_get_variable_shape(curr_value)}")
+                print(f"{curr_item_str} - {safe_get_variable_shape(curr_value)}") ## Shape only
+                
         else:
             # Print the current item first:
             # See if the curr_value has .items() or not.
-
             # Check if all values are scalar types
             if isinstance(curr_value, dict) and all(isinstance(v, (int, float, str, bool)) for v in curr_value.values()):
                 if not omit_curr_item_print:
@@ -1170,6 +1154,8 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
             except Exception as e:
                 print(f'Unhandled exception for outer block: {e}')
                 raise
+
+
 
 def debug_dump_object_member_shapes(obj):
     """ prints the name, type, and shape of all member variables. 

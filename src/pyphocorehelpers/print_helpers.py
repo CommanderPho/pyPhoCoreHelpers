@@ -36,6 +36,19 @@ from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters 
 def truncating_list_repr(items, max_full_display_n_items: int = 1000, truncated_num_edge_items: int = 3):
     """ If length is less than `max_full_display_n_items` return the full list 
     https://stackoverflow.com/questions/62884503/what-are-the-best-practices-for-repr-with-collection-class-python
+    
+
+    Usage:
+        from pyphocorehelpers.print_helpers import truncating_list_repr
+
+        short_list = [1, 2, 3]
+        medium_list = [1, 2, 3, 4, 5, 6]
+        long_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        print(truncating_list_repr(short_list, max_full_display_n_items = 5, truncated_num_edge_items = 3)) # '[1, 2, 3]'
+        print(truncating_list_repr(medium_list, max_full_display_n_items = 5, truncated_num_edge_items = 3)) # [1, 2, 3, ..., 4, 5, 6]
+        truncating_list_repr(long_list, max_full_display_n_items = 5, truncated_num_edge_items = 3) # '[ 1,  2,  3, ...,  8,  9, 10]'
+
+
     """
     if len(items) < max_full_display_n_items:
         return f"{items}"

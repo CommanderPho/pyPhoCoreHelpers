@@ -82,6 +82,12 @@ def is_consecutive_no_gaps(arr, enable_debug_print=False):
         return True
     
 
+
+def bidirectional_setdiff1d(arr0, arr1):
+    """ returns a tuple containing the bidirectional setdiff1D in each direction (they can differ) """
+    return np.setdiff1d(arr0, arr1), np.setdiff1d(arr1, arr0)
+
+
 def sorted_slice(a,l,r):
     start = np.searchsorted(a, l, 'left')
     end = np.searchsorted(a, r, 'right')

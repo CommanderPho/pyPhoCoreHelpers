@@ -1523,7 +1523,6 @@ class StackTraceFormatting(object):
         return sys.excepthook
 
 
-
 # """ Solution for long and convoluted stacktraces into libraries. Installs a sys.excepthook
 # From:
 #     https://stackoverflow.com/questions/2615414/python-eliminating-stack-traces-into-library-code/2616262#2616262

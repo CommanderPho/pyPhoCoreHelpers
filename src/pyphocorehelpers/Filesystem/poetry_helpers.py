@@ -63,7 +63,8 @@ class PoetryHelpers:
     from scripts.helpers.poetry_helpers import PoetryHelpers, VersionType
 
     """
-    def build_pyproject_toml_file(repo_path, is_release=False, pyproject_final_file_name = 'pyproject.toml', debug_print=False):
+    @classmethod
+    def build_pyproject_toml_file(cls, repo_path, is_release=False, pyproject_final_file_name = 'pyproject.toml', debug_print=False):
         """ Builds the complete final pyproject.toml file from the pyproject_template.toml_template for the current version (release or dev)
 
         from Spike3D.scripts.setup_dependent_repos import build_pyproject_toml_file
@@ -114,12 +115,12 @@ class PoetryHelpers:
         raise NotImplementedError
 
     @classmethod
-    def duplicate_poetry_env(cls):
+    def duplicate_poetry_env(cls, new_env_name: str = 'new_env'):
         # Get the path to the current Poetry environment
         env_path = subprocess.check_output(['poetry', 'env', 'info', '--path']).decode().strip()
 
         # Create a new environment with the same packages as the current environment
-        new_env_path = os.path.join(os.path.dirname(env_path), 'new_env')
+        new_env_path = os.path.join(os.path.dirname(env_path), new_env_name)
         subprocess.run(['python', '-m', 'venv', new_env_path])
         subprocess.run([os.path.join(new_env_path, 'bin', 'pip'), 'install', '-r', os.path.join(env_path, 'requirements.txt')])
 

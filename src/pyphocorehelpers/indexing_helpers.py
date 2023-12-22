@@ -1,6 +1,6 @@
 from collections import namedtuple
 from itertools import islice
-from typing import Callable, Optional
+from typing import Callable, Dict, List, Optional
 import numpy as np
 import pandas as pd
 
@@ -585,6 +585,60 @@ def join_on_index(*dfs, join_index='aclu', suffixes_list=None) -> pd.DataFrame:
         # joined_df = joined_df.join(df, how='inner')
         joined_df = joined_df.merge(df, on=join_index, how='inner', suffixes=a_suffix_pair)
     return joined_df
+
+
+
+def reorder_columns(df: pd.DataFrame, column_name_desired_index_dict: Dict[str, int]) -> pd.DataFrame:
+    """Reorders specified columns in a DataFrame while preserving other columns.
+    
+    Pure: Does not modify the df
+
+    Args:
+        df (pd.DataFrame): The DataFrame to reorder.
+        column_name_desired_index_dict (Dict[str, int]): A dictionary where keys are column names
+            to reorder and values are their desired indices in the reordered DataFrame.
+
+    Returns:
+        pd.DataFrame: The DataFrame with specified columns reordered while preserving remaining columns.
+
+    Raises:
+        ValueError: If any column in the dictionary is not present in the DataFrame.
+        
+        
+    Usage:
+    
+        from pyphocorehelpers.indexing_helpers import reorder_columns
+        dict(zip(['Long_LR_evidence', 'Long_RL_evidence', 'Short_LR_evidence', 'Short_RL_evidence'], np.arange(4)+4))
+        reorder_columns(merged_complete_epoch_stats_df, column_name_desired_index_dict=dict(zip(['Long_LR_evidence', 'Long_RL_evidence', 'Short_LR_evidence', 'Short_RL_evidence'], np.arange(4)+4)))
+        
+    """
+    # Validate column names
+    missing_columns = set(column_name_desired_index_dict.keys()) - set(df.columns)
+    if missing_columns:
+        raise ValueError(f"Columns {missing_columns} not found in the DataFrame.")
+
+    # Ensure desired indices are unique and within range
+    desired_indices = column_name_desired_index_dict.values()
+    if len(set(desired_indices)) != len(desired_indices) or any(index < 0 or index >= len(df.columns) for index in desired_indices):
+        raise ValueError("Desired indices must be unique and within the range of existing columns.")
+
+    # Create a list of columns to reorder
+    reordered_columns_desired_index_dict: Dict[str, int] = {column_name:desired_index for column_name, desired_index in sorted(column_name_desired_index_dict.items(), key=lambda item: item[1])}
+    # print(reordered_columns_desired_index_dict)
+    
+    # # Reorder specified columns while preserving remaining columns
+    remaining_columns = [col for col in df.columns if col not in column_name_desired_index_dict]
+    
+    reordered_columns_list: List[str] = remaining_columns.copy()
+    for item_to_insert, desired_index in reordered_columns_desired_index_dict.items():    
+        reordered_columns_list.insert(desired_index, item_to_insert)
+        
+    # print(reordered_columns_list)
+    # reordered_columns = reordered_columns + remaining_columns
+    reordered_df = df[reordered_columns_list]
+    return reordered_df
+
+
 
 
 # ==================================================================================================================== #

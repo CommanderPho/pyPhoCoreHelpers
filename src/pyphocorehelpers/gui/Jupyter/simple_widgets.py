@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import Callable, Optional, List, Dict
 import ipywidgets as widgets
+from ipywidgets import HBox, VBox
 from IPython.display import display, HTML
 from pathlib import Path
 
@@ -34,6 +35,11 @@ def render_colors(color_list):
     color_html = ''.join([f'<div style="width:50px; height:50px; background-color:{color}; margin:5px; display:inline-block;"></div>' for color in color_list])
     display(HTML(color_html))
 
+
+
+# ==================================================================================================================== #
+# Filesystem Paths                                                                                                     #
+# ==================================================================================================================== #
 
 def fullwidth_path_widget(a_path, file_name_label: str="session path:"):
     """ displays a simple file path and a reveal button that shows it. 
@@ -75,3 +81,58 @@ def fullwidth_path_widget(a_path, file_name_label: str="session path:"):
     box_layout = widgets.Layout(display='flex', flex_flow='row', align_items='stretch', width='70%')
     hbox = widgets.Box(children=[left_label, right_label, *actions_button_list], layout=box_layout)
     return hbox
+
+
+
+
+
+def build_global_data_root_parent_path_selection_widget(all_paths: List[Path], on_user_update_path_selection: Callable):
+    """ 
+    from pyphocorehelpers.gui.Jupyter.simple_widgets import build_global_data_root_parent_path_selection_widget
+    
+    all_paths = [Path(r'/home/halechr/turbo/Data'), Path(r'W:\Data'), Path(r'/home/halechr/FastData'), Path(r'/media/MAX/Data'), Path(r'/Volumes/MoverNew/data')]
+    global_data_root_parent_path = extant_paths[0]
+    def on_user_update_path_selection(new_path: Path):
+        global global_data_root_parent_path
+        new_global_data_root_parent_path = new_path.resolve()
+        global_data_root_parent_path = new_global_data_root_parent_path
+        print(f'global_data_root_parent_path changed to {global_data_root_parent_path}')
+        assert global_data_root_parent_path.exists(), f"global_data_root_parent_path: {global_data_root_parent_path} does not exist! Is the right computer's config commented out above?"
+                
+    global_data_root_parent_path_widget = build_global_data_root_parent_path_selection_widget(all_paths, on_user_update_path_selection)
+    global_data_root_parent_path_widget
+    
+    """
+    extant_paths = [a_path for a_path in all_paths if a_path.exists()]
+    assert len(extant_paths) > 0, f"NO EXTANT PATHS FOUND AT ALL!"
+    global_data_root_parent_path = extant_paths[0]        
+
+
+    # widgets.ToggleButtons
+    global_data_root_parent_path_widget = widgets.ToggleButtons(
+                                            options=extant_paths,
+                                            description='Data Root:',
+                                            disabled=False,
+                                            button_style='', # 'success', 'info', 'warning', 'danger' or ''
+                                            tooltip='global_data_root_parent_path',
+                                            layout=widgets.Layout(width='auto'),
+                                            style={"button_width": 'max-content'}, # "190px"
+                                        #     icon='check'
+                                        )
+
+    def on_global_data_root_parent_path_selection_change(change):
+        global global_data_root_parent_path
+        new_global_data_root_parent_path = Path(str(change['new'])).resolve()
+        global_data_root_parent_path = new_global_data_root_parent_path
+        print(f'global_data_root_parent_path changed to {global_data_root_parent_path}')
+        assert global_data_root_parent_path.exists(), f"global_data_root_parent_path: {global_data_root_parent_path} does not exist! Is the right computer's config commented out above?"
+        on_user_update_path_selection(new_global_data_root_parent_path)
+        
+
+    global_data_root_parent_path_widget.observe(on_global_data_root_parent_path_selection_change, names='value')
+    ## Call the user function with the first extant path:
+    on_user_update_path_selection(extant_paths[0])
+
+    return global_data_root_parent_path_widget
+
+

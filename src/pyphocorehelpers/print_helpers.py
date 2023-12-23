@@ -1,6 +1,6 @@
 import socket # for getting hostname
 from typing import List, Tuple, Dict, Optional, OrderedDict  # for OrderedMeta
-from datetime import datetime # for `get_now_day_str`
+from datetime import datetime, date, timedelta # for `get_now_day_str`
 import time # for `get_now_time_str`, `get_now_time_precise_str`
 import numpy as np
 import pandas as pd
@@ -427,6 +427,11 @@ def get_now_time_str(time_separator='-') -> str:
     return str(time.strftime(f"%Y-%m-%d_%H{time_separator}%m", time.localtime(time.time())))
 def get_now_time_precise_str(time_separator='-') -> str:
     return str(time.strftime(f"%Y-%m-%d_%H{time_separator}%m{time_separator}%S", time.localtime(time.time())))
+
+# TODO: enable simple backup-filename output
+# current_time = datetime.now()
+# rounded_time = (current_time + timedelta(minutes=2.5)).replace(second=0, microsecond=0)
+# formatted_time = rounded_time.strftime("%I%M%p").lower() # gets time like "530pm"
 
 
 

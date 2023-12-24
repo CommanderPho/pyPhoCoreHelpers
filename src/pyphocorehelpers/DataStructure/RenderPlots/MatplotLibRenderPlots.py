@@ -55,6 +55,43 @@ class MatplotlibRenderPlots(RenderPlots):
         return cls(figures=[fig], axes=axes)
 
 
+
+class FigureCollector:
+    """ 
+    from pyphocorehelpers.DataStructure.RenderPlots.MatplotLibRenderPlots import FigureCollector
+    
+    
+    """
+    def __init__(self, name='MatplotlibRenderPlots', figures=None, axes=None, context=None):
+        self.name = name
+        self.figures = figures or []
+        self.axes = axes or []
+        self.context = context or []
+        
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # Cleanup code, if needed
+        pass
+
+    def create_figure(self, *args, **kwargs):
+        fig = plt.figure(*args, **kwargs)
+        self.figures.append(fig)
+        return fig
+    
+    def subplots(self, *args, **kwargs):
+        fig, axes = plt.subplots(*args, **kwargs) # tuple[Figure, np.ndarray] or tuple[Figure, Axes]
+        self.figures.append(fig)
+        if isinstance(axes, Axes):
+            self.axes.append(axes) # single scalar axis
+        else:
+            for ax in axes:
+                self.axes.append(ax)
+        return fig, axes
+    
+
+
 #TODO 2023-12-13 00:57: - [ ] Custom Figure (TODO)
 
 @metadata_attributes(short_name=None, tags=['not-yet-implemented', 'matplotlib', 'figure'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-12-13 00:56', related_items=[])

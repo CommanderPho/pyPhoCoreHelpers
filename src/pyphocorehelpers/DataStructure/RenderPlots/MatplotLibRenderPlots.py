@@ -62,12 +62,13 @@ class FigureCollector:
     
     
     """
-    def __init__(self, name='MatplotlibRenderPlots', figures=None, axes=None, context=None):
+    def __init__(self, name='MatplotlibRenderPlots', figures=None, axes=None, contexts=None, base_context=None):
         self.name = name
         self.figures = figures or []
         self.axes = axes or []
-        self.context = context or []
-        
+        self.contexts = contexts or []
+        self.base_context = base_context
+
     def __enter__(self):
         return self
 
@@ -90,6 +91,7 @@ class FigureCollector:
                 self.axes.append(ax)
         return fig, axes
     
+
 
 
 #TODO 2023-12-13 00:57: - [ ] Custom Figure (TODO)

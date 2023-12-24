@@ -93,6 +93,50 @@ class FigureCollector:
     
 
 
+# #TODO 2023-12-23 22:01: - [ ] Context-determining figure
+# class ContextCollectingFigureCollector(FigureCollector):
+#     """ 
+#     from pyphocorehelpers.DataStructure.RenderPlots.MatplotLibRenderPlots import FigureCollector
+    
+    
+#     """
+#     def __init__(self, name='ContextCollectingFigureCollector', figures=None, axes=None, context=None, context_list=None):
+#         ## TODO: store specific properties:
+#         self.context_list = context_list or []
+#         super().__init__(name=name, figures=figures, axes=axes, context=context)
+        
+
+#     def create_figure(self, *args, **kwargs):
+#         fig = plt.figure(*args, **kwargs)
+#         self.figures.append(fig)
+#         return fig
+    
+#     def subplots(self, *args, **kwargs):
+#         sub_name = kwargs.pop('name', None) # 'name' is not a valid argument to plt.subplots anyway.
+#         if sub_name is None:
+#             # try to get subname from one of the other parameters:
+#             num_name = kwargs.get('num', None)
+#             sub_name = num_name or ""
+               
+#         if sub_name is not None:
+#             if self.context is not None:
+#                 # self.context.
+#                 sub_context = self.context.
+#             else:
+#                 sub_context = IdentifyingContext(sub_name=sub_name)
+#                 sub_context.adding_context_if_missing(sub_name=sub_name)
+                                
+#         fig, axes = plt.subplots(*args, **kwargs) # tuple[Figure, np.ndarray] or tuple[Figure, Axes]
+#         self.figures.append(fig)
+#         if isinstance(axes, Axes):
+#             self.axes.append(axes) # single scalar axis
+#         else:
+#             for ax in axes:
+#                 self.axes.append(ax)
+#         return fig, axes
+    
+
+
 
 #TODO 2023-12-13 00:57: - [ ] Custom Figure (TODO)
 

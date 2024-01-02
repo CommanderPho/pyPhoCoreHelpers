@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from typing import Callable, List, Dict, Tuple, Optional, OrderedDict  # for OrderedMeta
-from collections import namedtuple
+from collections import namedtuple # used in `_try_parse_to_dictionary_if_needed`
 import sys # needed for `is_reloaded_instance`
 from enum import Enum
 from enum import unique # GeneratedClassDefinitionType
@@ -314,6 +314,21 @@ class CodeConversion(object):
             return param_item
 
     @classmethod
+    def _isinstance_namedtuple(cls, an_obj_instance) -> bool:
+        """ Checks if an object instance is a subclass of `namedtuple`.
+        `isinstance(an_obj_instance, (namedtuple, ))` does not work because namedtuple is a generic type, so we'll check for being a subclass of `tuple` and the presence of the `_asdict` method
+        Replacement for: `isinstance(an_obj_instance, (namedtuple, ))`
+        
+        Usage:
+        if cls._isinstance_namedtuple(an_obj_instance):
+            # use namedtuple's built-in `._asdict()` property:
+            an_obj_instance_dict = an_obj_instance._asdict()
+        else:
+            print(f'not a namedtuple subclass')
+        """
+        return (isinstance(an_obj_instance, (tuple, )) and hasattr(an_obj_instance, '_asdict'))
+
+    @classmethod
     def _try_parse_to_dictionary_if_needed(cls, target_dict) -> dict:
         """ returns a for-sure dictionary or throws an Exception
         
@@ -327,8 +342,11 @@ class CodeConversion(object):
             except Exception as e:
                 print(f'ERROR: Could not convert code string: {target_dict} to a proper dictionary! Exception: {e}')
                 raise e
+        elif cls._isinstance_namedtuple(target_dict):
+            # use namedtuple's built-in `._asdict()` property:
+            target_dict = target_dict._asdict()
 
-        assert isinstance(target_dict, dict), f"target_dict must be a dictionary but is of type: {type(target_dict)}, target_dict: {target_dict}"
+        assert isinstance(target_dict, dict), f"target_dict must be a dictionary but is of type: {type(target_dict)},\ntarget_dict: {target_dict}"
         return target_dict # returns a for-sure dictionary or throws an Exception
         
     @classmethod

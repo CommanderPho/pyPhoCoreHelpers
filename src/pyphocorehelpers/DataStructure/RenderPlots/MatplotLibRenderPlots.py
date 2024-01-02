@@ -62,10 +62,11 @@ class FigureCollector:
     
     
     """
-    def __init__(self, name='MatplotlibRenderPlots', figures=None, axes=None, contexts=None, base_context=None):
+    def __init__(self, name='MatplotlibRenderPlots', figures=None, axes=None, axes_dict=None, contexts=None, base_context=None):
         self.name = name
         self.figures = figures or []
         self.axes = axes or []
+        self.axes_dict = axes_dict or {} # advanced axes support
         self.contexts = contexts or []
         self.base_context = base_context
 
@@ -82,7 +83,30 @@ class FigureCollector:
         return fig
     
     def subplots(self, *args, **kwargs):
+        """ 
+        (function) def subplots(
+            nrows: int = 1,
+            ncols: int = 1,
+            *,
+            sharex: bool | Literal['none', 'all', 'row', 'col'] = False,
+            sharey: bool | Literal['none', 'all', 'row', 'col'] = False,
+            squeeze: bool = True,
+            width_ratios: Sequence[float] | None = None,
+            height_ratios: Sequence[float] | None = None,
+            subplot_kw: dict[str, Any] | None = None,
+            gridspec_kw: dict[str, Any] | None = None,
+            **fig_kw: Unknown
+        ) -> tuple[Figure, Any]
+
+        """    
         fig, axes = plt.subplots(*args, **kwargs) # tuple[Figure, np.ndarray] or tuple[Figure, Axes]
+
+        # fig = figure(**fig_kw)
+        # axs = fig.subplots(nrows=nrows, ncols=ncols, sharex=sharex, sharey=sharey,
+        #                 squeeze=squeeze, subplot_kw=subplot_kw,
+        #                 gridspec_kw=gridspec_kw, height_ratios=height_ratios,
+        #                 width_ratios=width_ratios)
+
         self.figures.append(fig)
         if isinstance(axes, Axes):
             self.axes.append(axes) # single scalar axis
@@ -90,7 +114,94 @@ class FigureCollector:
             for ax in axes:
                 self.axes.append(ax)
         return fig, axes
-    
+
+    def subplot_mosaic(self, *args, **kwargs):
+        """ emulates matplotlib's fig.subplot_mosaic(...) function
+            def subplot_mosaic(
+                mosaic: list[HashableList[_T@subplot_mosaic]],
+                *,
+                sharex: bool = ...,
+                sharey: bool = ...,
+                width_ratios: ArrayLike | None = ...,
+                height_ratios: ArrayLike | None = ...,
+                empty_sentinel: _T@subplot_mosaic = ...,
+                subplot_kw: dict[str, Any] | None = ...,
+                per_subplot_kw: dict[_T@subplot_mosaic | tuple[_T@subplot_mosaic, ...], dict[str, Any]] | None = ...,
+                gridspec_kw: dict[str, Any] | None = ...
+            ) -> dict[_T@subplot_mosaic, Axes]
+            Build a layout of Axes based on ASCII art or nested lists.
+
+            This is a helper function to build complex GridSpec layouts visually.
+
+            See mosaic for an example and full API documentation
+
+            Parameters
+            mosaic : list of list of {hashable or nested} or str
+
+                A visual layout of how you want your Axes to be arranged labeled as strings. For example
+
+                x = [['A panel', 'A panel', 'edge'],
+                        ['C panel', '.',       'edge']]
+                produces 4 Axes:
+
+            'A panel' which is 1 row high and spans the first two columns
+            'edge' which is 2 rows high and is on the right edge
+            'C panel' which in 1 row and 1 column wide in the bottom left
+            a blank space 1 row and 1 column wide in the bottom center
+                Any of the entries in the layout can be a list of lists of the same form to create nested layouts.
+
+                If input is a str, then it can either be a multi-line string of the form
+
+                '''
+                AAE
+                C.E
+                '''
+                where each character is a column and each line is a row. Or it can be a single-line string where rows are separated by ;:
+
+                'AB;CC'
+                The string notation allows only single character Axes labels and does not support nesting but is very terse.
+
+                The Axes identifiers may be str or a non-iterable hashable object (e.g. tuple s may not be used).
+
+            sharex, sharey : bool, default: False
+                If True, the x-axis (*sharex*) or y-axis (*sharey*) will be shared among all subplots. In that case, tick label visibility and axis units behave as for subplots. If False, each subplot's x- or y-axis will be independent.
+
+            width_ratios : array-like of length *ncols*, optional
+                Defines the relative widths of the columns. Each column gets a relative width of width_ratios[i] / sum(width_ratios). If not given, all columns will have the same width. Equivalent to gridspec_kw={'width_ratios': [...]}. In the case of nested layouts, this argument applies only to the outer layout.
+
+            height_ratios : array-like of length *nrows*, optional
+                Defines the relative heights of the rows. Each row gets a relative height of height_ratios[i] / sum(height_ratios). If not given, all rows will have the same height. Equivalent to gridspec_kw={'height_ratios': [...]}. In the case of nested layouts, this argument applies only to the outer layout.
+
+            subplot_kw : dict, optional
+                Dictionary with keywords passed to the .Figure.add_subplot call used to create each subplot. These values may be overridden by values in *per_subplot_kw*.
+
+            per_subplot_kw : dict, optional
+                A dictionary mapping the Axes identifiers or tuples of identifiers to a dictionary of keyword arguments to be passed to the .Figure.add_subplot call used to create each subplot. The values in these dictionaries have precedence over the values in *subplot_kw*.
+
+                If *mosaic* is a string, and thus all keys are single characters, it is possible to use a single string instead of a tuple as keys; i.e. "AB" is equivalent to ("A", "B").
+
+            gridspec_kw : dict, optional
+                Dictionary with keywords passed to the .GridSpec constructor used to create the grid the subplots are placed on. In the case of nested layouts, this argument applies only to the outer layout. For more complex layouts, users should use .Figure.subfigures to create the nesting.
+
+            empty_sentinel : object, optional
+                Entry in the layout to mean "leave this space empty". Defaults to '.'. Note, if *layout* is a string, it is processed via inspect.cleandoc to remove leading white space, which may interfere with using white-space as the empty sentinel.
+
+            Returns
+            dict[label, Axes]
+            A dictionary mapping the labels to the Axes objects. The order of the axes is left-to-right and top-to-bottom of their position in the total layout.
+            
+        """
+        fig_kw = kwargs.pop('fig_kw', dict()) # empty dict by default
+        fig = plt.figure(**fig_kw) # layout="constrained"
+        self.figures.append(fig)
+        ## subplot_mosaic
+        ax_dict = fig.subplot_mosaic(*args, **kwargs) # dict[label, Axes]
+        assert len(self.figures) == 1, f"requires only one figure because self.axes_dict is flat"
+        self.axes_dict = ax_dict
+        self.axes = [v for k, v in self.axes_dict if isinstance(v, Axes)] # flat axes
+        assert len(self.axes) == len(self.axes_dict), f"all axes_dict entries should be of type Axes, so should be added to the flat self.axes."
+        return fig, ax_dict
+
 
 
 # #TODO 2023-12-23 22:01: - [ ] Context-determining figure

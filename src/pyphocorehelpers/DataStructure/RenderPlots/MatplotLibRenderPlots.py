@@ -57,11 +57,12 @@ class MatplotlibRenderPlots(RenderPlots):
 
 
 class FigureCollector:
-    """ 
+    """ 2023-12-27 - Very useful context-manger helper for capturing matplotlib figures, axes, and other outputs.
+    
+    
     from pyphocorehelpers.DataStructure.RenderPlots.MatplotLibRenderPlots import FigureCollector
     
-    Specifically a Matplotlib thing
-    
+    Specifically a Matplotlib thing: .create_figure(...), .subplots(...), .subplot_mosaic(...) are alternatives to the matplotlib functions of the same names but they keep track of the outputs for later use.
     
     """
     def __init__(self, name='MatplotlibRenderPlots', figures=None, axes=None, axes_dict=None, contexts=None, base_context=None):

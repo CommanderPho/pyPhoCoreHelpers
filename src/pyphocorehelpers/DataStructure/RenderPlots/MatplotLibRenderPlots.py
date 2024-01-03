@@ -60,6 +60,8 @@ class FigureCollector:
     """ 
     from pyphocorehelpers.DataStructure.RenderPlots.MatplotLibRenderPlots import FigureCollector
     
+    Specifically a Matplotlib thing
+    
     
     """
     def __init__(self, name='MatplotlibRenderPlots', figures=None, axes=None, axes_dict=None, contexts=None, base_context=None):
@@ -76,6 +78,9 @@ class FigureCollector:
     def __exit__(self, exc_type, exc_value, traceback):
         # Cleanup code, if needed
         pass
+
+
+    # Main Matplotlib-based Helper Functions _____________________________________________________________________________ #
 
     def create_figure(self, *args, **kwargs):
         fig = plt.figure(*args, **kwargs)

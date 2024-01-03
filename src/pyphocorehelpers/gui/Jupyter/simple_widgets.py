@@ -41,7 +41,7 @@ def render_colors(color_list):
 # Filesystem Paths                                                                                                     #
 # ==================================================================================================================== #
 
-def fullwidth_path_widget(a_path, file_name_label: str="session path:"):
+def fullwidth_path_widget(a_path, file_name_label: str="session path:", box_layout_kwargs=None):
     """ displays a simple file path and a reveal button that shows it. 
      
      from pyphocorehelpers.gui.Jupyter.simple_widgets import fullwidth_path_widget
@@ -50,6 +50,8 @@ def fullwidth_path_widget(a_path, file_name_label: str="session path:"):
     from pyphocorehelpers.Filesystem.path_helpers import open_file_with_system_default
     from pyphocorehelpers.Filesystem.open_in_system_file_manager import reveal_in_system_file_manager
 
+    box_layout_kwargs = box_layout_kwargs or {} # empty
+    
     has_valid_file = False
     resolved_path: Optional[Path] = None
 
@@ -78,7 +80,8 @@ def fullwidth_path_widget(a_path, file_name_label: str="session path:"):
             open_button.on_click(lambda _: open_file_with_system_default(a_path))
             actions_button_list.append(open_button)
 
-    box_layout = widgets.Layout(display='flex', flex_flow='row', align_items='stretch', width='70%')
+    box_layout_kwargs = (box_layout_kwargs | dict(display='flex', flex_flow='row', align_items='stretch', width='70%'))
+    box_layout = widgets.Layout(**box_layout_kwargs)
     hbox = widgets.Box(children=[left_label, right_label, *actions_button_list], layout=box_layout)
     return hbox
 

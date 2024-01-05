@@ -144,7 +144,7 @@ def global_function(is_global:bool=True):
 
 
 
-def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None, uses=None, used_by=None, related_items=None, conforms_to=None, is_global:bool=False, validate_computation_test:Optional[Callable]=None):
+def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None, uses=None, used_by=None, related_items=None, conforms_to=None, is_global:bool=False, validate_computation_test:Optional[Callable]=None, requires_global_keys=None, provides_global_keys=None):
     """Adds function attributes to a function or class
 
     ```python
@@ -153,6 +153,8 @@ def function_attributes(short_name=None, tags=None, creation_date=None, input_re
         @function_attributes(short_name='pf_dt_sequential_surprise', tags=['tag1','tag2'], input_requires=[], output_provides=[], uses=[], used_by=[], related_items=[])
         def _perform_time_dependent_pf_sequential_surprise_computation(computation_result, debug_print=False):
             # function body
+            
+        
     ```
 
     func.short_name, func.tags, func.creation_date, func.input_requires, func.output_provides, func.uses, func.used_by, func.related_items, func.conforms_to, func.is_global, func.validate_computation_test
@@ -169,6 +171,8 @@ def function_attributes(short_name=None, tags=None, creation_date=None, input_re
         func.conforms_to = conforms_to
         func.is_global = is_global
         func.validate_computation_test = validate_computation_test
+        func.requires_global_keys = requires_global_keys
+        func.provides_global_keys = provides_global_keys
         return func
     return decorator
 

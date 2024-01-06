@@ -179,7 +179,12 @@ def build_fn_properties_df(a_fn_dict, included_attribute_names_list:Optional[Lis
     return df
             
         
-
+def copy_to_clipboard(code_str: str, message_print=True):
+    df = pd.DataFrame([code_str])
+    df.to_clipboard(index=False,header=False)
+    if message_print:
+        print(f'Copied "{code_str}" to clipboard!')
+    
             
 class CodeParsers:
     """ 
@@ -258,6 +263,69 @@ class CodeParsers:
         # Input variables are those that are referenced but not assigned within the block
         input_vars = referenced_names - assigned_names
         return list(input_vars)
+
+    @classmethod
+    def convert_to_kwarg_passthrough(cls, input_str, post_equals_space: bool = False, to_clipboard=True):
+        """
+        Convert a string of parameters into a keyword argument passthrough format.
+
+        Prompt:
+        
+        Write a python function that given a string like 'single_plot_fixed_height=100.0, debug_test_max_num_slices=20, size=(15,15), dpi=72, constrained_layout=True, scrollable_figure=True' it should produce a string like 'single_plot_fixed_height=single_plot_fixed_height, debug_test_max_num_slices=debug_test_max_num_slices, size=size, dpi=dpi, constrained_layout=constrained_layout, scrollable_figure=scrollable_figure'
+        
+        Args:
+            input_str (str): Input string containing parameters.
+
+        Returns:
+            str: Formatted string with parameters as keyword arguments.
+            
+        Usage:
+        
+        CodeParsers.convert_to_kwarg_passthrough( 'single_plot_fixed_height=100.0, debug_test_max_num_slices=20, size=(15,15), dpi=72, constrained_layout=True, scrollable_figure=True')
+        >>> 'single_plot_fixed_height=single_plot_fixed_height, debug_test_max_num_slices=debug_test_max_num_slices, size=size, dpi=dpi, constrained_layout=constrained_layout, scrollable_figure=scrollable_figure'
+        
+        """
+        out = []
+        for kwarg_k_v_pair in input_str.split(', '):
+            k, v = kwarg_k_v_pair.strip().split('=')
+            k = k.strip()
+            v = v.strip()
+            
+            if post_equals_space:
+                equals_str = '= '
+            else:
+                equals_str = '='
+                
+            out.append(equals_str.join([k, k])) # note this is k=k, not k=v
+
+        code_str = ', '.join(out)
+        if to_clipboard:
+            copy_to_clipboard(code_str)
+        return code_str
+
+    # @classmethod
+    # def convert_to_classmethod(cls, input_str):
+    #     """
+    #     Convert a Python function definition to its @classmethod version.
+
+    #     Args:
+    #         input_str (str): Input string containing a Python function definition.
+
+    #     Returns:
+    #         str: Formatted string with @classmethod added.
+    #     """
+    #     lines = input_str.split('\n')
+    #     first_line = lines[0].strip()
+    #     indentation = ' ' * (len(lines[0]) - len(lines[0].lstrip()))
+
+    #     if not first_line.startswith('def '):
+    #         return "Input doesn't seem to be a valid function definition."
+
+    #     method_name = first_line.split('(')[0][4:]
+    #     new_method_signature = f"    @classmethod\n    def {method_name}(cls, {first_line.split('(')[1]}"
+        
+    #     return '\n'.join([lines[0], new_method_signature] + [line.replace(indentation, indentation + '    ') for line in lines[1:]])
+
 
 
 

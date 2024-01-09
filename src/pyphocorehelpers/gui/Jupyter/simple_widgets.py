@@ -49,6 +49,7 @@ def fullwidth_path_widget(a_path, file_name_label: str="session path:", box_layo
     """
     from pyphocorehelpers.Filesystem.path_helpers import open_file_with_system_default
     from pyphocorehelpers.Filesystem.open_in_system_file_manager import reveal_in_system_file_manager
+    from pyphocorehelpers.programming_helpers import copy_to_clipboard
 
     box_layout_kwargs = box_layout_kwargs or {} # empty
     
@@ -69,6 +70,10 @@ def fullwidth_path_widget(a_path, file_name_label: str="session path:", box_layo
     right_label = widgets.Label(a_path, layout=widgets.Layout(width='auto', flex='1 1 auto', margin='2px'))
 
     actions_button_list = []
+    copy_to_clipboard_button = widgets.Button(description='Copy', layout=widgets.Layout(flex='0 1 auto', width='auto', margin='1px'), disabled=(not Path(a_path).resolve().exists()), button_style='info', tooltip='Copy to Clipboard') # , icon='folder-tree'
+    copy_to_clipboard_button.on_click(lambda _: copy_to_clipboard(str(a_path)))
+    actions_button_list.append(copy_to_clipboard_button)
+
     reveal_button = widgets.Button(description='Reveal', layout=widgets.Layout(flex='0 1 auto', width='auto', margin='1px'), disabled=(not Path(a_path).resolve().exists()), button_style='info', tooltip='Reveal in System Explorer', icon='folder-tree')
     reveal_button.on_click(lambda _: reveal_in_system_file_manager(a_path))
     actions_button_list.append(reveal_button)

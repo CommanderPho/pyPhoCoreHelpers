@@ -420,13 +420,20 @@ def generate_html_string(input_str, color=None, font_size=None, bold=False, ital
 # Category: Getting Current Date/Time as String for File Names/Logging/etc:                                            #
 # ==================================================================================================================== #
 # Helpers to get the current date and time. Written as functions so they stay current:
-# from pyphocorehelpers.print_helpers import get_now_day_str, get_now_time_str, get_now_time_precise_str
+# from pyphocorehelpers.print_helpers import get_now_day_str, get_now_time_str, get_now_time_precise_str, get_now_rounded_time_str
 def get_now_day_str() -> str:
     return datetime.today().strftime('%Y-%m-%d')
 def get_now_time_str(time_separator='-') -> str:
     return str(time.strftime(f"%Y-%m-%d_%H{time_separator}%m", time.localtime(time.time())))
 def get_now_time_precise_str(time_separator='-') -> str:
     return str(time.strftime(f"%Y-%m-%d_%H{time_separator}%m{time_separator}%S", time.localtime(time.time())))
+def get_now_rounded_time_str(rounded_minutes:float=2.5, time_separator='') -> str:
+	""" rounded_minutes:float=2.5 - nearest previous minute mark to round to
+	"""
+	current_time = datetime.now()
+	rounded_time = (current_time - timedelta(minutes=current_time.minute % rounded_minutes)).replace(second=0, microsecond=0)
+	formatted_time = rounded_time.strftime(f"%Y-%m-%d_%I{time_separator}%M%p")
+	return formatted_time
 
 # TODO: enable simple backup-filename output
 # current_time = datetime.now()

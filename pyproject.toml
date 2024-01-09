@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyphocorehelpers"
-version = "0.2.0"
+version = "0.3.0"
 description = "A collection of generally useful python code by Pho Hale"
 authors = ["Pho Hale <CommanderPho@users.noreply.github.com>"]
 readme = "README.md"

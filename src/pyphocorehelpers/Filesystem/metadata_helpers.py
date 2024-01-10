@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, Optional
 
 import pandas as pd
@@ -8,7 +9,11 @@ from pyphocorehelpers.function_helpers import function_attributes
 
 
 class FilesystemMetadata:
-    """ helps with accessing cross-platform filesystem metadata """
+    """ helps with accessing cross-platform filesystem metadata
+    
+    
+    from pyphocorehelpers.Filesystem.metadata_helpers import FilesystemMetadata
+    """
     
     @staticmethod
     def get_last_modified_time(file_path: str) -> datetime:
@@ -61,6 +66,9 @@ def get_files_metadata(paths) -> pd.DataFrame:
     metadata = []
 
     for path in paths:
+        if not isinstance(path, Path):
+            path = Path(path).resolve()
+            
         if path.is_file():
             modified_time = os.path.getmtime(path)
             created_time = os.path.getctime(path)

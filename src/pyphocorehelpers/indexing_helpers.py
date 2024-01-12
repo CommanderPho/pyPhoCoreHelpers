@@ -437,6 +437,17 @@ def apply_to_dict_values(a_dict: dict, a_callable: Callable, include_condition: 
         return {k:a_callable(v) for k, v in a_dict.items()}
 
 
+def list_of_dicts_to_dict_of_lists(list_of_dicts):
+    dict_of_lists = {}
+    for item in list_of_dicts:
+        for key, value in item.items():
+            if key in dict_of_lists:
+                dict_of_lists[key].append(value)
+            else:
+                dict_of_lists[key] = [value]
+    return dict_of_lists
+    
+        
 
 # ==================================================================================================================== #
 # Numpy NDArrays                                                                                                       #

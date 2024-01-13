@@ -1,7 +1,67 @@
+from typing import Optional
 import numpy as np
 import pandas as pd
 from pathlib import Path
 import cv2
+
+import matplotlib.pyplot as plt # for export_array_as_image
+from PIL import Image # for export_array_as_image
+
+
+def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png') -> (Image, Path):
+    """ Exports a numpy array to file as a colormapped image
+    
+    # Usage:
+    
+        from pyphocorehelpers.plotting.media_output_helpers import save_array_as_image
+    
+        image, out_path = save_array_as_image(img_data, desired_height=100, desired_width=None, skip_img_normalization=True)
+        image
+                
+    """
+    # Assuming `your_array` is your numpy array
+    # For the colormap, you can use any colormap from matplotlib. 
+    # In this case, 'hot' is used.
+    # Get the specified colormap
+    colormap = plt.get_cmap(colormap)
+
+    if skip_img_normalization:
+        norm_array = img_data
+    else:
+        # Normalize your array to 0-1
+        norm_array = (img_data - np.min(img_data)) / np.ptp(img_data)
+
+    # Apply colormap
+    image_array = colormap(norm_array)
+
+    # Convert to PIL image and remove alpha channel
+    image = Image.fromarray((image_array[:, :, :3] * 255).astype(np.uint8))
+
+    if desired_width is not None:
+        # Specify width
+        assert desired_height is None, f"please don't provide both width and height, the other will be calculated automatically."
+        # Calculate height to preserve aspect ratio
+        desired_height = int(desired_width * image_array.shape[0] / image_array.shape[1])
+    elif (desired_height is not None):
+        # Specify height:
+        assert desired_width is None, f"please don't provide both width and height, the other will be calculated automatically."
+        # Calculate width to preserve aspect ratio
+        desired_width = int(desired_height * image_array.shape[1] / image_array.shape[0])
+    else:
+        raise ValueError("you must specify width or height of the output image")
+
+    # Resize image
+    # image = image.resize((new_width, new_height), Image.LANCZOS)
+    image = image.resize((desired_width, desired_height), Image.NEAREST)
+
+    out_path = Path(out_path).resolve()
+    # Save image to file
+    image.save(out_path)
+
+    return image, out_path
+
+
+
 
 #TODO 2023-09-27 19:54: - [ ] saving
 
@@ -19,7 +79,7 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
 
     Usage:
 
-        from pyphocorehelpers.plotting.video_output_helpers import save_array_as_video
+        from pyphocorehelpers.plotting.media_output_helpers import save_array_as_video
         
         video_out_path = save_array_as_video(array=active_relative_entropy_results['snapshot_occupancy_weighted_tuning_maps'], video_filename='output/videos/snapshot_occupancy_weighted_tuning_maps.avi', isColor=False)
         print(f'video_out_path: {video_out_path}')

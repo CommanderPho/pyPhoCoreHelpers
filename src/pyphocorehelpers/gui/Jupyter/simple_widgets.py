@@ -1,4 +1,4 @@
-from typing import Callable, Optional, List, Dict
+from typing import Callable, Optional, List, Dict, Union
 import ipywidgets as widgets
 from ipywidgets import HBox, VBox
 from IPython.display import display, HTML
@@ -91,6 +91,28 @@ def fullwidth_path_widget(a_path, file_name_label: str="session path:", box_layo
     return hbox
 
 
+
+
+def simple_path_display_widget(a_path: Union[Path, str]):
+    """ Returns a simple clickable Path that works on Windows and for paths containing spaces.
+    
+    Call like:
+        from pyphocorehelpers.gui.Jupyter.simple_widgets import simple_path_display_widget, _build_file_link_from_path
+        simple_path_display_widget(r"C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/EXTERNAL/Screenshots/ProgrammaticDisplayFunctionTesting/2024-01-17/kdiba/gor01/one/2006-6-08_14-26-15/plot_all_epoch_bins_marginal_predictions_Laps all_epoch_binned Marginals.png")
+        
+    """
+    def _subfn_build_file_link_from_path(a_path: Union[Path, str]) -> str:
+        # if not isinstance(a_path, str):
+        #     a_path = str(a_path)
+        if not isinstance(a_path, Path):
+            a_path = Path(a_path).resolve() # we need a Path
+        a_path_url_str: str = a_path.as_uri() # returns a string like "file:///C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/EXTERNAL/Screenshots/ProgrammaticDisplayFunctionTesting/2024-01-17/kdiba/gor01/one/2006-6-08_14-26-15/plot_all_epoch_bins_marginal_predictions_Laps%20all_epoch_binned%20Marginals.png"
+        return f'<a href="{a_path_url_str}" target="_blank">{a_path_url_str}</a>'
+        # return f'<a href="file://{a_path_url_str}" target="_blank">{a_path_url_str}</a>'
+
+    # BEGIN FUNCTION BODY ________________________________________________________________________________________________ #
+    file_link: str = _subfn_build_file_link_from_path(a_path)
+    return HTML(file_link)
 
 
 

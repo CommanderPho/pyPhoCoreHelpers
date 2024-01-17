@@ -129,6 +129,20 @@ def discover_data_files(basedir: Path, glob_pattern='*.mat', recursive=True):
     return found_files # 'RatS-Day5TwoNovel-2020-12-04_07-55-09'
 
 
+def file_uri_from_path(a_path: Union[Path, str]) -> str:
+    """ returns a path as a escaped, cross-platform, and hopefully clickable uri/url string.
+    Usage:
+        from pyphocorehelpers.Filesystem.path_helpers import file_uri_from_path
+        file_uri_from_path(r"C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/EXTERNAL/Screenshots/ProgrammaticDisplayFunctionTesting/2024-01-17/kdiba/gor01/one/2006-6-08_14-26-15/plot_all_epoch_bins_marginal_predictions_Laps all_epoch_binned Marginals.png")
+        
+    """
+    if not isinstance(a_path, Path):
+        a_path = Path(a_path).resolve() # we need a Path
+    return a_path.as_uri() # returns a string like "file:///C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/EXTERNAL/Screenshots/ProgrammaticDisplayFunctionTesting/2024-01-17/kdiba/gor01/one/2006-6-08_14-26-15/plot_all_epoch_bins_marginal_predictions_Laps%20all_epoch_binned%20Marginals.png"
+    
+
+
+
 def quote_wrapped_string(a_str: str, quote_str:str="\"") -> str:
     """ takes a a_str and returns it wrapped in literal quote characters specified by `quote_str`. Defaults to double quotes """
     return f'{quote_str}{a_str}{quote_str}'

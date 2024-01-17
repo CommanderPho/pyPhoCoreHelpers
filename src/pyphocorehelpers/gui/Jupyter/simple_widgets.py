@@ -100,6 +100,8 @@ def simple_path_display_widget(a_path: Union[Path, str]):
         from pyphocorehelpers.gui.Jupyter.simple_widgets import simple_path_display_widget, _build_file_link_from_path
         simple_path_display_widget(r"C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/EXTERNAL/Screenshots/ProgrammaticDisplayFunctionTesting/2024-01-17/kdiba/gor01/one/2006-6-08_14-26-15/plot_all_epoch_bins_marginal_predictions_Laps all_epoch_binned Marginals.png")
         
+    NOTE: could use from pyphocorehelpers.Filesystem.path_helpers import file_uri_from_path
+    
     """
     def _subfn_build_file_link_from_path(a_path: Union[Path, str]) -> str:
         # if not isinstance(a_path, str):

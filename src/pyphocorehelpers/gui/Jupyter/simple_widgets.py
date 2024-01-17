@@ -144,3 +144,44 @@ def build_global_data_root_parent_path_selection_widget(all_paths: List[Path], o
     return global_data_root_parent_path_widget
 
 
+
+
+def build_dropdown_selection_widget(all_items: List[Path], on_user_update_item_selection: Callable):
+    """ Builds a dropdown list that allows the user to select from a list of items, such as contexts.
+        from pyphocorehelpers.gui.Jupyter.simple_widgets import build_dropdown_selection_widget
+
+        active_slected_context = included_session_contexts[0]
+
+        def selected_context_changed_callback(context_str, context_data):
+            global active_slected_context
+            print(f"You selected {context_str}:{context_data}")
+            active_slected_context = context_data # update the selected context
+
+        context_selection_dropdown = build_dropdown_selection_widget(included_session_contexts, on_user_update_item_selection=selected_context_changed_callback)
+        context_selection_dropdown
+    
+    """
+    item_list = all_items.copy()
+    assert len(item_list) > 0, f"item_list is empty!"
+    # global_data_selected_item = item_list[0]        
+
+    def selected_context_changed_callback(change):
+        # global global_data_selected_item
+        selected_item = change['new']
+        print(f"You selected {selected_item}")
+        # Run your function or cell code here
+        on_user_update_item_selection(str(selected_item), selected_item)
+
+
+    # item_list = ['Item 1', 'Item 2', 'Item 3']
+    # item_list = included_session_contexts.copy()
+    # item_list = all_items.copy()
+    context_selection_dropdown = widgets.Dropdown(options=item_list, description='Select Context:', layout=widgets.Layout(width='auto'))
+    context_selection_dropdown.style = {'description_width': 'initial'} # Increase dropdown width with CSS
+    context_selection_dropdown.observe(selected_context_changed_callback, 'value')
+
+    ## Call the user function with the first extant path:
+    on_user_update_item_selection(str(item_list[0]), item_list[0])
+    
+    return context_selection_dropdown
+

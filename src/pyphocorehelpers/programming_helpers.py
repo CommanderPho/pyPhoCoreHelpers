@@ -5,7 +5,7 @@ import os
 import sys
 import contextlib
 from pathlib import Path
-from typing import Optional, List, Dict, Union
+from typing import List, Dict, Optional, Union, Callable
 from functools import wraps
 import numpy as np
 import pandas as pd
@@ -17,6 +17,8 @@ import nbformat
 import IPython
 from IPython.display import display, Javascript
 import json
+from attrs import define, field, Factory
+
 # from pyphocorehelpers.function_helpers import function_attributes, _custom_function_metadata_attribute_names
 
 # ==================================================================================================================== #
@@ -131,7 +133,6 @@ def build_fn_properties_dict(a_fn_dict, included_attribute_names_list:Optional[L
         data_dict[a_name] = a_fn_metadata_dict
         
     return data_dict
-
 
 
 def build_fn_properties_df(a_fn_dict, included_attribute_names_list:Optional[List]=None, private_attribute_names_list:List[str]=['__name__', '__doc__'], debug_print:bool=False) -> pd.DataFrame:
@@ -325,8 +326,6 @@ class CodeParsers:
     #     new_method_signature = f"    @classmethod\n    def {method_name}(cls, {first_line.split('(')[1]}"
         
     #     return '\n'.join([lines[0], new_method_signature] + [line.replace(indentation, indentation + '    ') for line in lines[1:]])
-
-
 
 
 class IPythonHelpers:
@@ -567,6 +566,78 @@ class IPythonHelpers:
         return cells
 
 
+    @classmethod
+    def write_notebook(cls, cells, path: Path):
+        """ writes a new notebook with the provided cells to the path provided. """
+        if not isinstance(path, Path):
+            path = Path(path).resolve()
+            
+        nb = nbformat.v4.new_notebook()
+
+        # Assign the cells to the new notebook
+        nb['cells'] = cells
+
+        # Write the notebook to the given path
+        with open(path, 'w', encoding='utf-8') as f:
+            nbformat.write(nb, f)
+
+        print(f"Notebook written to: {path}")
+        
+
+
+@define(slots=False)
+class NotebookProcessor:
+    """ processes Jupyter Notebooks
+    from pyphocorehelpers.programming_helpers import NotebookProcessor
+    
+    notebook_path = Path(r"C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/ReviewOfWork_2024-01-22.ipynb").resolve()
+    processor = NotebookProcessor(path=notebook_path)
+
+    """
+    path: Path = field()
+    cells: List = field(default=Factory(list))
+
+    def __attrs_post_init__(self):
+        self.load_cells()
+
+    def load_cells(self):
+        self.cells = IPythonHelpers.extract_cells(self.path)
+        print(self.cells)
+
+    def get_cells_with_tags(self):
+        return [{'content': cell['source'], 'tags': cell['metadata'].get('tags', [])} 
+                 for cell in self.cells if cell['metadata'].get('tags', [])]
+            
+    def get_cells_with_tag(self, tag):
+        return [{'content': cell['source'], 'tags': cell['metadata'].get('tags')}
+                for cell in self.cells if (tag in cell['metadata'].get('tags', []))]
+    
+    def get_empty_cells(self):
+        return [cell for cell in self.cells if not cell['source'] or cell['source'].isspace()]
+    
+
+    def remove_empty_cells_and_save(self, new_path):
+        """ 
+        ## Remove all empty cells, and save the resultant notebook as the current notebook with the '_cleaned' filename suffix (but same extention)
+        new_path = processor.path.with_stem(f'{processor.path.stem}_cleaned').resolve()
+        processor.remove_empty_cells_and_save(new_path=new_path)
+
+
+        """
+        # spawn a new list omitting empty cells
+        original_n_cells = len(self.cells)
+        cleaned_cells = [cell for cell in self.cells if cell['source'] and not cell['source'].isspace()]
+        post_clean_n_cells = len(cleaned_cells)
+        n_changed_cells = original_n_cells - post_clean_n_cells
+        if n_changed_cells > 0:        
+            print(f'original_n_cells: {original_n_cells}, post_clean_n_cells: {post_clean_n_cells}, n_changed_cells: {n_changed_cells} cells changed. Saving to {new_path}...')
+            # Commit changes back to a notebook
+            IPythonHelpers.write_notebook(cleaned_cells, new_path)
+            print(f"Cleaned notebook saved to: {new_path}")
+        else:
+            print(f'no cells changed.')
+        
+    
 
 
 # 	def transform_dict_literal_to_constructor(dict_literal):

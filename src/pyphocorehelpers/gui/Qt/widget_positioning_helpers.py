@@ -4,30 +4,32 @@
 from enum import Enum, auto
 from attrs import define, field, Factory
 
+# max_size = 16777215
+
 
 @define(slots=False)
 class WidgetGeometryInfo:
-	""" represents constraints on a widget's size/shape/geometry/etc
+    """ represents constraints on a widget's size/shape/geometry/etc
     from pyphocorehelpers.gui.Qt.widget_positioning_helpers import WidgetGeometryInfo
 
     """
-	minimumSize = field() # QSize # metadata={'setter':lambda w: w.setMinimumSize(}
-	maximumSize = field() # QSize
-	baseSize = field() # QSize
-	sizePolicy = field() # QSizePolicy 
-	geometry = field() # QRect
-	
-	@classmethod
-	def init_from_widget(cls, a_widget) -> "WidgetGeometryInfo":
-		# (a_widget.minimumSize(), a_widget.maximumSize(), a_widget.baseSize(), a_widget.sizePolicy(), a_widget.geometry())
-		return WidgetGeometryInfo(minimumSize=a_widget.minimumSize(), maximumSize=a_widget.maximumSize(), baseSize=a_widget.baseSize(), sizePolicy=a_widget.sizePolicy(), geometry=a_widget.geometry())
-	
-	def apply_to_widget(self, a_widget):
+    minimumSize = field() # QSize # metadata={'setter':lambda w: w.setMinimumSize(}
+    maximumSize = field() # QSize
+    baseSize = field() # QSize
+    sizePolicy = field() # QSizePolicy 
+    geometry = field() # QRect
+    
+    @classmethod
+    def init_from_widget(cls, a_widget) -> "WidgetGeometryInfo":
+        # (a_widget.minimumSize(), a_widget.maximumSize(), a_widget.baseSize(), a_widget.sizePolicy(), a_widget.geometry())
+        return WidgetGeometryInfo(minimumSize=a_widget.minimumSize(), maximumSize=a_widget.maximumSize(), baseSize=a_widget.baseSize(), sizePolicy=a_widget.sizePolicy(), geometry=a_widget.geometry())
+    
+    def apply_to_widget(self, a_widget):
         """ apply the constraints to the widget. """
         if self.minimumSize is not None:
-    		a_widget.setMinimumSize(self.minimumSize)
+            a_widget.setMinimumSize(self.minimumSize)
         if self.maximumSize is not None:
-    		a_widget.setMaximumSize(self.maximumSize)
+            a_widget.setMaximumSize(self.maximumSize)
 
 
 

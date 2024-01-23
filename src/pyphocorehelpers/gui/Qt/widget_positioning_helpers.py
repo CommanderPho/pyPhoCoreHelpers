@@ -2,7 +2,36 @@
 # -*- coding: utf-8 -*-
 
 from enum import Enum, auto
-from PyQt5.QtWidgets import QDesktopWidget
+from attrs import define, field, Factory
+
+
+@define(slots=False)
+class WidgetGeometryInfo:
+	""" represents constraints on a widget's size/shape/geometry/etc
+    from pyphocorehelpers.gui.Qt.widget_positioning_helpers import WidgetGeometryInfo
+
+    """
+	minimumSize = field() # QSize # metadata={'setter':lambda w: w.setMinimumSize(}
+	maximumSize = field() # QSize
+	baseSize = field() # QSize
+	sizePolicy = field() # QSizePolicy 
+	geometry = field() # QRect
+	
+	@classmethod
+	def init_from_widget(cls, a_widget) -> "WidgetGeometryInfo":
+		# (a_widget.minimumSize(), a_widget.maximumSize(), a_widget.baseSize(), a_widget.sizePolicy(), a_widget.geometry())
+		return WidgetGeometryInfo(minimumSize=a_widget.minimumSize(), maximumSize=a_widget.maximumSize(), baseSize=a_widget.baseSize(), sizePolicy=a_widget.sizePolicy(), geometry=a_widget.geometry())
+	
+	def apply_to_widget(self, a_widget):
+        """ apply the constraints to the widget. """
+        if self.minimumSize is not None:
+    		a_widget.setMinimumSize(self.minimumSize)
+        if self.maximumSize is not None:
+    		a_widget.setMaximumSize(self.maximumSize)
+
+
+
+
 
 
 # class DesiredWidgetLocation(Enum):
@@ -66,6 +95,8 @@ class WidgetPositioningHelpers:
               WidgetPositioningHelpers.move_widget_to_top_left_corner(spike_raster_plt_3d, screen_index=None, debug_print=True)
   
         """
+        from PyQt5.QtWidgets import QDesktopWidget
+        
         if screen_index is None:
             # Global Desktop Widget:		
             desktopWidget = QDesktopWidget()

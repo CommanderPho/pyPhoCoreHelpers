@@ -818,13 +818,17 @@ class MemoryManagement:
             return de_deuped_args
         else:
             return args
+        
+
 FunctionInspectionTuple = namedtuple('FunctionInspectionTuple', ['full_fn_spec', 'positional_args_names', 'kwargs_names', 'default_kwargs_dict'])
+
 def inspect_callable_arguments(a_callable: Callable, debug_print=False) -> FunctionInspectionTuple:
     """ Inspects a callable's arguments
     Progress:
         import inspect
         from neuropy.plotting.ratemaps import plot_ratemap_1D, plot_ratemap_2D
-
+        from pyphocorehelpers.programming_helpers import inspect_callable_arguments
+        
         fn_spec = inspect.getfullargspec(plot_ratemap_2D)
         fn_sig = inspect.signature(plot_ratemap_2D)
         ?fn_sig
@@ -855,6 +859,7 @@ def inspect_callable_arguments(a_callable: Callable, debug_print=False) -> Funct
     default_kwargs_dict = {argname:v for argname, v in zip(kwargs_names, full_fn_spec.defaults)} # {'item1': None, 'item2': '', 'item3': 5.0}
 
     return FunctionInspectionTuple(full_fn_spec=full_fn_spec, positional_args_names=positional_args_names, kwargs_names=kwargs_names, default_kwargs_dict=default_kwargs_dict)
+
 def get_arguments_as_optional_dict(**kwargs):
     """ Easily converts your existing argument-list style default values into a dict:
             Defines a simple function that takes only **kwargs as its inputs and prints the values it recieves. Paste your values as arguments to the function call. The dictionary will be output to the console, so you can easily copy and paste.
@@ -864,6 +869,7 @@ def get_arguments_as_optional_dict(**kwargs):
             Output: ", **({'point_size': 8, 'font_size': 10, 'name': 'build_center_labels_test', 'shape_opacity': 0.8, 'show_points': False} | kwargs)"
     """
     CodeConversion.get_arguments_as_optional_dict(**kwargs)
+    
 @unique
 class GeneratedClassDefinitionType(ExtendedEnum):
     """Specifies which type of class to generate in CodeConversion.convert_dictionary_to_class_defn(...)."""
@@ -903,9 +909,11 @@ class GeneratedClassDefinitionType(ExtendedEnum):
     @classmethod
     def include_properties_defnsList(cls):
         return cls.build_member_value_dict([False, True, True])
+    
+
 class CodeConversion(object):
     """ Converts code (usually passed as text) to various alternative formats to ease development workflows.
-
+    from pyphocorehelpers.programming_helpers import CodeConversion
 
     TODO 2023-10-24 - Add Ignored imports:
     ignored_imports = ['import bool,

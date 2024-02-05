@@ -640,6 +640,20 @@ class NotebookProcessor:
             print(f'no cells changed.')
 
 
+	# from IPython.display import display, Javascript
+
+	# def add_cell_below():
+	# 	# js_code = """
+	# 	# var cell = Jupyter.notebook.insert_cell_below();
+	# 	# """
+	# 	# display(Javascript(js_code))
+	# 	## VSCode:
+	# 	display({
+	# 	"cell.insertCodeBelow": {
+	# 		"code": 'print("This is a new cell")'
+	# 	}
+	# 	}, raw=True)
+				
 
 
 # 	def transform_dict_literal_to_constructor(dict_literal):
@@ -946,9 +960,26 @@ class CodeConversion(object):
 
 
     """
-    _types_replace_dict = {'numpy.':'np.', 'pandas.':'pd.'}
+    # _types_replace_dict = {'numpy.':'np.', 'pandas.':'pd.'}
+    
+    _types_replace_dict = {'numpy.':'np.', 'pandas.':'pd.'} # OLD
+    # _types_replace_dict = {{'dict': 'Dict', 'list': 'List', 'tuple': 'Tuple', 'numpy.ndarray': 'NDArray', 'numpy.':'np.', 'pandas.':'pd.'}}
+    # _types_import_replace_dict = {'import dict': 'from typing import Dict', 'import list': 'from typing import List', 'import tuple': 'from typing import Tuple', 'import numpy.ndarray': 'from nptyping import NDArray'}
     _inverse_types_replace_dict = {v:k for k,v in _types_replace_dict.items()}
 
+    # types_replace_dict.update({'dict':'Dict'})
+    # types_import_replace_dict.update({'import dict':'from typing import Dict'})
+
+    # types_replace_dict.update({'list':'List'})
+    # types_import_replace_dict.update({'import list':'from typing import List'})
+
+    # types_replace_dict.update({'tuple':'Tuple'})
+    # types_import_replace_dict.update({'import tuple':'from typing import Tuple'})
+
+    # types_replace_dict.update({'np.ndarray':'NDArray'})
+    # types_import_replace_dict.update({'import np.ndarray':'from nptyping import NDArray'})
+                
+            
 
     _general_find_replace_dict = {'pd.core.frame.DataFrame':'pd.DataFrame'}
 

@@ -6,7 +6,7 @@ import sys
 import contextlib
 from collections import namedtuple
 from pathlib import Path
-from typing import List, Dict, Optional, Union, Callable
+from typing import List, Dict, Optional, Union, Callable, Tuple, Any
 from functools import wraps
 import numpy as np
 import pandas as pd
@@ -93,15 +93,15 @@ def metadata_attributes(short_name=None, tags=None, creation_date=None, input_re
 
 
 def build_metadata_property_reverse_search_map(a_fn_dict, a_metadata_property_name='short_name'):
-	"""allows lookup of key into the original dict via a specific value of a specified property
-	Usage:
+    """allows lookup of key into the original dict via a specific value of a specified property
+    Usage:
         from pyphocorehelpers.programming_helpers import build_metadata_property_reverse_search_map
-		short_name_reverse_lookup_map = build_metadata_property_reverse_search_map(curr_active_pipeline.registered_merged_computation_function_dict, a_metadata_property_name='short_name')
-		short_name_search_value = 'long_short_fr_indicies_analyses'
-		short_name_reverse_lookup_map[short_name_search_value] # '_perform_long_short_firing_rate_analyses'
-	"""
-	metadata_property_reverse_search_map = {getattr(a_fn, a_metadata_property_name, None):a_name for a_name, a_fn in a_fn_dict.items() if getattr(a_fn, a_metadata_property_name, None)}
-	return metadata_property_reverse_search_map
+        short_name_reverse_lookup_map = build_metadata_property_reverse_search_map(curr_active_pipeline.registered_merged_computation_function_dict, a_metadata_property_name='short_name')
+        short_name_search_value = 'long_short_fr_indicies_analyses'
+        short_name_reverse_lookup_map[short_name_search_value] # '_perform_long_short_firing_rate_analyses'
+    """
+    metadata_property_reverse_search_map = {getattr(a_fn, a_metadata_property_name, None):a_name for a_name, a_fn in a_fn_dict.items() if getattr(a_fn, a_metadata_property_name, None)}
+    return metadata_property_reverse_search_map
 
 
 def build_fn_properties_dict(a_fn_dict, included_attribute_names_list:Optional[List]=None, private_attribute_names_list:List[str]=['__name__', '__doc__'], debug_print:bool=False) -> Dict:
@@ -640,20 +640,20 @@ class NotebookProcessor:
             print(f'no cells changed.')
 
 
-	# from IPython.display import display, Javascript
+    # from IPython.display import display, Javascript
 
-	# def add_cell_below():
-	# 	# js_code = """
-	# 	# var cell = Jupyter.notebook.insert_cell_below();
-	# 	# """
-	# 	# display(Javascript(js_code))
-	# 	## VSCode:
-	# 	display({
-	# 	"cell.insertCodeBelow": {
-	# 		"code": 'print("This is a new cell")'
-	# 	}
-	# 	}, raw=True)
-				
+    # def add_cell_below():
+    # 	# js_code = """
+    # 	# var cell = Jupyter.notebook.insert_cell_below();
+    # 	# """
+    # 	# display(Javascript(js_code))
+    # 	## VSCode:
+    # 	display({
+    # 	"cell.insertCodeBelow": {
+    # 		"code": 'print("This is a new cell")'
+    # 	}
+    # 	}, raw=True)
+                
 
 
 # 	def transform_dict_literal_to_constructor(dict_literal):
@@ -1705,3 +1705,39 @@ import pyphocorehelpers.programming_helpers                >>> pyphocorehelpers.
         member_assignments_code_str = '\n'.join([f'{indent_character}{indent_character}self.{a_final_arg_name} = {a_final_arg_name}' for a_final_arg_name in init_final_variable_names_list])
 
         return f"""{indent_character}def __init__(self, {member_properties_code_str}):\n{indent_character}{indent_character}super({class_name}, self).__init__(){member_assignments_code_str}"""
+
+
+    @classmethod
+    def generate_unwrap_code_from_dict_like(cls, **kwargs) -> Tuple[str, List[str]]:
+        """ Generate unwrapping code from a dict-like class
+        from pyphocorehelpers.programming_helpers import CodeConversion
+
+        
+
+        >> Output:
+            ## Unwrapping `short_long_pf_overlap_analyses`:
+            short_long_neurons_diff = short_long_pf_overlap_analyses['short_long_neurons_diff']
+            poly_overlap_df = short_long_pf_overlap_analyses['poly_overlap_df']
+            conv_overlap_dict = short_long_pf_overlap_analyses['conv_overlap_dict']
+            conv_overlap_scalars_df = short_long_pf_overlap_analyses['conv_overlap_scalars_df']
+            product_overlap_dict = short_long_pf_overlap_analyses['product_overlap_dict']
+            product_overlap_scalars_df = short_long_pf_overlap_analyses['product_overlap_scalars_df']
+            relative_entropy_overlap_dict = short_long_pf_overlap_analyses['relative_entropy_overlap_dict']
+            relative_entropy_overlap_scalars_df = short_long_pf_overlap_analyses['relative_entropy_overlap_scalars_df']
+
+
+        """
+        # short_long_pf_overlap_analyses
+        # a_dict_like.keys()
+        # a_dict_like
+        assert len(kwargs) == 1, f"please pass kwargs one at at time, like generate_unwrap_code(short_long_pf_overlap_analyses=short_long_pf_overlap_analyses)"
+        dict_like_name: str = str(list(kwargs.keys())[0]) # 'short_long_pf_overlap_analyses'
+        a_dict_like = list(kwargs.values())[0]
+        code_lines = []
+        for k, v in a_dict_like.items():
+            a_code_line: str = f"{k} = {dict_like_name}['{k}']"
+            code_lines.append(a_code_line)
+            
+        code_lines_str: str = '\n'.join(code_lines)
+        print(f'## Unwrapping `{dict_like_name}`:\n{code_lines_str}\n\n')
+        return code_lines_str, code_lines

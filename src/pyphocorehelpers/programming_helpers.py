@@ -1710,8 +1710,11 @@ import pyphocorehelpers.programming_helpers                >>> pyphocorehelpers.
     @classmethod
     def generate_unwrap_code_from_dict_like(cls, **kwargs) -> Tuple[str, List[str]]:
         """ Generate unwrapping code from a dict-like class
-        from pyphocorehelpers.programming_helpers import CodeConversion
+        Usage:
+            from pyphocorehelpers.programming_helpers import CodeConversion
 
+            code_lines_str, code_lines = CodeConversion.generate_unwrap_code_from_dict_like(short_long_pf_overlap_analyses=short_long_pf_overlap_analyses)
+            code_lines_str
         
 
         >> Output:

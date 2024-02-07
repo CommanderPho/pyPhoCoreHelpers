@@ -491,6 +491,23 @@ def safe_np_hstack(arr):
         return np.array(arr) # ChatGPT suggests returning np.empty((0, 0))  # Create an empty array with shape (0, 0)
     
 
+def dict_to_full_array(a_dict: Dict, full_indicies: NDArray, fill_value=-1) -> NDArray:
+	""" 
+	a_dict: the dictionary of values you want to build into a NDArray
+	full_indicies: NDArray - the completely list of all possible indicies that you want to build the array for. Any matching entries in `a_dict.keys()` will be filled with their corresponding value, otherwise `fill_value` will be used.
+	Returns a NDArray of size: (len(full_indicies), )
+	"""
+	keys_list =	list(a_dict.keys())
+	values_list = list(a_dict.values())
+	found_indicies = np.array([list(full_indicies).index(k) for k in keys_list])
+	# print(f'found_indicies: {found_indicies}')
+	key_to_index_map = dict(zip(keys_list, found_indicies))
+	out_array: NDArray = np.full_like(full_indicies, fill_value=fill_value)
+	out_array[found_indicies] = np.array(values_list)
+	# print(f'values_list: {values_list}')
+	# print(f'out_array: {out_array}')
+	return out_array
+
 
 class NumpyHelpers:
     """ various extensions and generalizations for numpy arrays 

@@ -41,24 +41,24 @@ def safe_len(v):
     
 
 def safe_find_index_in_list(a_list, a_search_obj):
-	""" tries to find the index of `a_search_obj` in the list `a_list` 
-	If found, returns the index
-	If not found, returns None (instead of throwing a ValueError which is the default)
-	
-	Example:
-		an_ax = plots.axs[2]
-		safe_find_index_in_list(plots.axs, an_ax)
-		# list(plots.axs).index(an_ax)
-	"""
-	if not isinstance(a_list, list):
-		a_list = list(a_list) # convert to list
-	try:
-		return a_list.index(a_search_obj)
-	except ValueError as e:
-		# Item not found
-		return None
-	except Exception as e:
-		raise e
+    """ tries to find the index of `a_search_obj` in the list `a_list` 
+    If found, returns the index
+    If not found, returns None (instead of throwing a ValueError which is the default)
+    
+    Example:
+        an_ax = plots.axs[2]
+        safe_find_index_in_list(plots.axs, an_ax)
+        # list(plots.axs).index(an_ax)
+    """
+    if not isinstance(a_list, list):
+        a_list = list(a_list) # convert to list
+    try:
+        return a_list.index(a_search_obj)
+    except ValueError as e:
+        # Item not found
+        return None
+    except Exception as e:
+        raise e
 
 
 
@@ -198,12 +198,12 @@ def interleave_elements(start_points, end_points, debug_print:bool=False):
 
 
 def are_all_equal(arr) -> bool:
-	""" returns True if arr is empty, or if all elements of arr are equal to each other """
-	if len(arr) == 0:
-		return True
-	else:
-		val = arr[0] # get first element
-		return np.all([x == val for x in arr])
+    """ returns True if arr is empty, or if all elements of arr are equal to each other """
+    if len(arr) == 0:
+        return True
+    else:
+        val = arr[0] # get first element
+        return np.all([x == val for x in arr])
     
 
 # ==================================================================================================================== #
@@ -492,21 +492,21 @@ def safe_np_hstack(arr):
     
 
 def dict_to_full_array(a_dict: Dict, full_indicies: NDArray, fill_value=-1) -> NDArray:
-	""" 
-	a_dict: the dictionary of values you want to build into a NDArray
-	full_indicies: NDArray - the completely list of all possible indicies that you want to build the array for. Any matching entries in `a_dict.keys()` will be filled with their corresponding value, otherwise `fill_value` will be used.
-	Returns a NDArray of size: (len(full_indicies), )
-	"""
-	keys_list =	list(a_dict.keys())
-	values_list = list(a_dict.values())
-	found_indicies = np.array([list(full_indicies).index(k) for k in keys_list])
-	# print(f'found_indicies: {found_indicies}')
-	key_to_index_map = dict(zip(keys_list, found_indicies))
-	out_array: NDArray = np.full_like(full_indicies, fill_value=fill_value)
-	out_array[found_indicies] = np.array(values_list)
-	# print(f'values_list: {values_list}')
-	# print(f'out_array: {out_array}')
-	return out_array
+    """ 
+    a_dict: the dictionary of values you want to build into a NDArray
+    full_indicies: NDArray - the completely list of all possible indicies that you want to build the array for. Any matching entries in `a_dict.keys()` will be filled with their corresponding value, otherwise `fill_value` will be used.
+    Returns a NDArray of size: (len(full_indicies), )
+    """
+    keys_list =	list(a_dict.keys())
+    values_list = list(a_dict.values())
+    found_indicies = np.array([list(full_indicies).index(k) for k in keys_list])
+    # print(f'found_indicies: {found_indicies}')
+    key_to_index_map = dict(zip(keys_list, found_indicies))
+    out_array: NDArray = np.full_like(full_indicies, fill_value=fill_value)
+    out_array[found_indicies] = np.array(values_list)
+    # print(f'values_list: {values_list}')
+    # print(f'out_array: {out_array}')
+    return out_array
 
 
 class NumpyHelpers:
@@ -638,35 +638,35 @@ def find_neighbours(value, df, colname):
 
 # Concatenate dataframes
 def simple_merge(*dfs_list, debug_print=False) -> pd.DataFrame:
-	""" naievely merges several dataframes with an equal number of rows (and in the same order) into a single dataframe with all of the unique columns of the individual dfs. Any duplicate columns will be removed.
+    """ naievely merges several dataframes with an equal number of rows (and in the same order) into a single dataframe with all of the unique columns of the individual dfs. Any duplicate columns will be removed.
 
-	Usage:
-		dfs_list = (deepcopy(neuron_identities_table), deepcopy(long_short_fr_indicies_analysis_table), deepcopy(neuron_replay_stats_table))
-		dfs_list = (deepcopy(neuron_identities_table), deepcopy(long_short_fr_indicies_analysis_table), deepcopy(neuron_replay_stats_table))
-		df_combined, dropped_duplicate_columns = simple_merge(*dfs_list, debug_print=False)
-		df_combined
+    Usage:
+        dfs_list = (deepcopy(neuron_identities_table), deepcopy(long_short_fr_indicies_analysis_table), deepcopy(neuron_replay_stats_table))
+        dfs_list = (deepcopy(neuron_identities_table), deepcopy(long_short_fr_indicies_analysis_table), deepcopy(neuron_replay_stats_table))
+        df_combined, dropped_duplicate_columns = simple_merge(*dfs_list, debug_print=False)
+        df_combined
 
-	"""
-	assert are_all_equal([len(x) for x in dfs_list]), f"all dataframes must be the same length but [len(x) for x in dfs_list]: {[len(x) for x in dfs_list]}"
-	df_combined = pd.concat(dfs_list, axis=1)
-	# df_combined = pd.concat([df1, df2, df3], axis=1)
+    """
+    assert are_all_equal([len(x) for x in dfs_list]), f"all dataframes must be the same length but [len(x) for x in dfs_list]: {[len(x) for x in dfs_list]}"
+    df_combined = pd.concat(dfs_list, axis=1)
+    # df_combined = pd.concat([df1, df2, df3], axis=1)
 
-	# Remove duplicate columns if values are the same
-	to_drop = []
-	columns = df_combined.columns
-	for i in range(len(columns)):
-		for j in range(i+1, len(columns)):
-			if columns[i] == columns[j] and df_combined[columns[i]].equals(df_combined[columns[j]]):
-				to_drop.append(columns[j])
-	if debug_print:
-		print(f"to_drop: {to_drop}")
-	df_combined = df_combined.drop(columns=to_drop)
-	# # Handle columns with the same name but conflicting values
-	# # (Here, we're simply renaming them for clarity, you can handle them differently if needed)
-	# for col in to_drop:
-	#     df_combined[col + '_conflict'] = df_combined[col]
-	# print(df_combined)
-	return df_combined, to_drop
+    # Remove duplicate columns if values are the same
+    to_drop = []
+    columns = df_combined.columns
+    for i in range(len(columns)):
+        for j in range(i+1, len(columns)):
+            if columns[i] == columns[j] and df_combined[columns[i]].equals(df_combined[columns[j]]):
+                to_drop.append(columns[j])
+    if debug_print:
+        print(f"to_drop: {to_drop}")
+    df_combined = df_combined.drop(columns=to_drop)
+    # # Handle columns with the same name but conflicting values
+    # # (Here, we're simply renaming them for clarity, you can handle them differently if needed)
+    # for col in to_drop:
+    #     df_combined[col + '_conflict'] = df_combined[col]
+    # print(df_combined)
+    return df_combined, to_drop
 
 
 def join_on_index(*dfs, join_index='aclu', suffixes_list=None) -> pd.DataFrame:
@@ -712,6 +712,10 @@ def reorder_columns(df: pd.DataFrame, column_name_desired_index_dict: Dict[str, 
         dict(zip(['Long_LR_evidence', 'Long_RL_evidence', 'Short_LR_evidence', 'Short_RL_evidence'], np.arange(4)+4))
         reorder_columns(merged_complete_epoch_stats_df, column_name_desired_index_dict=dict(zip(['Long_LR_evidence', 'Long_RL_evidence', 'Short_LR_evidence', 'Short_RL_evidence'], np.arange(4)+4)))
         
+        ## Move the "height" columns to the end
+        result_df = reorder_columns(result_df, column_name_desired_index_dict=dict(zip(list(filter(lambda column: column.endswith('_peak_heights'), result_df.columns)), np.arange(len(result_df.columns)-4, len(result_df.columns)))))
+        result_df
+                
     """
     # Validate column names
     missing_columns = set(column_name_desired_index_dict.keys()) - set(df.columns)
@@ -740,7 +744,39 @@ def reorder_columns(df: pd.DataFrame, column_name_desired_index_dict: Dict[str, 
     return reordered_df
 
 
+def reorder_columns_relative(df: pd.DataFrame, column_names: list[str], relative_mode='end') -> pd.DataFrame:
+    """Reorders specified columns in a DataFrame while preserving other columns.
+    
+    Pure: Does not modify the df
 
+    Args:
+        df (pd.DataFrame): The DataFrame to reorder.
+        column_name_desired_index_dict (Dict[str, int]): A dictionary where keys are column names
+            to reorder and values are their desired indices in the reordered DataFrame.
+
+    Returns:
+        pd.DataFrame: The DataFrame with specified columns reordered while preserving remaining columns.
+
+    Raises:
+        ValueError: If any column in the dictionary is not present in the DataFrame.
+        
+        
+    Usage:
+    
+        from pyphocorehelpers.indexing_helpers import reorder_columns, reorder_columns_relative
+        
+        ## Move the "height" columns to the end
+        result_df = reorder_columns_relative(result_df, column_names=list(filter(lambda column: column.endswith('_peak_heights'), existing_columns)), relative_mode='end')
+        result_df
+                
+    """
+    if relative_mode == 'end':
+        existing_columns = list(df.columns)
+        return reorder_columns(df, column_name_desired_index_dict=dict(zip(column_names, np.arange(len(existing_columns)-4, len(existing_columns)))))
+    else:
+        raise NotImplementedError
+    
+    
 
 # ==================================================================================================================== #
 # Discrete Bins/Binning                                                                                                #

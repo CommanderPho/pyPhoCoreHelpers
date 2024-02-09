@@ -1,6 +1,6 @@
 from collections import namedtuple
 from itertools import islice
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 from nptyping import NDArray
 import numpy as np
 import pandas as pd
@@ -595,7 +595,7 @@ def safe_pandas_get_group(dataframe_group, key):
     
 
 ## Pandas DataFrame helpers:
-def partition(df: pd.DataFrame, partitionColumn: str):
+def partition(df: pd.DataFrame, partitionColumn: str) -> Tuple[NDArray, NDArray]:
     """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
     History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
     """
@@ -603,7 +603,7 @@ def partition(df: pd.DataFrame, partitionColumn: str):
     grouped_df = df.groupby([partitionColumn]) #  Groups on the specified column.
     return unique_values, np.array([grouped_df.get_group(aValue) for aValue in unique_values], dtype=object) # dataframes split for each unique value in the column
 
-def partition_df(df: pd.DataFrame, partitionColumn: str):
+def partition_df(df: pd.DataFrame, partitionColumn: str)-> Tuple[NDArray, List[pd.DataFrame]]:
     """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
     History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
     """

@@ -205,12 +205,14 @@ class WidgetPositioningHelpers:
     def align_window_edges(cls, main_window, secondary_window, relative_position = 'below', resize_to_main=(1.0, None), debug_print=False):
         """ align the two separate windows (with main_window being the one that's stationary and secondary_window being the one adjusted to sit relative to it).
         
-            relative_position: str? - 'above', 'below', or None
+            relative_position: str? - 'above', 'below', 'left_of', 'right_of', or None
             resize_to_main: (percent_of_main_width?, percent_of_main_height?): specifying None for either value will prevent resize in that dimension
 
             Usage:
-                WidgetPositioningHelpers.align_3d_and_2d_windows(spike_raster_plt_3d, spike_raster_plt_2d)
+                WidgetPositioningHelpers.align_window_edges(spike_raster_plt_3d, spike_raster_plt_2d)
         """
+        if relative_position is not None:
+            assert relative_position in ['above', 'below', 'left_of', 'right_of']
         # _move_widget_to_top_left_corner(spike_raster_plt_3d, screen_index=1, debug_print=debug_print) # move to secondary screen's top-left corner.
         main_win_geom = main_window.window().geometry() # get the QTCore PyRect object
         if debug_print:
@@ -247,6 +249,12 @@ class WidgetPositioningHelpers:
             desired_secondary_window_x = main_x
             desired_secondary_window_y = main_y - desired_secondary_dy # subtract the secondary window's height from the top of the primary window
             # TODO: make sure they both fit on the screen together.
+        elif relative_position == 'left_of':
+            desired_secondary_window_x = main_x - desired_secondary_dx # subtract the secondary window's width from the left edge of the primary window
+            desired_secondary_window_y = main_y 
+        elif relative_position == 'right_of':
+            desired_secondary_window_x = main_x + main_dx # place directly to the right of the main window
+            desired_secondary_window_y = main_y 
         else:
             raise NotImplementedError
 

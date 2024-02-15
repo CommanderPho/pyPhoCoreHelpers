@@ -605,6 +605,9 @@ def partition(df: pd.DataFrame, partitionColumn: str) -> Tuple[NDArray, NDArray]
 
 def partition_df(df: pd.DataFrame, partitionColumn: str)-> Tuple[NDArray, List[pd.DataFrame]]:
     """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
+
+    USEFUL NOTE: to get a dict, do `partitioned_dfs = dict(zip(*partition_df(spikes_df, partitionColumn='new_epoch_IDX')))`
+    
     History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
     """
     unique_values = np.unique(df[partitionColumn]) # array([ 0,  1,  2,  3,  4,  7, 11, 12, 13, 14])

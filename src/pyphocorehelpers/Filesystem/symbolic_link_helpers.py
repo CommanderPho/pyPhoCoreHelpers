@@ -297,6 +297,7 @@ def make_specific_items_local(existing_symlink_folder_path: Path, desired_local_
 # ==================================================================================================================== #
 # SymlinkManager  - 2024-01-02                                                                                         #
 # ==================================================================================================================== #
+## Related Notebook: `SCRATCH/2023-01-02 - Symlink Helper.ipynb`
 
 
 @define(slots=False)
@@ -304,6 +305,8 @@ class SymlinkManager:
     """ 2024-01-02 - stores references to multiple alternative versions of a filesystem directory (such as a .venv folder) and allows easily switching between these by modifying a symbolic link at a given location 
     
     from pyphocorehelpers.Filesystem.symbolic_link_helpers import SymlinkManager
+
+    ## Related Notebook: `SCRATCH/2023-01-02 - Symlink Helper.ipynb`
 
     
     """

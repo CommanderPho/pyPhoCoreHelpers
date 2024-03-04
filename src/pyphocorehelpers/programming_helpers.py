@@ -838,6 +838,21 @@ FunctionInspectionTuple = namedtuple('FunctionInspectionTuple', ['full_fn_spec',
 
 def inspect_callable_arguments(a_callable: Callable, debug_print=False) -> FunctionInspectionTuple:
     """ Inspects a callable's arguments
+
+    Usage:        
+        from pyphocorehelpers.programming_helpers import inspect_callable_arguments, FunctionInspectionTuple
+
+        fn_inspect_tuple: FunctionInspectionTuple = inspect_callable_arguments(PhoPaginatedMultiDecoderDecodedEpochsWindow.init_from_track_templates)
+        fn_inspect_tuple
+
+        # FunctionInspectionTuple(full_fn_spec=FullArgSpec(args=['cls', 'curr_active_pipeline', 'track_templates', 'decoder_decoded_epochs_result_dict', 'epochs_name', 'included_epoch_indicies', 'name', 'title', 'defer_show'], varargs=None, varkw='kwargs',
+        #                                                   defaults=('laps', None, 'CombinedDirectionalDecoderDecodedEpochsWindow', 'Pho Combined Directional Decoder Decoded Epochs', False), kwonlyargs=[], kwonlydefaults=None, annotations={'epochs_name': <class 'str'>}),
+        #                         positional_args_names=['cls', 'curr_active_pipeline', 'track_templates', 'decoder_decoded_epochs_result_dict'],
+        #                         kwargs_names=['epochs_name', 'included_epoch_indicies', 'name', 'title', 'defer_show'],
+        #                         default_kwargs_dict={'epochs_name': 'laps', 'included_epoch_indicies': None, 'name': 'CombinedDirectionalDecoderDecodedEpochsWindow', 'title': 'Pho Combined Directional Decoder Decoded Epochs', 'defer_show': False})
+                
+
+
     Progress:
         import inspect
         from neuropy.plotting.ratemaps import plot_ratemap_1D, plot_ratemap_2D
@@ -1506,7 +1521,7 @@ class CodeConversion(object):
             '''
             >>> "\nmax_num_spikes_per_neuron = 20000 # the number of spikes to truncate each neuron's timeseries to\nkleinberg_parameters = DynamicParameters(s=2, gamma=0.1)\nuse_progress_bar = False # whether to use a tqdm progress bar\ndebug_print = False # whether to print debug-level progress using traditional print(...) statements\n"
 
-            active_str = convert_defn_lines_to_dictionary(test_parameters_defns_code_string, multiline_dict_defn=False)
+            active_str = CodeConversion.convert_defn_lines_to_dictionary(test_parameters_defns_code_string, multiline_dict_defn=False)
             active_str
             >>> "{'max_num_spikes_per_neuron': 20000, 'kleinberg_parameters': DynamicParameters(s=2, gamma=0.1), 'use_progress_bar': False, 'debug_print': False}"
 

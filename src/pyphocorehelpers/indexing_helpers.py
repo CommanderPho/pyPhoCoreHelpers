@@ -1,6 +1,6 @@
 from collections import namedtuple
 from itertools import islice
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from nptyping import NDArray
 import numpy as np
 import pandas as pd
@@ -625,6 +625,21 @@ def partition_df(df: pd.DataFrame, partitionColumn: str)-> Tuple[NDArray, List[p
     unique_values = np.unique(df[partitionColumn]) # array([ 0,  1,  2,  3,  4,  7, 11, 12, 13, 14])
     grouped_df = df.groupby([partitionColumn]) #  Groups on the specified column.
     return unique_values, [grouped_df.get_group(aValue) for aValue in unique_values] # dataframes split for each unique value in the column
+
+def partition_df_dict(df: pd.DataFrame, partitionColumn: str)-> Dict[Any, pd.DataFrame]:
+    """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
+
+    Usage:
+        from pyphocorehelpers.indexing_helpers import partition_df_dict
+        
+        partitioned_dfs = partition_df_dict(spikes_df, partitionColumn='new_epoch_IDX')
+
+    History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
+    """
+    return dict(zip(*partition_df(df, partitionColumn=partitionColumn))) # dataframes split for each unique value in the column
+
+
+        
 
 
 def find_neighbours(value, df, colname):

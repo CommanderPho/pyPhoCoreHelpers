@@ -189,6 +189,54 @@ def copy_to_clipboard(code_str: str, message_print=True):
         print(f'Copied "{code_str}" to clipboard!')
 
 
+def copy_image_to_clipboard(image, message_print=True):
+    """ copies the passed image to the system clipboard. Only works on Windows.
+    
+    from pyphocorehelpers.programming_helpers import copy_image_to_clipboard
+    
+     """
+    import sys
+    import subprocess
+    import io
+    from PIL import Image
+
+    def send_to_clipboard(data):
+        if sys.platform == 'win32':
+            import win32clipboard
+            win32clipboard.OpenClipboard()
+            win32clipboard.EmptyClipboard()
+            data = data[14:]  # Remove the 14-byte BMP header
+            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+            win32clipboard.CloseClipboard()
+        elif sys.platform == 'linux':
+            """ Requires xclip, untested.
+            sudo apt-get install xclip  # Debian/Ubuntu
+            # or
+            sudo yum install xclip  # CentOS/Fedora
+            """
+            clip_type = 'image/png'
+            process = subprocess.Popen(['xclip', '-selection', 'clipboard', '-t', clip_type, '-i'], stdin=subprocess.PIPE)
+            process.communicate(data)
+        else:
+            raise NotImplementedError(f'unimplemented platform!')
+
+        
+    # Send the image to the clipboard
+    output = io.BytesIO()
+    image.convert('RGB').save(output, 'BMP')
+    data = output.getvalue()
+    
+    send_to_clipboard(data)
+
+    output.close()
+
+    if message_print:
+        print(f'Copied image to clipboard!')
+
+    
+    
+
+
 class CodeParsers:
     """
 

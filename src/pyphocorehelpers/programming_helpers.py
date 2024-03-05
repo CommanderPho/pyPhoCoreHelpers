@@ -183,8 +183,18 @@ def build_fn_properties_df(a_fn_dict, included_attribute_names_list:Optional[Lis
 
 
 def copy_to_clipboard(code_str: str, message_print=True):
-    df = pd.DataFrame([code_str])
-    df.to_clipboard(index=False,header=False)
+    """ tries a clean method that uses the jaraco.clipboard library, but falls back to Pandas for compatibility if it isn't available
+    """
+    try:
+        # Try to import jaraco.clipboard
+        import jaraco.clipboard as clipboard
+        jaraco.clipboard.copy(code_str)
+
+    except ImportError:
+        # If jaraco.clipboard is not available, fall back to pandas method that leaves extra double quotes wrapping the clipboard string
+        df = pd.DataFrame([code_str])
+        df.to_clipboard(index=False,header=False)
+
     if message_print:
         print(f'Copied "{code_str}" to clipboard!')
 
@@ -200,7 +210,9 @@ def copy_image_to_clipboard(image, message_print=True):
     import io
     from PIL import Image
 
-    def send_to_clipboard(data):
+    # Input is of type PIL.Image
+
+    def _subfn_send_to_clipboard(data, clip_type='image/png'):
         if sys.platform == 'win32':
             import win32clipboard
             win32clipboard.OpenClipboard()
@@ -214,22 +226,23 @@ def copy_image_to_clipboard(image, message_print=True):
             # or
             sudo yum install xclip  # CentOS/Fedora
             """
-            clip_type = 'image/png'
             process = subprocess.Popen(['xclip', '-selection', 'clipboard', '-t', clip_type, '-i'], stdin=subprocess.PIPE)
             process.communicate(data)
         else:
             raise NotImplementedError(f'unimplemented platform!')
 
         
-    # Send the image to the clipboard
-    output = io.BytesIO()
-    image.convert('RGB').save(output, 'BMP')
-    data = output.getvalue()
-    
-    send_to_clipboard(data)
+    # Determine format based on platform
+    img_format: str = 'PNG' if sys.platform == 'linux' else 'BMP'
 
+    # Output the image to bytes
+    output = io.BytesIO()
+    image.convert('RGB').save(output, img_format)
+    data = output.getvalue()
     output.close()
 
+    # Send the image to the clipboard
+    _subfn_send_to_clipboard(data, clip_type=f'image/{img_format.lower()}')
     if message_print:
         print(f'Copied image to clipboard!')
 

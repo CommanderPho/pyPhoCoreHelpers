@@ -1,4 +1,5 @@
-from typing import Optional
+import io
+from typing import Optional, Union, List, Dict, Tuple
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -6,6 +7,11 @@ import cv2
 
 import matplotlib.pyplot as plt # for export_array_as_image
 from PIL import Image # for export_array_as_image
+
+from plotly.graph_objects import Figure as PlotlyFigure # required for `fig_to_clipboard`
+from matplotlib.figure import FigureBase
+from pyphoplacecellanalysis.SpecificResults.PendingNotebookCode import copy_image_to_clipboard # required for `fig_to_clipboard`
+
 
 
 def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png') -> (Image, Path):
@@ -139,3 +145,39 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
 # video_out_path = normalize_and_save_as_video(array=array, output_filename='output/videos/long_short_rel_entr_curves_frames.mp4')
 
 """
+
+
+
+
+# plotly.graph_objs._figure.Figure
+
+# @function_attributes(short_name=None, tags=['clipboard', 'image', 'figure', 'export', 'matplotlib', 'plotly'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-03-05 13:59', related_items=[])
+def fig_to_clipboard(a_fig: Union[PlotlyFigure, FigureBase], format="png", **kwargs):
+    """ Any common figure type (matplotlib, Plotly, etc) to clipboard as image  _______________________________________________________________________________________________  
+    
+    from pyphocorehelpers.plotting.media_output_helpers import fig_to_clipboard
+
+    fig_to_clipboard(fig)
+
+    """
+    _fig_save_fn = None
+    if isinstance(a_fig, FigureBase):
+        # Matplotlib Figure:
+        _fig_save_fn = a_fig.savefig
+    elif isinstance(a_fig, PlotlyFigure):
+        # Plotly Figure:
+        _fig_save_fn = a_fig.write_image
+    else:
+        raise NotImplementedError(f"type(a_fig): {type(a_fig)}, a_fig: {a_fig}")
+    ## Perform the image generation to clipboard:
+    with io.BytesIO() as buf:
+        _fig_save_fn(buf, format=format, **kwargs)
+        buf.seek(0)
+        img = Image.open(buf)
+        # Send the image to the clipboard
+        copy_image_to_clipboard(img)
+        # Close the buffer and figure to free resources
+        buf.close()
+            
+
+

@@ -188,7 +188,7 @@ def copy_to_clipboard(code_str: str, message_print=True):
     try:
         # Try to import jaraco.clipboard
         import jaraco.clipboard as clipboard
-        jaraco.clipboard.copy(code_str)
+        clipboard.copy(code_str)
 
     except ImportError:
         # If jaraco.clipboard is not available, fall back to pandas method that leaves extra double quotes wrapping the clipboard string
@@ -202,8 +202,24 @@ def copy_to_clipboard(code_str: str, message_print=True):
 def copy_image_to_clipboard(image, message_print=True):
     """ copies the passed image to the system clipboard. Only works on Windows.
     
+    from PIL import Image
     from pyphocorehelpers.programming_helpers import copy_image_to_clipboard
     
+     
+    
+    from pyphocorehelpers.programming_helpers import copy_image_to_clipboard
+
+    canvas = self.ui.canvas
+
+    canvas.draw()  # Ensure the canvas has been drawn once before copying the figure        
+    buf = io.BytesIO()
+    canvas.print_png(buf)
+    buf.seek(0)
+    img = Image.open(buf)
+    # Send the image to the clipboard
+    copy_image_to_clipboard(img)
+    buf.close()
+        
      """
     import sys
     import subprocess

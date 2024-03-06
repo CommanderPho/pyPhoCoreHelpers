@@ -5,6 +5,7 @@ from shutil import copytree # used in `make_specific_items_local`
 from pathlib import Path
 from typing import Optional, Dict, Optional, Tuple, List
 from datetime import datetime, timedelta
+import numpy as np
 from pyphocorehelpers.Filesystem.metadata_helpers import FilesystemMetadata, get_file_metadata
 from pyphocorehelpers.Filesystem.path_helpers import discover_data_files, generate_copydict, copy_movedict, copy_file
 from attrs import define, field, Factory
@@ -271,6 +272,8 @@ def make_specific_items_local(existing_symlink_folder_path: Path, desired_local_
     desired_local_folder_paths: a list of paths you wish to copy locally from the file.
     
     Usage:
+        from pyphocorehelpers.Filesystem.symbolic_link_helpers import make_specific_items_local
+
         ## DO NOT CALL .resolve() on the input path, this resolves the symlink!!!
         a_symlink_path: Path = Path('/home/halechr/FastData/KDIBA/pin01/one')
         print(f'existing_symlink_folder_path: {a_symlink_path}')
@@ -287,7 +290,7 @@ def make_specific_items_local(existing_symlink_folder_path: Path, desired_local_
     for a_symlink_path in desired_local_folder_paths:
         if debug_print:
             print(f'>> a_symlink_path: {a_symlink_path}')
-        assert a_symlink_path.exists()
+        assert a_symlink_path.exists(), f"a_symlink_path: '{a_symlink_path}' does not exist."
         status_dict[a_symlink_path] = symlinked_item_to_full_local_item(a_symlink_path, dryrun=dryrun, debug_print=debug_print)
 
     return status_dict

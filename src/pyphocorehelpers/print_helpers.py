@@ -28,7 +28,6 @@ import itertools
 # Required for proper print_object_memory_usage
 import objsize # python -m pip install objsize==0.6.1
 
-from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters # for CapturedException
 # from pyphocorehelpers.function_helpers import function_attributes # # function_attributes causes circular import issue :[
 
 
@@ -1331,59 +1330,6 @@ def document_active_variables(params, include_explicit_values=False, enable_prin
     
     
 
-# ==================================================================================================================== #
-# Exceptions and Error Handling                                                                                        #
-# ==================================================================================================================== #
-
-
-@define(slots=False, repr=False)
-class CapturedException:
-    """ Formats a captured exception in a try/catch block
-
-    Usage:
-        from pyphocorehelpers.print_helpers import CapturedException
-
-        # ...
-
-        try:
-            # *SOMETHING*
-        except Exception as e:
-            exception_info = sys.exc_info()
-            e = CapturedException(e, exception_info)
-            print(f'exception occured: {e}')
-            if fail_on_exception:
-                raise e
-
-    """
-    exc: BaseException = field()
-    exc_info: Tuple = field()
-    captured_result_state: Optional[object] = field(default=None) # additional state that you might want for debugging, but usually None
-    
-    """ An exception and its related info/context during the process of executing composed functions with error handling."""
-    
-    def __repr__(self):
-        # Don't print out captured_result_state (as it's huge and clogs the console)
-        return f'!! {self.exc} ::::: {self.exc_info}'
-
-
-
-
-# class CapturedException(DynamicParameters):
-#     """ An exception and its related info/context during the process of executing composed functions with error handling."""
-    
-#     def __repr__(self):
-#         # Don't print out captured_result_state (as it's huge and clogs the console)
-#         return f'!! {self.exc} ::::: {self.exc_info}'
-#         # return super().__repr__()
-
-    
-#     def __init__(self, exc, exc_info, captured_result_state):
-#         super(CapturedException, self).__init__(exc=exc, exc_info=exc_info, captured_result_state=captured_result_state)
-#         # self.exc = exc
-#         # self.exc_info = exc_info
-#         # self.captured_result_state = captured_result_state
-
-
     
 # ==================================================================================================================== #
 # LOGGING                                                                                                              #
@@ -1460,115 +1406,6 @@ def build_module_logger(module_name='Spike3D.notebook', file_logging_dir=Path('E
     return module_logger
 
 
-
-# ==================================================================================================================== #
-# Stack Trace Formatting                                                                                               #
-# ==================================================================================================================== #
-
-class StackTraceFormatting(object):
-    """
-
-    https://stackoverflow.com/questions/31949760/how-to-limit-python-traceback-to-specific-files
-    vaultah answered Oct 9, 2015 at 15:43
-
-    They both use the traceback.extract_tb.
-    It returns "a list of “pre-processed” stack trace entries extracted from the traceback object"; all of them are instances of traceback.FrameSummary (a named tuple).
-    Each traceback.FrameSummary object has a filename field which stores the absolute path of the corresponding file.
-    We check if it starts with any of the directory paths provided as separate function arguments to determine if we'll need to exclude the entry (or keep it).
-
-    """
-    @classmethod
-    def spotlight(cls, *show):
-        ''' Return a function to be set as new sys.excepthook.
-            It will SHOW traceback entries for files from these directories. 
-            https://stackoverflow.com/questions/31949760/how-to-limit-python-traceback-to-specific-files
-            vaultah answered Oct 9, 2015 at 15:43
-        '''
-        show = tuple(join(abspath(p), '') for p in show)
-
-        def _check_file(name):
-            return name and name.startswith(show)
-
-        def _print(type, value, tb):
-            show = (fs for fs in extract_tb(tb) if _check_file(fs.filename))
-            fmt = format_list(show) + format_exception_only(type, value)
-            print(''.join(fmt), end='', file=sys.stderr)
-
-        return _print
-
-    @classmethod
-    def shadow(cls, *hide):
-        ''' Return a function to be set as new sys.excepthook.
-            It will HIDE traceback entries for files from these directories. 
-            https://stackoverflow.com/questions/31949760/how-to-limit-python-traceback-to-specific-files
-            vaultah answered Oct 9, 2015 at 15:43
-        '''
-        hide = tuple(join(abspath(p), '') for p in hide)
-
-        def _check_file(name):
-            print(f'shadow:\t name: {name}')
-            return name and not name.startswith(hide)
-
-        def _print(type, value, tb):
-            print(f'shadow:\t tb: {tb}')
-            show = (fs for fs in extract_tb(tb) if _check_file(fs.filename))
-            fmt = format_list(show) + format_exception_only(type, value)
-            print(''.join(fmt), end='', file=sys.stderr)
-
-        return _print
-
-    @classmethod
-    def restore_default(cls):
-        """ Restores the default sys.excepthook from sys.__excepthook__
-        
-        """
-        sys.excepthook = sys.__excepthook__
-        print(f'Restored the default sys.excepthook from sys.__excepthook__.')
-        return sys.__excepthook__
-
-    @classmethod
-    def shadow_sitepackages(cls):
-        # Gets the "sitepackges" library directories for exclusion from the stacktrace
-        curr_sitepackages = site.getsitepackages()
-        print(f'Excluding sitepackages (library) directories from stacktraces: {curr_sitepackages}')
-        sys.excepthook = cls.shadow(*curr_sitepackages)
-        return sys.excepthook
-
-
-# """ Solution for long and convoluted stacktraces into libraries. Installs a sys.excepthook
-# From:
-#     https://stackoverflow.com/questions/2615414/python-eliminating-stack-traces-into-library-code/2616262#2616262
-
-# Solution by Alex Martelli answered Apr 10, 2010 at 23:37
-
-# """
-
-# # def trimmedexceptions(type, value, tb, pylibdir=None, lev=None):
-# #     """trim system packages from the exception printout"""
-# #     if pylibdir is None:
-# #         import traceback, distutils.sysconfig
-# #         pylibdir = distutils.sysconfig.get_python_lib(1,1)
-# #         nlev = trimmedexceptions(type, value, tb, pylibdir, 0)
-# #         traceback.print_exception(type, value, tb, nlev)
-# #     else:
-# #         fn = tb.tb_frame.f_code.co_filename
-# #         if tb.tb_next is None or fn.startswith(pylibdir):
-# #             return lev
-# #         else:
-# #             return trimmedexceptions(type, value, tb.tb_next, pylibdir, lev+1)
-
-# # import sys
-# # sys.excepthook=trimmedexceptions
-# # This one doesn't seem to change anything either.
-
-# import sys
-# from pyphocorehelpers.print_helpers import StackTraceFormatting
-
-# # ## TODO: Investigate https://pymotw.com/2/sys/exceptions.html to try and figure out why my stacktrace handling isn't working
-# # # StackTraceFormatting.shadow_sitepackages()
-
-# sys.excepthook = StackTraceFormatting.restore_default()
-# # sys.excepthook = StackTraceFormatting.shadow('~\miniconda3\envs\phoviz_ultimate\lib\site-packages')
 
 
 def get_system_hostname(enable_print:bool=False) -> str:

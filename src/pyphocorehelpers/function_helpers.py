@@ -5,7 +5,7 @@ from itertools import accumulate
 from functools import wraps # This convenience func preserves name and docstring
 from typing import List, Callable, Optional # for function composition
 
-from pyphocorehelpers.print_helpers import CapturedException
+from pyphocorehelpers.exception_helpers import CapturedException
 
 """ 
 TODO: add a version of compose_functions that's capable of reporting progress of executing the composed functions, and perhaps that is capable of timing them. 
@@ -59,7 +59,10 @@ def compose_functions_with_error_handling(*args, progress_logger=None, error_log
                 # result shouldn't be updated unless there wasn't an error, so it should be fine to move on to the next function
                 if error_logger is not None:
                     error_logger(f'\t Encountered error: {accumulated_errors[f]} continuing.')
-                                
+            except BaseException as e:
+                print(f'UNHANDLED EXCEPTION: {e}')
+                raise
+                
             else:
                 # only if no error occured do we commit the temp_result to result
                 result = temp_result

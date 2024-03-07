@@ -20,6 +20,7 @@ from IPython.display import display, Javascript
 import json
 from attrs import define, field, Factory
 from pyphocorehelpers.DataStructure.enum_helpers import ExtendedEnum
+from pyphocorehelpers.function_helpers import function_attributes
 
 # from pyphocorehelpers.function_helpers import function_attributes, _custom_function_metadata_attribute_names
 
@@ -1017,6 +1018,102 @@ class GeneratedClassDefinitionType(ExtendedEnum):
         return cls.build_member_value_dict([False, True, True])
     
 
+import inspect
+import re
+import ast # SourceCodeParsing
+
+
+@metadata_attributes(short_name=None, tags=['source-code-parsing', 'source-code'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-03-07 08:37', related_items=[])
+class SourceCodeParsing:
+    """ Contains functions that help parse python source code.
+    
+    Can be used in the future to enable VSCode coding automations like converting selected text between two formats, etc.
+
+
+    
+    """
+    @classmethod
+    @function_attributes(short_name=None, tags=['return', 'source-code-parsing', 'pho'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-03-07 08:38', related_items=[])
+    def get_return_line_numbers(cls, func):
+        """ Get the line numbers in the source code of a function where a 'return' statement appears. 
+        
+        from pyphocorehelpers.programming_helpers import SourceCodeParsing
+
+        return_lines_info = SourceCodeParsing.get_last_return_lines(compute_pho_heuristic_replay_scores)
+        for line_no, code in return_lines_info:
+            print(f"Line {line_no}: {code}")
+            
+        """
+        if not inspect.isfunction(func):
+            raise ValueError('The provided object is not a function')
+
+        source_lines, starting_line_no = inspect.getsourcelines(func)
+        
+        # Combine the source lines into a single string for pattern matching
+        source = ''.join(source_lines)
+
+        # Find all occurrences of return using a regular expression
+        # This simplistic regex assumes that 'return' will be at the start of a line or after a space,
+        # and that it will be followed by a space, a newline, a comment, or the end of a statement.
+        # In reality, you may want to adjust this to handle more complex scenarios (like nested functions).
+        return_lines = [
+            match.start()
+            for match in re.finditer(r'(?<![^\s])return(?![^\s])', source)
+        ]
+
+        line_numbers = [source[:line_start].count('\n') + starting_line_no for line_start in return_lines]
+
+        return line_numbers
+
+    @classmethod
+    @function_attributes(short_name=None, tags=['ALT','source-code-parsing', 'pho', 'efficiency'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-03-07 08:36', related_items=[])
+    def get_last_return_lines(cls, func):
+        """ Get the line and code of the last return statement of each block in a function. """
+        if not inspect.isfunction(func):
+            raise ValueError('The provided object is not a function')
+
+        source_lines, starting_line_no = inspect.getsourcelines(func)
+        # Parse the source code into an AST
+        func_ast = ast.parse(''.join(source_lines), mode='exec')
+
+        return_statements = []
+
+        # Helper function to visit Return nodes in the AST
+        class ReturnVisitor(ast.NodeVisitor):
+            def visit_FunctionDef(self, node):
+                # In each function, we want only the last 'Return' node in each block, if it exists
+                for body_element in node.body:
+                    if isinstance(body_element, (ast.For, ast.While, ast.If)):
+                        self.generic_visit(body_element)
+                    elif isinstance(body_element, ast.Return):
+                        return_statements.append((body_element, starting_line_no + body_element.lineno - 1))
+
+            def visit_If(self, node):
+                self.visit_branch(node)
+
+            def visit_For(self, node):
+                self.visit_branch(node)
+
+            def visit_While(self, node):
+                self.visit_branch(node)
+
+            def visit_branch(self, branch_node):
+                for body in [branch_node.body, branch_node.orelse]:
+                    if body: # it's not an empty body or orelse
+                        last_stmt = body[-1]
+                        if isinstance(last_stmt, ast.Return):
+                            return_statements.append((last_stmt, starting_line_no + last_stmt.lineno - 1))
+                        else:
+                            self.generic_visit(last_stmt)
+
+        ReturnVisitor().visit(func_ast)
+
+        return_lines_info = [(lineno, source_lines[lineno - starting_line_no].strip()) 
+                            for _, lineno in return_statements]
+
+        return return_lines_info
+
+                
 class CodeConversion(object):
     """ Converts code (usually passed as text) to various alternative formats to ease development workflows.
     from pyphocorehelpers.programming_helpers import CodeConversion

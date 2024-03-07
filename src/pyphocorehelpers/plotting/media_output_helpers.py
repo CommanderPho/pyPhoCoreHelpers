@@ -10,7 +10,7 @@ from PIL import Image # for export_array_as_image
 
 from plotly.graph_objects import Figure as PlotlyFigure # required for `fig_to_clipboard`
 from matplotlib.figure import FigureBase
-from pyphoplacecellanalysis.SpecificResults.PendingNotebookCode import copy_image_to_clipboard # required for `fig_to_clipboard`
+# from pyphoplacecellanalysis.SpecificResults.PendingNotebookCode import copy_image_to_clipboard # required for `fig_to_clipboard`
 
 
 
@@ -160,6 +160,8 @@ def fig_to_clipboard(a_fig: Union[PlotlyFigure, FigureBase], format="png", **kwa
     fig_to_clipboard(fig)
 
     """
+    from pyphocorehelpers.programming_helpers import copy_image_to_clipboard
+    
     _fig_save_fn = None
     if isinstance(a_fig, FigureBase):
         # Matplotlib Figure:

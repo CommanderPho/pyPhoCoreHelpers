@@ -147,7 +147,7 @@ def disable_function_context(obj, fn_name: str):
 
     """
     temp = getattr(obj, fn_name)
-    setattr(obj, fn_name, lambda: None)
+    setattr(obj, fn_name, (lambda: None)) # should I add *args, **kwargs to lambda?
     yield
     setattr(obj, fn_name, temp)
 

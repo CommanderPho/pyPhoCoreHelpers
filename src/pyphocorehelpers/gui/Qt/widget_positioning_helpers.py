@@ -94,8 +94,10 @@ class WidgetPositioningHelpers:
         Specifying a screen_index does not work. Only works if screen_index=None
   
         Examples:
-              WidgetPositioningHelpers.move_widget_to_top_left_corner(spike_raster_plt_3d, screen_index=None, debug_print=True)
-  
+              
+            from pyphocorehelpers.gui.Qt.widget_positioning_helpers import WidgetPositioningHelpers
+            WidgetPositioningHelpers.get_screen_desktopRect(screen_index=None, debug_print=True)
+
         """
         from PyQt5.QtWidgets import QDesktopWidget
         

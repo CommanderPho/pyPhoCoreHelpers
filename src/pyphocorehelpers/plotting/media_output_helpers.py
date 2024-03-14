@@ -156,7 +156,7 @@ def fig_to_clipboard(a_fig: Union[PlotlyFigure, FigureBase], format="png", **kwa
     """ Any common figure type (matplotlib, Plotly, etc) to clipboard as image  _______________________________________________________________________________________________  
     
     from pyphocorehelpers.plotting.media_output_helpers import fig_to_clipboard
-
+    
     fig_to_clipboard(fig)
 
     """

@@ -769,7 +769,6 @@ def reorder_columns(df: pd.DataFrame, column_name_desired_index_dict: Dict[str, 
         reordered_columns_list.insert(desired_index, item_to_insert)
         
     # print(reordered_columns_list)
-    # reordered_columns = reordered_columns + remaining_columns
     reordered_df = df[reordered_columns_list]
     return reordered_df
 

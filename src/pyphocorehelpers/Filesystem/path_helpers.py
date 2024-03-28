@@ -227,6 +227,12 @@ def print_data_files_list_as_array(filenames_list):
 
 
 def save_filelist_to_text_file(hdf5_output_paths: List[Path], filelist_path: Path, debug_print:bool=False):
+    """ 
+    from pyphocorehelpers.Filesystem.path_helpers import save_filelist_to_text_file
+        
+    _out_string, filelist_path = save_filelist_to_text_file(hdf5_output_paths, filelist_path=text_file_path, debug_print=True)
+
+    """
     _out_string = '\n'.join([str(a_file) for a_file in hdf5_output_paths])
     if debug_print:
         print(f'{_out_string}')
@@ -234,6 +240,36 @@ def save_filelist_to_text_file(hdf5_output_paths: List[Path], filelist_path: Pat
     with open(filelist_path, 'w') as f:
         f.write(_out_string)
     return _out_string, filelist_path
+
+
+def read_filelist_from_text_file(filelist_path: Path, debug_print:bool=False) -> List[Path]:
+    """ 
+    from pyphocorehelpers.Filesystem.path_helpers import read_filelist_from_text_file
+        
+    read_hdf5_output_paths = read_filelist_from_text_file(filelist_path=filelist_path, debug_print=True)
+    read_hdf5_output_paths
+
+    """
+    filelist: List[Path] = []
+    assert filelist_path.exists()
+    assert filelist_path.is_file()
+    with open(filelist_path, 'r') as f:
+        read_lines = f.readlines()
+
+    assert len(read_lines) > 0
+    num_file_lines: int = len(read_lines)
+    if debug_print:
+        print(f'num_file_lines: {num_file_lines}')
+
+
+    for i, a_line in enumerate(read_lines):
+        if debug_print:
+            print(f'a_line[{i}]: {a_line}')
+        a_file: Path = Path(unwrap_quote_wrapped_file_path_string(a_line)).resolve()
+        filelist.append(a_file)
+
+    return filelist
+
 
 
 def save_copydict_to_text_file(file_movedict: Dict[Path,Path], filelist_path: Path, debug_print:bool=False):

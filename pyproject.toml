@@ -14,6 +14,13 @@ numpy = "^1.23.2"
 pandas = "1.5.3"
 ansi2html = "^1.8.0"
 numba = "^0.56.4"
+mkdocs-gen-files = "^0.5.0"
+mkdocs-literate-nav = "^0.6.1"
+mkdocs-section-index = "^0.3.8"
+mkdocs-matplotlib = "^0.10.1"
+mkdocs-jupyter = "^0.24.6"
+mkdocstrings = {extras = ["python"], version = "^0.24.1"}
+mkdocstrings-python = "^1.9.0"
 
 [tool.poetry.group.dev.dependencies]
 importlib-metadata = "^6.0.0"

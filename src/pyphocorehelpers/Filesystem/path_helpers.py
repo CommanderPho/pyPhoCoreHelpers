@@ -7,6 +7,7 @@ from contextlib import contextmanager
 import pathlib
 from pathlib import Path
 from typing import List, Optional, Union, Dict
+import re
 from datetime import datetime, timedelta
 from pyphocorehelpers.Filesystem.metadata_helpers import FilesystemMetadata
 from pyphocorehelpers.function_helpers import function_attributes
@@ -36,6 +37,48 @@ def build_unique_filename(file_to_save_path, additional_postfix_extension=None):
     unique_save_path = parent_path.joinpath(unique_file_name)
     # print(f"'{file_to_save_path}' backing up -> to_file: '{unique_save_path}'")
     return unique_save_path, unique_file_name
+
+
+def parse_unique_file_name(unique_file_name):
+    """ reciprocal to parse filenames created with `build_unique_filename`
+
+    Usage:
+
+    from pyphocorehelpers.Filesystem.path_helpers import parse_unique_file_name
+
+
+    """
+    # Regex pattern to match the unique file name format
+    pattern = r'(?P<prefix>.+?)?-?(?P<datetime>\d{14})-(?P<stem>.+?)(?P<extensions>(\.\w+)*)$'
+    match = re.match(pattern, unique_file_name)
+    
+    if match:
+        prefix_str = match.group("prefix")
+        datetime_str = match.group("datetime")
+        stem = match.group("stem")
+        extensions = match.group("extensions")
+        
+        # Parse datetime
+        datetime_obj = datetime.strptime(datetime_str, "%Y%m%d%H%M%S")
+        
+        # Separate multiple extensions if necessary
+        extension_list = extensions.split(".") if extensions else []
+        extension_list = ["." + ext for ext in extension_list if ext] # prepend '.' to each extension
+        
+        # Create a dictionary to store the parsed components
+        parsed_components = {
+            'prefix_str': prefix_str,
+            "datetime": datetime_obj,
+            "stem": stem,
+            "extensions": extension_list
+        }
+        return parsed_components
+    else:
+        return None
+        # raise ValueError("Filename does not match the expected format")
+    
+
+    
 
 def backup_extant_file(file_to_backup_path, MAX_BACKUP_AMOUNT=2):
     """creates a backup of an existing file that would otherwise be overwritten

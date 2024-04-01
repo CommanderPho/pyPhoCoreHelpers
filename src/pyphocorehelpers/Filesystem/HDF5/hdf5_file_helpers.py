@@ -1,4 +1,8 @@
+from pathlib import Path
+from typing import Dict, List, Tuple
 import h5py
+import pandas as pd
+import tables
 
 ignored_keys = ['#subsystem#', '#refs#']
 
@@ -155,3 +159,130 @@ class HDF5_Helper(object):
         with h5py.File(path,'r') as f:
             cls.descend_obj(f[group], enable_print_attributes=enable_print_attributes)
             
+
+# ==================================================================================================================== #
+# 2024-04-01 - Unfinished                                                                                              #
+# ==================================================================================================================== #
+            
+
+# # Raw h5py ___________________________________________________________________________________________________________ #
+# def _hdf5_to_dict_recurr(hdf5_object):
+#     """
+#     Recursively reads HDF5 file objects and constructs a nested dictionary
+#     of datasets and arrays.
+    
+#     Parameters:
+#         hdf5_object: An h5py.Group or h5py.File object.
+        
+#     Returns:
+#         A nested dictionary with the HDF5 hierarchy's structure.
+#     """
+#     result = {}
+#     for name, item in hdf5_object.items():
+#         if isinstance(item, h5py.Dataset):  # Found a dataset
+#             result[name] = item[()]  # Load the dataset's content into the dict
+#         elif isinstance(item, h5py.Group):  # Found a group, recurse
+#             result[name] = _hdf5_to_dict_recurr(item)  # Recursively call on the group
+#     return result
+
+# def hdf5_to_dict(hdf5_path: Path):
+#     """
+#     Recursively reads HDF5 file objects and constructs a nested dictionary
+#     of datasets and arrays.
+    
+#     Parameters:
+#         hdf5_object: An h5py.Group or h5py.File object.
+        
+#     Returns:
+#         A nested dictionary with the HDF5 hierarchy's structure.
+#     """
+#     data_dict = {}
+#     failed_keys = []
+
+#     # Open the HDF5 file and start the conversion process
+#     with h5py.File(hdf5_path, 'r') as hdf_file:
+#         data_dict = _hdf5_to_dict_recurr(hdf_file)
+
+#     return data_dict, failed_keys
+
+
+# # PyTables ___________________________________________________________________________________________________________ #
+# def _pytables_to_dict_recurr(hdf5_node):
+#     """
+#     Recursively reads HDF5 file nodes stored with PyTables and constructs a
+#     nested dictionary of tables and arrays.
+    
+#     Parameters:
+#         hdf5_node: A PyTables Group or File node.
+        
+#     Returns:
+#         A nested dictionary with the HDF5 hierarchy's structure.
+#     """
+#     result = {}
+#     for node in hdf5_node:
+#         if isinstance(node, tables.Group):
+#             # Recurse into the group
+#             result[node._v_name] = _pytables_to_dict_recurr(node) # call recurrsively
+#         elif isinstance(node, tables.Table) or isinstance(node, tables.Array):
+#             # Read the Table or Array data
+#             # print(f'found node: "{node._v_name}" that is a Table or Array')
+#             result[node._v_name] = node.read()
+#             # if (node._v_name) == 'table':
+#             #     result[node._v_name] = node.read()
+#             #     node.read
+#             #     node.t
+#             # else:
+#             #     print(f'\t not dataframe.')
+#             #     result[node._v_name] = node.read()
+
+#     return result
+
+# def pytables_to_dict(hdf5_path: Path):
+#     """
+#     Recursively reads HDF5 file nodes stored with PyTables and constructs a
+#     nested dictionary of tables and arrays.
+    
+#     Parameters:
+#         hdf5_node: A PyTables Group or File node.
+        
+#     Returns:
+#         A nested dictionary with the HDF5 hierarchy's structure.
+#     """
+
+
+#     data_dict = {}
+#     failed_keys = []
+
+#     # Open the HDF5 file using PyTables and start the conversion process
+#     with tables.open_file(hdf5_path, 'r') as hdf_file:
+#         data_dict = _pytables_to_dict_recurr(hdf_file.root)
+
+#     return data_dict
+
+
+# pandas _____________________________________________________________________________________________________________ #
+def hdf5_to_pandas_df_dict(hdf5_path: Path) -> Tuple[Dict[str, pd.DataFrame], List[str]]:
+    # Using the pandas HDFStore to manage access to the file
+
+    data_dict = {}
+    failed_keys = []
+
+    with pd.HDFStore(hdf5_path, 'r') as store:
+        # Iterate over all the keys in the HDFStore and read each one as a DataFrame
+        for key in store.keys():
+            # Use exception handling to catch errors for non-DataFrame data
+            try:
+                data_dict[key] = pd.read_hdf(store, key)
+            except (ValueError, TypeError) as e:
+                print(f"Could not read key '{key}': {e}")
+                # Handle non-DataFrame data differently or skip
+                # For example, store the keys that failed for further investigation
+                failed_keys.append(key)
+
+
+
+    # Now `data_dict` is a nested dictionary structure with the HDF5 file's content.
+    # You can access the datasets and groups just like you would with a normal Python dict.
+    return data_dict, failed_keys
+
+

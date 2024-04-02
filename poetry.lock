@@ -1026,13 +1026,17 @@ version = "0.2.0"
 description = "Draw styled text in Matplotlib"
 optional = false
 python-versions = ">=3.6"
-files = [
-    {file = "flexitext-0.2.0-py3-none-any.whl", hash = "sha256:4a25e3efd3c2708c457e928da3ec7f58786516b796e6ce8738420584fd64fb35"},
-    {file = "flexitext-0.2.0.tar.gz", hash = "sha256:5a27898bffbab4b0e8f34247b35ed401bd42cc969597d7c21b7509620edebdf5"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 matplotlib = ">=3.4"
+
+[package.source]
+type = "git"
+url = "https://github.com/CommanderPho/flexitext.git"
+reference = "main"
+resolved_reference = "8cd274c8cb97fe6f32ca56b3c792ae97eb4cc521"
 
 [[package]]
 name = "fonttools"
@@ -2938,7 +2942,7 @@ develop = true
 
 [package.dependencies]
 dill = {version = "==0.3.5.1", extras = ["graph"]}
-flexitext = "^0.2.0"
+flexitext = {git = "https://github.com/CommanderPho/flexitext.git", rev = "main"}
 h5py = "^3.8.0"
 hdf5storage = "^0.1.19"
 hmmlearn = "^0.2.8"
@@ -2953,7 +2957,7 @@ pandas = ">=2.2.0,<3"
 panel = "^1.2.3"
 params = "^0.9.0"
 pingouin = "^0.5.3"
-portion = "^2.3.1"
+portion = {git = "https://github.com/CommanderPho/portion.git"}
 pynapple = "^0.3.1"
 python-benedict = "^0.28.3"
 scikit-learn = "^1.2.1"
@@ -3592,20 +3596,24 @@ xxhash = ["xxhash (>=1.4.3)"]
 
 [[package]]
 name = "portion"
-version = "2.4.2"
+version = "2.4.3"
 description = "Python data structure and operations for intervals"
 optional = false
-python-versions = "~= 3.7"
-files = [
-    {file = "portion-2.4.2-py3-none-any.whl", hash = "sha256:17f0388d7df3488313ac527d8da9542d2c1329dfefb8793a77ad2dfc97596051"},
-    {file = "portion-2.4.2.tar.gz", hash = "sha256:5289b40d98959b16b3f6927781678935d3df1b7c14947f5d7778e5e04dd9a065"},
-]
+python-versions = "~= 3.8"
+files = []
+develop = false
 
 [package.dependencies]
 sortedcontainers = ">=2.2,<3.0"
 
 [package.extras]
 test = ["black (>=21.8b)", "coverage (>=6.0,<7.0)", "pytest (>=7.0,<8.0)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/CommanderPho/portion.git"
+reference = "HEAD"
+resolved_reference = "d2497756daa215d4897b4cc0223b6fd5db8abcce"
 
 [[package]]
 name = "pox"
@@ -3806,7 +3814,6 @@ optional = true
 python-versions = ">=3.7"
 files = [
     {file = "PyQt5-5.15.10-cp37-abi3-macosx_10_13_x86_64.whl", hash = "sha256:93288d62ebd47b1933d80c27f5d43c7c435307b84d480af689cef2474e87e4c8"},
-    {file = "PyQt5-5.15.10-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:862cea3be95b4b0a2b9678003b3a18edf7bd5eafd673860f58820f246d4bf616"},
     {file = "PyQt5-5.15.10-cp37-abi3-manylinux_2_17_x86_64.whl", hash = "sha256:b89478d16d4118664ff58ed609e0a804d002703c9420118de7e4e70fa1cb5486"},
     {file = "PyQt5-5.15.10-cp37-abi3-win32.whl", hash = "sha256:ff99b4f91aa8eb60510d5889faad07116d3340041916e46c07d519f7cad344e1"},
     {file = "PyQt5-5.15.10-cp37-abi3-win_amd64.whl", hash = "sha256:501355f327e9a2c38db0428e1a236d25ebcb99304cd6e668c05d1188d514adec"},

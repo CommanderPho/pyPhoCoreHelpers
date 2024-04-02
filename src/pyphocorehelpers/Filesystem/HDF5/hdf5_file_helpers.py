@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, Tuple
 import h5py
+import numpy as np
 import pandas as pd
 import tables
 
@@ -204,6 +205,50 @@ class HDF5_Helper(object):
 #         data_dict = _hdf5_to_dict_recurr(hdf_file)
 
 #     return data_dict, failed_keys
+
+
+def write_hdf5_data_manifest(hdf5_path: Path, manifest_key_strings: List[str], datamanifest_key: str = 'data_manifest'):
+    """ tries to write a list of keys as a manifest of the data contained within the file for easier loading.
+    
+    Usage:
+        from pyphocorehelpers.Filesystem.HDF5.hdf5_file_helpers import write_hdf5_data_manifest
+
+        hdf5_path = debug_output_hdf5_file_path # 'your_existing_file.h5'
+        # nested_strings = [['provided/long_LR/laps_df', 'provided/long_LR/train_df', 'provided/long_LR/test_df'], ['valid/long_LR/train_df', 'valid/long_LR/test_df'], ['provided/long_RL/laps_df', 'provided/long_RL/train_df', 'provided/long_RL/test_df'], ['valid/long_RL/train_df', 'valid/long_RL/test_df'], ['provided/short_LR/laps_df', 'provided/short_LR/train_df', 'provided/short_LR/test_df'], ['valid/short_LR/train_df', 'valid/short_LR/test_df'], ['provided/short_RL/laps_df', 'provided/short_RL/train_df', 'provided/short_RL/test_df'], ['valid/short_RL/train_df', 'valid/short_RL/test_df']]
+        # Flatten the nested list into a single list of strings
+        # strings = [item for sublist in nested_strings for item in sublist]
+        manifest_key_strings = ['provided/long_LR/laps_df', 'provided/long_LR/train_df', 'provided/long_LR/test_df', 'valid/long_LR/train_df', 'valid/long_LR/test_df', 'provided/long_RL/laps_df', 'provided/long_RL/train_df', 'provided/long_RL/test_df', 'valid/long_RL/train_df', 'valid/long_RL/test_df', 'provided/short_LR/laps_df', 'provided/short_LR/train_df', 'provided/short_LR/test_df', 'valid/short_LR/train_df', 'valid/short_LR/test_df', 'provided/short_RL/laps_df', 'provided/short_RL/train_df', 'provided/short_RL/test_df', 'valid/short_RL/train_df', 'valid/short_RL/test_df']
+        write_hdf5_data_manifest(hdf5_path=hdf5_path, manifest_key_strings=manifest_key_strings)
+
+    """
+    # Convert the list of strings to a fixed-size numpy array of strings. 
+    # This is necessary because HDF5 datasets require fixed-size elements.
+    # variable_length_string_dtype = h5py.special_dtype(vlen=str)
+    # string_arr = np.array(strings, dtype=variable_length_string_dtype)
+    # variable_length_data = np.array(strings, dtype=variable_length_string_dtype)
+
+    # Convert variable-length strings to fixed-length strings (truncating if necessary)
+    fixed_length_dtype = 'S200'  # This example creates strings with a fixed length of 100 chars
+    string_arr = np.array(manifest_key_strings, dtype=fixed_length_dtype)
+    # string_arr = np.array(variable_length_data.astype(fixed_length_dtype), dtype=fixed_length_dtype)
+    # Path to your existing HDF5 file
+    
+    # Open the HDF5 file in append mode (or "a" mode)
+    with h5py.File(hdf5_path, 'a') as hdf_file:
+        # Create a new dataset within the file to hold your array of strings,
+        # or overwrite an existing one.
+        dataset_name = 'data_manifest'
+        
+        # Check if the dataset already exists and if so, delete it.
+        if dataset_name in hdf_file:
+            del hdf_file[dataset_name]
+        
+        # Create a new dataset to store the list of strings
+        hdf_file.create_dataset(dataset_name, data=string_arr)
+
+        # Optionally you can specify compression to save space:
+        # hdf_file.create_dataset('strings_dataset', data=string_arr, compression='gzip')
+
 
 
 # # PyTables ___________________________________________________________________________________________________________ #

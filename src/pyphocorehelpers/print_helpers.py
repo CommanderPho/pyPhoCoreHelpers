@@ -897,7 +897,7 @@ def dbg_dump(*args, dumpopt_stream=sys.stderr, dumpopt_forcename=True, dumpopt_p
 from pyphocorehelpers.DataStructure.enum_helpers import ExtendedEnum
 
 class TypePrintMode(ExtendedEnum):
-    """Describes the type of file progress actions that can be performed to get the right verbage.
+    """Describes the various ways of formatting an objects  type identity (`type(obj)`)
     Used by `print_file_progress_message(...)`
     """
     FULL_TYPE_STRING = "FullTypeString" # the complete output of calling type(obj) on the object. -- e.g. "<class 'pandas.core.frame.DataFrame'>"
@@ -956,7 +956,7 @@ class TypePrintMode(ExtendedEnum):
         """
         return curr_str.rsplit('.', 1)[-1] # 
 
-def strip_type_str_to_classname(a_type_str):
+def strip_type_str_to_classname(a_type_str: str) -> str:
     """ Extracts the class string out of the string returned by type(an_obj) 
     a_type_str: a string returned by type(an_obj) in the form of ["<class 'tuple'>", "<class 'int'>", "<class 'float'>", "<class 'numpy.ndarray'>", "<class 'pandas.core.series.Series'>", "<class 'pandas.core.frame.DataFrame'>", "<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>", "<class 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters'>"]
     return: str

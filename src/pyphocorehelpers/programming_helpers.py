@@ -1282,8 +1282,14 @@ class CodeConversion(object):
         return target_dict # returns a for-sure dictionary or throws an Exception
 
     @classmethod
-    def _find_best_type_representation_string(cls, a_type, unspecified_generic_type_name='type', keep_generic_types=['NoneType'], types_replace_dict = {'numpy.':'np.', 'pandas.':'pd.'}):
+    def _find_best_type_representation_string(cls, a_type, unspecified_generic_type_name='type', keep_generic_types=['NoneType'], types_replace_dict = {'numpy.':'np.', 'pandas.':'pd.'}) -> str:
         """ Uses `strip_type_str_to_classname(a_type) to find the best type-string representation.
+
+        Usage:
+            from pyphocorehelpers.programming_helpers import CodeConversion
+
+            CodeConversion._find_best_type_representation_string(str(type(k)))
+
 
         """
         from pyphocorehelpers.print_helpers import strip_type_str_to_classname # used to convert dict to class with types
@@ -1314,6 +1320,71 @@ class CodeConversion(object):
         class_name = split_type_components[-1]  # 'Epoch'
         import_statement = f'from {base_type_str} import {class_name}' # 'from neuropy.core.epoch import Epoch'
         return import_statement
+
+    @classmethod
+    def convert_type_to_typehint_string(cls, target_class_str: str, use_relative_types:bool=True) -> Tuple[str, Optional[str]]:
+        """ returns the proper typestring for the provided target_class_str for use as typehints or elsewhere
+        Usage:
+
+        from pyphocorehelpers.programming_helpers import CodeConversion
+
+        
+        History: factored out of `CodeConversion.convert_dictionary_to_class_defn` on 2024-04-05.
+
+        """
+        if isinstance(target_class_str, type):
+            target_class_str = str(target_class_str) # convert the type to a string
+
+        # by default type(v) gives <class 'numpy.ndarray'>
+        full_type_string: str = f"{cls._find_best_type_representation_string(target_class_str)}"
+        output_type_string: str = None
+        import_statement: Optional[str] = None
+
+        if use_relative_types:
+            """ for type_str = 'neuropy.core.epoch.Epoch' """
+            split_type_components = full_type_string.split('.')
+            num_items = len(split_type_components)
+            if num_items == 1:
+                base_type_str = None
+                class_name = split_type_components[0]
+                import_statement = f'import {class_name}' # 'from neuropy.core.epoch import Epoch'
+            elif num_items > 1:
+                base_type_str = '.'.join(split_type_components[:-1]) # 'neuropy.core.epoch'
+                class_name = split_type_components[-1]  # 'Epoch'
+                import_statement = f'from {base_type_str} import {class_name}' # 'from neuropy.core.epoch import Epoch'
+            else:
+                raise NotImplementedError
+
+            if split_type_components[0] in ['np', 'pd']:
+                # do different for pandas and numpy
+                relative_type_str: str = full_type_string
+                import_statement = None # f'import {split_type_components[0]}' # 'import numpy as np' TODO: import numpy/pd
+            else:
+                relative_type_str: str = class_name
+
+            # Apply the find/replace dict to fix issues like '' being output
+            relative_type_str: str = cls.apply_find_replace(find_replace_dict=cls._general_find_replace_dict, target_str=relative_type_str)
+            output_type_string = relative_type_str
+        else:
+            output_type_string = full_type_string # just use the full type string
+
+        return output_type_string, import_statement 
+            
+
+    @classmethod
+    def get_dict_typehint_string(cls, a_dict: Dict, use_relative_types:bool = True) -> str:
+        """ Generates the typehint from a dictionary, including its 1-layer nested datatypes (returns 'Dict[str, pd.DataFrame]' instead of 'Dict', for example.
+         
+        :return - a typehint string like 'Dict[str, pd.DataFrame]'
+        
+        """
+        from neuropy.utils.indexing_helpers import collapse_if_identical
+
+        assert isinstance(a_dict, dict)
+        # note `[0]` in the following just gets the typestring itself, and not the import that is produced.
+        _collapsed_output = collapse_if_identical([(cls.convert_type_to_typehint_string(type(k), use_relative_types=use_relative_types)[0], cls.convert_type_to_typehint_string(type(v), use_relative_types=use_relative_types)[0]) for k,v in a_dict.items()])
+        return f"Dict[{', '.join(_collapsed_output)}]" # 'Dict[str, pd.DataFrame]'
+    
 
     # ==================================================================================================================== #
     # Public/Main Methods                                                                                                  #
@@ -1459,38 +1530,13 @@ class CodeConversion(object):
             if include_types:
                 # by default type(v) gives <class 'numpy.ndarray'>
                 if use_relative_types:
-                    full_types_str_dict = {k:f"{cls._find_best_type_representation_string(type(v))}" for k,v in target_dict.items()}
-
-                    relative_types_dict = {}
-                    for k, full_type_string in full_types_str_dict.items():
-                        """ for type_str = 'neuropy.core.epoch.Epoch' """
-                        split_type_components = full_type_string.split('.')
-                        num_items = len(split_type_components)
-                        if num_items == 1:
-                            base_type_str = None
-                            class_name = split_type_components[0]
-                            import_statement = f'import {class_name}' # 'from neuropy.core.epoch import Epoch'
-                        elif num_items > 1:
-                            base_type_str = '.'.join(split_type_components[:-1]) # 'neuropy.core.epoch'
-                            class_name = split_type_components[-1]  # 'Epoch'
-                            import_statement = f'from {base_type_str} import {class_name}' # 'from neuropy.core.epoch import Epoch'
-                        else:
-                            raise NotImplementedError
-
-                        if split_type_components[0] in ['np', 'pd']:
-                            # do different for pandas and numpy
-                            relative_types_dict[k] = full_type_string
-                            import_statement = None # f'import {split_type_components[0]}' # 'import numpy as np' TODO: import numpy/pd
-                        else:
-                            relative_types_dict[k] = class_name
-
+                    # Using `cls.convert_type_to_typehint_string(...)`:
+                    relative_types_dict = {k:cls.convert_type_to_typehint_string(type(v), use_relative_types=use_relative_types)[0] for k,v in target_dict.items()}
+                    import_statements_list = [cls.convert_type_to_typehint_string(type(v), use_relative_types=use_relative_types)[1] for v in target_dict.values()]
+                    for import_statement in import_statements_list:
                         if (import_statement is not None) and (import_statement not in needed_import_statements):
                             needed_import_statements.append(import_statement)
-
-
-                    # Apply the find/replace dict to fix issues like '' being output
-                    relative_types_dict = {k:cls.apply_find_replace(find_replace_dict=cls._general_find_replace_dict, target_str=v) for k,v in relative_types_dict.items()}
-
+                    
                     member_properties_code_str = '\n'.join([f"{indent_character}{output_variable_prefix}{k}: {v}" for k,v in relative_types_dict.items()])
                 else:
                     member_properties_code_str = '\n'.join([f"{indent_character}{output_variable_prefix}{k}: {cls._find_best_type_representation_string(type(v))}" for k,v in target_dict.items()])

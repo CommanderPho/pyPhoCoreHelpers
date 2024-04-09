@@ -1113,7 +1113,7 @@ class SourceCodeParsing:
 
         return return_lines_info
 
-                
+
 class CodeConversion(object):
     """ Converts code (usually passed as text) to various alternative formats to ease development workflows.
     from pyphocorehelpers.programming_helpers import CodeConversion
@@ -1995,3 +1995,23 @@ import pyphocorehelpers.programming_helpers                >>> pyphocorehelpers.
         code_lines_str: str = '\n'.join(code_lines)
         print(f'## Unwrapping `{dict_like_name}`:\n{code_lines_str}\n\n')
         return code_lines_str, code_lines
+
+
+
+
+@function_attributes(short_name=None, tags=['attrs', 'class', 'make_class', 'dict'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-11-15 00:00', related_items=[])
+@classmethod
+def create_class_from_dict(cls, class_name, input_dict):
+    """ Programmatic Attr Class Generation with attr.ib     
+    TempGraphicsOutput = create_class_from_dict('TempGraphicsOutput', _out)
+    TempGraphicsOutput
+    """
+    import attr
+    import attrs
+
+    attributes = {}
+    for key, value in input_dict.items():
+        attributes[key] = attr.ib(type=type(value), default=value) # , repr=False
+
+    return attrs.make_class(class_name, attributes)
+

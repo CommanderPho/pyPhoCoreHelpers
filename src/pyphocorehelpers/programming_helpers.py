@@ -1386,6 +1386,22 @@ class CodeConversion(object):
         return f"Dict[{', '.join(_collapsed_output)}]" # 'Dict[str, pd.DataFrame]'
     
 
+
+    @classmethod
+    def get_tuple_typehint_string(cls, a_tuple: Tuple, use_relative_types:bool = True) -> str:
+        """ Generates the typehint from a tuple, including its 1-layer nested datatypes (returns 'Dict[str, pd.DataFrame]' instead of 'Dict', for example.
+         
+        :return - a typehint string like 'Dict[str, pd.DataFrame]'
+        
+        """
+        assert isinstance(a_tuple, tuple)
+        # note `[0]` in the following just gets the typestring itself, and not the import that is produced.
+        _collapsed_output = [cls.convert_type_to_typehint_string(type(v), use_relative_types=use_relative_types)[0] for v in a_tuple] # DO NOT collapse
+        return f"Tuple[{', '.join(_collapsed_output)}]" # 'Dict[str, pd.DataFrame]'
+
+
+
+
     # ==================================================================================================================== #
     # Public/Main Methods                                                                                                  #
     # ==================================================================================================================== #

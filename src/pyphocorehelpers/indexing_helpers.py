@@ -448,6 +448,55 @@ def list_of_dicts_to_dict_of_lists(list_of_dicts):
     return dict_of_lists
     
         
+def reorder_keys(a_dict: Dict, key_name_desired_index_dict: Dict[str, int]) -> Dict:
+    """Reorders specified keys in a Dict while preserving other keys.
+    
+    based off of `reorder_columns`
+                
+    """
+    # Validate column names
+    missing_columns = set(key_name_desired_index_dict.keys()) - set(a_dict.keys())
+    if missing_columns:
+        raise ValueError(f"Keys {missing_columns} not found in the Dict.")
+
+    # Ensure desired indices are unique and within range
+    desired_indices = key_name_desired_index_dict.values()
+    if len(set(desired_indices)) != len(desired_indices) or any(index < 0 or index >= len(list(a_dict.keys())) for index in desired_indices):
+        raise ValueError("Desired indices must be unique and within the range of existing keys.")
+
+    # Create a list of columns to reorder
+    reordered_columns_desired_index_dict: Dict[str, int] = {column_name:desired_index for column_name, desired_index in sorted(key_name_desired_index_dict.items(), key=lambda item: item[1])}
+    # print(reordered_columns_desired_index_dict)
+    
+    # # Reorder specified columns while preserving remaining columns
+    remaining_columns = [col for col in list(a_dict.keys()) if col not in key_name_desired_index_dict]
+    
+    reordered_columns_list: List[str] = remaining_columns.copy()
+    for item_to_insert, desired_index in reordered_columns_desired_index_dict.items():    
+        reordered_columns_list.insert(desired_index, item_to_insert)
+        
+    # print(reordered_columns_list)
+    reordered_dict = {k:a_dict[k] for k in reordered_columns_list}
+    return reordered_dict
+
+def reorder_keys_relative(a_dict: Dict, key_names: List[str], relative_mode='end') -> Dict:
+    """Reorders specified keys in a Dict while preserving other keys.
+    
+    Based off of `reorder_columns_relative`
+                
+    Usage:
+        from pyphocorehelpers.indexing_helpers import reorder_keys_relative
+
+    """
+    if relative_mode == 'end':
+        existing_columns = list(a_dict.keys())
+        return reorder_keys(a_dict, key_name_desired_index_dict=dict(zip(key_names, np.arange(len(existing_columns)-4, len(existing_columns))))) # -4 ???
+    else:
+        raise NotImplementedError
+    
+
+    
+
 
 # ==================================================================================================================== #
 # Numpy NDArrays                                                                                                       #
@@ -806,6 +855,8 @@ def reorder_columns_relative(df: pd.DataFrame, column_names: list[str], relative
         raise NotImplementedError
     
     
+
+            
 
 # ==================================================================================================================== #
 # Discrete Bins/Binning                                                                                                #

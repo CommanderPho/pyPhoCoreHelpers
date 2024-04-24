@@ -289,6 +289,8 @@ class PhoWidgetHelper:
 
     @staticmethod
     def perform_add_button_text_label(p, text, position, font_size=18, color=[1, 1, 1], font='courier', shadow=False, name=None, viewport=False):
+        from pyvista.plotting.tools import parse_color, FONTS
+        
         text_actor = _vtk.vtkTextActor()
         text_actor.SetInput(text)
         text_actor.SetPosition(position)

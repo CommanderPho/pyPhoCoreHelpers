@@ -44,8 +44,11 @@ class DayDateTimeParser(BaseMatchParser):
         export_datetime_str, session_str, export_file_type, decoding_time_bin_size_str = match.group('export_datetime_str'), match.group('session_str'), match.group('export_file_type'), match.group('decoding_time_bin_size_str')
         parsed_output_dict.update({k:match.group(k) for k in output_dict_keys})
 
+        # Remove the leading characters that are not part of the datetime format
+        cleaned_datetime_str: str = export_datetime_str.lstrip('._')
+
         # parse the datetime from the export_datetime_str and convert it to datetime object
-        export_datetime = datetime.strptime(export_datetime_str, "%Y-%m-%d_%I%M%p")
+        export_datetime = datetime.strptime(cleaned_datetime_str, "%Y-%m-%d_%I%M%p") # ValueError: time data '._2024-02-08_0535PM' does not match format '%Y-%m-%d_%I%M%p'
         parsed_output_dict['export_datetime'] = export_datetime
 
         return parsed_output_dict

@@ -886,15 +886,23 @@ def open_file_with_system_default(filename: Union[Path, str]):
     """
     if isinstance(filename, Path):
         filename = str(filename.resolve())
-    platform = _get_platform_str()
-    if platform == 'darwin':
+
+    platform_str: str = _get_platform_str()
+    if platform_str == 'darwin':
         subprocess.call(('open', filename))
-    elif platform in ['win64', 'win32']:
-        os.startfile(filename.replace('/','\\'))
-    elif platform == 'wsl':
+    elif platform_str in ['win64', 'win32', 'windows']:
+        # os.startfile(filename.replace('/', '\\'))
+        os.startfile(filename.replace('/', '\\'), 'open')
+        # import webbrowser
+        # webbrowser.open(filename.replace('/', '\\'))
+
+    elif platform_str == 'wsl':
         subprocess.call('cmd.exe /C start'.split() + [filename])
-    else:                                   
-        # linux variants
+    elif platform_str == 'linux':
         subprocess.call(('xdg-open', filename))
+    else:
+        raise ValueError(f"Unsupported platform: {platform_str}")
+
+
 
 

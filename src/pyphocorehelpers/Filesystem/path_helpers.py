@@ -906,3 +906,21 @@ def open_file_with_system_default(filename: Union[Path, str]):
 
 
 
+def sanitize_filename_for_Windows(original_proposed_filename: str) -> str:
+    """ 2024-04-28 - sanitizes a proposed filename such that it is valid for saving (in Windows). 
+
+    Currently it only replaces the colon (":") with a "-". Can add more forbidden characters and their replacements to `file_sep_replace_dict` as I discover/need them
+
+    Usage:
+        from pyphocorehelpers.Filesystem.path_helpers import sanitize_filename_for_Windows
+
+        original_proposed_filename: str = "wcorr_diff_Across Sessions 'wcorr_diff' (8 Sessions) - time bin size: 0.025 sec"
+        good_filename: str = sanitize_filename_for_Windows(original_proposed_filename)
+        good_filename
+    
+    """
+    file_sep_replace_dict = {":":"-"}
+    refined_filename: str = original_proposed_filename
+    for k, v in file_sep_replace_dict.items():
+        refined_filename = refined_filename.replace(k, v)
+    return refined_filename

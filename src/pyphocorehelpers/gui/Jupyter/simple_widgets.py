@@ -1,7 +1,7 @@
 from typing import Callable, Optional, List, Dict, Union
 import ipywidgets as widgets
 from ipywidgets import HBox, VBox
-from IPython.display import display, HTML
+from IPython.display import display, HTML, Javascript
 from pathlib import Path
 
 
@@ -67,25 +67,39 @@ def fullwidth_path_widget(a_path, file_name_label: str="session path:", box_layo
     
     
     left_label = widgets.Label(file_name_label, layout=widgets.Layout(width='auto'))
-    right_label = widgets.Label(a_path, layout=widgets.Layout(width='auto', flex='1 1 auto', margin='2px'))
+    # right_label = widgets.Label(a_path, layout=widgets.Layout(width='auto', flex='1 1 auto', margin='2px'))
+    # Change the style of 'right_label' to make it bolder and larger using HTML tags in the value
+    right_label = widgets.HTML(
+        value=f"<b style='font-size: larger;'>{a_path}</b>",
+        layout=widgets.Layout(width='auto', flex='1 1 auto', margin='2px')
+    )
 
+
+    button_layout = widgets.Layout(flex='0 1 auto', width='auto', margin='1px') # The button_layout ensures that buttons don't grow and are only as wide as necessary.
+    # right_label_layout = widgets.Layout(flex='1 1 auto', min_width='0px', width='auto') # We use the flex property in the right_label_layout to let the label grow and fill the space, but it can also shrink if needed (flex='1 1 auto'). We set a min_width so it doesn't get too small and width='auto' to let it size based on content
+    
     actions_button_list = []
-    copy_to_clipboard_button = widgets.Button(description='Copy', layout=widgets.Layout(flex='0 1 auto', width='auto', margin='1px'), disabled=(not Path(a_path).resolve().exists()), button_style='info', tooltip='Copy to Clipboard') # , icon='folder-tree'
+    copy_to_clipboard_button = widgets.Button(description='Copy', layout=button_layout, disabled=(not Path(a_path).resolve().exists()), button_style='info', tooltip='Copy to Clipboard', icon='clipboard') # , icon='folder-tree'
     copy_to_clipboard_button.on_click(lambda _: copy_to_clipboard(str(a_path)))
     actions_button_list.append(copy_to_clipboard_button)
 
-    reveal_button = widgets.Button(description='Reveal', layout=widgets.Layout(flex='0 1 auto', width='auto', margin='1px'), disabled=(not Path(a_path).resolve().exists()), button_style='info', tooltip='Reveal in System Explorer', icon='folder-tree')
+    reveal_button = widgets.Button(description='Reveal', layout=button_layout, disabled=(not Path(a_path).resolve().exists()), button_style='info', tooltip='Reveal in System Explorer', icon='folder-open-o')
     reveal_button.on_click(lambda _: reveal_in_system_file_manager(a_path))
     actions_button_list.append(reveal_button)
 
     if has_valid_file:
         is_dir = resolved_path.is_dir()
         if not is_dir:
-            open_button = widgets.Button(description='Open', layout=widgets.Layout(flex='0 1 auto', width='auto', margin='1px'), disabled=((not Path(a_path).resolve().exists()) or ((Path(a_path).resolve().is_dir()))), button_style='info', tooltip='Open with default app', icon='folder-tree')
+            open_button = widgets.Button(description='Open', layout=button_layout, disabled=((not Path(a_path).resolve().exists()) or ((Path(a_path).resolve().is_dir()))), button_style='info', tooltip='Open with default app', icon='external-link-square')
             open_button.on_click(lambda _: open_file_with_system_default(a_path))
             actions_button_list.append(open_button)
 
-    box_layout_kwargs = (box_layout_kwargs | dict(display='flex', flex_flow='row', align_items='stretch', width='70%'))
+    box_layout_kwargs = (box_layout_kwargs | dict(display='flex', flex_flow='row nowrap',
+                                                #    align_items='stretch', width='70%',
+                                                    align_items='center', # Vertically align items in the middle
+                                                    justify_content='flex-start', # Align items to the start of the container
+                                                    width='70%'                                                 
+                                                   ))
     box_layout = widgets.Layout(**box_layout_kwargs)
     hbox = widgets.Box(children=[left_label, right_label, *actions_button_list], layout=box_layout)
     return hbox

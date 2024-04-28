@@ -1362,6 +1362,7 @@ def document_active_variables(params, include_explicit_values=False, enable_prin
 def build_module_logger(module_name='Spike3D.notebook', file_logging_dir=Path('EXTERNAL/TESTING/Logging'), debug_print=False):
     """ Builds a logger for a specific module that logs to console output and a file. 
     
+    TODO: see `from pyphoplacecellanalysis.General.Batch.runBatch import build_batch_task_logger` as a replacement
     
     Testing:
     

@@ -64,6 +64,11 @@ class FigureCollector:
     
     Specifically a Matplotlib thing: .create_figure(...), .subplots(...), .subplot_mosaic(...) are alternatives to the matplotlib functions of the same names but they keep track of the outputs for later use.
     
+
+
+        
+
+
     """
     def __init__(self, name='MatplotlibRenderPlots', figures=None, axes=None, axes_dict=None, contexts=None, base_context=None):
         self.name = name
@@ -87,6 +92,106 @@ class FigureCollector:
         fig = plt.figure(*args, **kwargs)
         self.figures.append(fig)
         return fig
+    
+
+    def build_or_reuse_figure(self, fignum=1, fig=None, fig_idx:int=0, **kwargs):
+        """ Reuses a Matplotlib figure if it exists, or creates a new one if needed
+        Inputs:
+            fignum - an int or str that identifies a figure
+            fig - an existing Matplotlib figure
+            fig_idx:int - an index to identify this figure as part of a series of related figures, e.g. plot_pf_1D[0], plot_pf_1D[1], ... 
+            **kwargs - are passed as kwargs to the plt.figure(...) command when creating a new figure
+        Outputs:
+            fig: a Matplotlib figure object
+
+        History: factored out of `plot_ratemap_2D`
+
+        Usage:
+            from neuropy.utils.matplotlib_helpers import build_or_reuse_figure
+            
+        Example 1:
+            ## Figure Setup:
+            fig = build_or_reuse_figure(fignum=kwargs.pop('fignum', None), fig=kwargs.pop('fig', None), fig_idx=kwargs.pop('fig_idx', 0), figsize=kwargs.pop('figsize', (10, 4)), dpi=kwargs.pop('dpi', None), constrained_layout=True) # , clear=True
+            subfigs = fig.subfigures(actual_num_subfigures, 1, wspace=0.07)
+            ##########################
+
+        Example 2:
+            
+            if fignum is None:
+                if f := plt.get_fignums():
+                    fignum = f[-1] + 1
+                else:
+                    fignum = 1
+
+            ## Figure Setup:
+            if ax is None:
+                fig = build_or_reuse_figure(fignum=fignum, fig=fig, fig_idx=0, figsize=(12, 4.2), dpi=None, clear=True, tight_layout=False)
+                gs = GridSpec(1, 1, figure=fig)
+
+                if use_brokenaxes_method:
+                    # `brokenaxes` method: DOES NOT YET WORK!
+                    from brokenaxes import brokenaxes ## Main brokenaxes import 
+                    pad_size: float = 0.1
+                    # [(a_tuple.start, a_tuple.stop) for a_tuple in a_test_epoch_df.itertuples(index=False, name="EpochTuple")]
+                    lap_start_stop_tuples_list = [((a_tuple.start - pad_size), (a_tuple.stop + pad_size)) for a_tuple in ensure_dataframe(laps_Epoch_obj).itertuples(index=False, name="EpochTuple")]
+                    # ax = brokenaxes(xlims=((0, .1), (.4, .7)), ylims=((-1, .7), (.79, 1)), hspace=.05, subplot_spec=gs[0])
+                    ax = brokenaxes(xlims=lap_start_stop_tuples_list, hspace=.05, subplot_spec=gs[0])
+                else:
+                    ax = plt.subplot(gs[0])
+
+            else:
+                # otherwise get the figure from the passed axis
+                fig = ax.get_figure()
+                        
+                
+        """
+        if fignum is None:
+            if f := plt.get_fignums():
+                fignum = f[-1] + 1
+            else:
+                fignum = 1
+
+        ## Figure Setup:
+        if fig is not None:
+            # provided figure
+            extant_fig = fig
+        else:
+            extant_fig = None # is this okay?
+            
+        if fig is not None:
+            # provided figure
+            active_fig_id = fig
+        else:
+            if isinstance(fignum, int):
+                # a numeric fignum that can be incremented
+                active_fig_id = fignum + fig_idx
+            elif isinstance(fignum, str):
+                # a string-type fignum.
+                # TODO: deal with inadvertant reuse of figure? perhaps by appending f'{fignum}[{fig_ind}]'
+                if fig_idx > 0:
+                    active_fig_id = f'{fignum}[{fig_idx}]'
+                else:
+                    active_fig_id = fignum
+            else:
+                raise NotImplementedError
+        
+        if extant_fig is None:
+            # fig = plt.figure(active_fig_id, **({'dpi': None, 'clear': True} | kwargs)) # , 'tight_layout': False - had to remove 'tight_layout': False because it can't coexist with 'constrained_layout'
+            fig = self.create_figure(active_fig_id, **({'dpi': None, 'clear': True} | kwargs))
+            #  UserWarning: The Figure parameters 'tight_layout' and 'constrained_layout' cannot be used together.
+        else:
+            fig = extant_fig
+            if fig not in self.figures:
+                # if the fig exists but was created externally, add it to the list of figures. Note that we might be missing its existing axes then...
+                print(f'fig exists but was created externally, add it to the list of figures')
+                self.figures.append(fig)
+                for ax in fig.get_axes():
+                    if (ax not in self.axes) and (ax not in self.axes.values()):
+                        self.axes.append(ax)
+                        # not sure if this logic is air-tight
+
+        return fig
+                
     
     def subplots(self, *args, **kwargs):
         """ 
@@ -121,7 +226,7 @@ class FigureCollector:
                 self.axes.append(ax)
         return fig, axes
 
-    def subplot_mosaic(self, *args, **kwargs):
+    def subplot_mosaic(self, *args, extant_fig=None, **kwargs):
         """ emulates matplotlib's fig.subplot_mosaic(...) function
             def subplot_mosaic(
                 mosaic: list[HashableList[_T@subplot_mosaic]],
@@ -198,8 +303,14 @@ class FigureCollector:
             
         """
         fig_kw = kwargs.pop('fig_kw', dict()) # empty dict by default
-        fig = plt.figure(**fig_kw) # layout="constrained"
-        self.figures.append(fig)
+        extant_fig = kwargs.pop('extant_fig', None)
+        if extant_fig is None:
+            fig = plt.figure(**fig_kw) # layout="constrained"
+            self.figures.append(fig)
+        else:
+            if fig not in self.figures:
+                self.figures.append(fig)
+
         ## subplot_mosaic
         ax_dict = fig.subplot_mosaic(*args, **kwargs) # dict[label, Axes]
         assert len(self.figures) == 1, f"requires only one figure because self.axes_dict is flat"

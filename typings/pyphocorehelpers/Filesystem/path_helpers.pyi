@@ -8,6 +8,103 @@ from typing import Dict, List, Optional, Union
 from datetime import datetime
 from pyphocorehelpers.function_helpers import function_attributes
 from pyphocorehelpers.programming_helpers import metadata_attributes
+from attrs import define
+
+@define(slots=False)
+class BaseMatchParser:
+    """ 
+    ## Sequential Parser:
+    ### Tries a series of methods to parse a filename into a variety of formats that doesn't require nested try/catch
+    ### Recieves: filename: str
+    """
+    def try_parse(self, filename: str) -> Optional[Dict]:
+        ...
+    
+
+
+@define(slots=False)
+class DayDateTimeParser(BaseMatchParser):
+    def try_parse(self, filename: str) -> Optional[Dict]:
+        ...
+    
+
+
+@define(slots=False)
+class DayDateOnlyParser(BaseMatchParser):
+    def try_parse(self, filename: str) -> Optional[Dict]:
+        ...
+    
+
+
+@define(slots=False)
+class DayDateWithVariantSuffixParser(BaseMatchParser):
+    def try_parse(self, filename: str) -> Optional[Dict]:
+        ...
+    
+
+
+@define(slots=False)
+class AutoVersionedUniqueFilenameParser(BaseMatchParser):
+    """ '20221109173951-loadedSessPickle.pkl' """
+    def build_unique_filename(self, file_to_save_path, additional_postfix_extension=...) -> str:
+        """ builds the filenames from the path of the form: '20221109173951-loadedSessPickle.pkl'"""
+        ...
+    
+    def try_parse(self, filename: str) -> Optional[Dict]:
+        ...
+    
+
+
+@define(slots=False)
+class AutoVersionedExtantFileBackupFilenameParser(BaseMatchParser):
+    """ 'backup-20221109173951-loadedSessPickle.pkl.bak' """
+    def build_backup_filename(self, file_to_save_path, backup_extension: str = ...) -> str:
+        """ builds the filenames from the path of the form: 'backup-20221109173951-loadedSessPickle.pkl.bak'"""
+        ...
+    
+    def try_parse(self, filename: str) -> Optional[Dict]:
+        ...
+    
+
+
+def try_datetime_detect_by_split(a_filename: str, split_parts_delimiter: str = ...): # -> dict[Any, Any]:
+    """ tries to find a datetime-parsable component anywhere in the string after splitting by `split_parts_delimiter` 
+    """
+    ...
+
+def try_detect_full_file_export_filename(a_filename: str): # -> dict[Any, Any] | None:
+    """ Parses filenames like
+
+    loadedSessPickle_test_strings = [
+    'loadedSessPickle.pkl',
+    'loadedSessPickle_2023-10-06.pkl',
+    'loadedSessPickle_2024-03-28_Apogee.pkl',
+    ]
+
+    global_computation_results_test_strings = [
+    'global_computation_results.pkl',
+    'global_computation_results_2023-10-06.pkl',
+    'global_computation_results_2024-03-28_Apogee.pkl',
+    ]
+
+    
+    """
+    ...
+
+@function_attributes(short_name=None, tags=['parse', 'filename'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-03-28 10:10', related_items=[])
+def try_parse_chain(basename: str, debug_print: bool = ...): # -> Dict[Any, Any] | None:
+    """ tries to parse the basename with the list of parsers. 
+    
+    Usage:
+    
+        from pyphocorehelpers.Filesystem.path_helpers import try_parse_chain
+    
+        basename: str = _test_h5_filename.stem
+        final_parsed_output_dict = try_parse_chain(basename=basename)
+        final_parsed_output_dict
+
+    """
+    ...
 
 def build_unique_filename(file_to_save_path, additional_postfix_extension=...): # -> tuple[Path, str]:
     """ builds a unique filename for the file to be saved at file_to_save_path.
@@ -19,6 +116,17 @@ def build_unique_filename(file_to_save_path, additional_postfix_extension=...): 
         from pyphocorehelpers.Filesystem.path_helpers import build_unique_filename
         unique_save_path, unique_file_name = build_unique_filename(curr_active_pipeline.pickle_path) # unique_file_name: '20221109173951-loadedSessPickle.pkl'
         unique_save_path # 'W:/Data/KDIBA/gor01/one/2006-6-09_1-22-43/20221109173951-loadedSessPickle.pkl'
+    """
+    ...
+
+def parse_unique_file_name(unique_file_name: str): # -> Dict[Any, Any] | None:
+    """ reciprocal to parse filenames created with `build_unique_filename`
+
+    Usage:
+
+    from pyphocorehelpers.Filesystem.path_helpers import parse_unique_file_name
+
+
     """
     ...
 
@@ -79,7 +187,11 @@ def file_uri_from_path(a_path: Union[Path, str]) -> str:
     ...
 
 def quote_wrapped_string(a_str: str, quote_str: str = ...) -> str:
-    """ takes a a_str and returns it wrapped in literal quote characters specified by `quote_str`. Defaults to double quotes """
+    """ takes a a_str and returns it wrapped in literal quote characters specified by `quote_str`. Defaults to double quotes 
+
+    from pyphocorehelpers.Filesystem.path_helpers import quote_wrapped_string, unwrap_quote_wrapped_string
+
+    """
     ...
 
 def unwrap_quote_wrapped_string(a_quote_wrapped_str: str) -> str:
@@ -106,6 +218,22 @@ def print_data_files_list_as_array(filenames_list): # -> None:
     ...
 
 def save_filelist_to_text_file(hdf5_output_paths: List[Path], filelist_path: Path, debug_print: bool = ...): # -> tuple[str, Path]:
+    """ 
+    from pyphocorehelpers.Filesystem.path_helpers import save_filelist_to_text_file
+        
+    _out_string, filelist_path = save_filelist_to_text_file(hdf5_output_paths, filelist_path=text_file_path, debug_print=True)
+
+    """
+    ...
+
+def read_filelist_from_text_file(filelist_path: Path, debug_print: bool = ...) -> List[Path]:
+    """ 
+    from pyphocorehelpers.Filesystem.path_helpers import read_filelist_from_text_file
+        
+    read_hdf5_output_paths = read_filelist_from_text_file(filelist_path=filelist_path, debug_print=True)
+    read_hdf5_output_paths
+
+    """
     ...
 
 def save_copydict_to_text_file(file_movedict: Dict[Path, Path], filelist_path: Path, debug_print: bool = ...): # -> tuple[LiteralString, Path]:
@@ -262,6 +390,21 @@ def open_file_with_system_default(filename: Union[Path, str]): # -> None:
 
         open_file_with_system_default(r'C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/EXTERNAL/DEVELOPER_NOTES/DataStructureDocumentation/InteractivePlaceCellConfig.html')
 
+    """
+    ...
+
+def sanitize_filename_for_Windows(original_proposed_filename: str) -> str:
+    """ 2024-04-28 - sanitizes a proposed filename such that it is valid for saving (in Windows). 
+
+    Currently it only replaces the colon (":") with a "-". Can add more forbidden characters and their replacements to `file_sep_replace_dict` as I discover/need them
+
+    Usage:
+        from pyphocorehelpers.Filesystem.path_helpers import sanitize_filename_for_Windows
+
+        original_proposed_filename: str = "wcorr_diff_Across Sessions 'wcorr_diff' (8 Sessions) - time bin size: 0.025 sec"
+        good_filename: str = sanitize_filename_for_Windows(original_proposed_filename)
+        good_filename
+    
     """
     ...
 

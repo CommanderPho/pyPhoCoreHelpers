@@ -127,27 +127,8 @@ _custom_function_metadata_attribute_names = dict(short_name=None, tags=None, cre
 )
 
 
-def global_function(is_global:bool=True):
-    """Adds function attributes to a function that marks it as global
 
-    ```python
-        from pyphocorehelpers.function_helpers import global_function
-
-        @global_function()
-        def _perform_time_dependent_pf_sequential_surprise_computation(computation_result, debug_print=False):
-            # function body
-    ```
-
-    func.is_global
-    """
-    def decorator(func):
-        func.is_global = is_global
-        return func
-    return decorator
-
-
-
-def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None, uses=None, used_by=None, related_items=None, conforms_to=None, is_global:bool=False, validate_computation_test:Optional[Callable]=None, requires_global_keys=None, provides_global_keys=None):
+def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None, uses=None, used_by=None, related_items=None, conforms_to=None, is_global:bool=False, validate_computation_test:Optional[Callable]=None, requires_global_keys=None, provides_global_keys=None, **kwargs):
     """Adds function attributes to a function or class
 
     ```python
@@ -176,12 +157,10 @@ def function_attributes(short_name=None, tags=None, creation_date=None, input_re
         func.validate_computation_test = validate_computation_test
         func.requires_global_keys = requires_global_keys
         func.provides_global_keys = provides_global_keys
+        for k, v in kwargs.items():
+            setattr(func, k, v)
         return func
     return decorator
-
-
-
-
 
 
 

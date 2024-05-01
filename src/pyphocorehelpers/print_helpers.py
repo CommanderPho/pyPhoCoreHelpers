@@ -19,8 +19,6 @@ from traceback import extract_tb, format_list, format_exception_only # Required 
 from attrs import define, field, Factory
 
 import re ## required for strip_type_str_to_classname(...)
-
-# Required for build_module_logger
 from pathlib import Path
 import logging
 
@@ -1336,6 +1334,14 @@ def document_active_variables(params, include_explicit_values=False, enable_prin
 # LOGGING                                                                                                              #
 # ==================================================================================================================== #
 
+def get_system_hostname(enable_print:bool=False) -> str:
+    hostname = socket.gethostname()
+    if enable_print:
+        print(f"Hostname: {hostname}") # Hostname: LNX00052
+    return hostname
+
+
+
 # logging.basicConfig()
 # logging.root.setLevel(logging.DEBUG)
 
@@ -1381,8 +1387,7 @@ def build_run_log_task_identifier(run_context: Union[str, List[str]], logging_ro
         _out_parts.append(runtime_start_str)
     
     if include_hostname:
-        import socket
-        hostname: str = socket.gethostname() # get the system's hostname
+        hostname: str = get_system_hostname() # get the system's hostname
         # print(f"Hostname: {hostname}") # Hostname: LNX00052
         _out_parts.append(hostname)
 
@@ -1394,6 +1399,7 @@ def build_run_log_task_identifier(run_context: Union[str, List[str]], logging_ro
     if isinstance(run_context, (list, tuple)):
         _out_parts.extend(run_context)
     elif hasattr(run_context, 'get_description'):
+        # like an IdentifyingContext object
         _out_parts.append(str(run_context.get_description(separator='.'))) # 'kdiba.gor01.two.2006-6-07_16-40-19'
     else:
         _out_parts.append(str(run_context))
@@ -1406,14 +1412,17 @@ def build_run_log_task_identifier(run_context: Union[str, List[str]], logging_ro
 
     return out_str
 
-def build_logger(full_logger_string: str, file_logging_dir=Path('EXTERNAL/TESTING/Logging'), debug_print=True):
+def build_logger(full_logger_string: str, file_logging_dir=Path('EXTERNAL/TESTING/Logging'),
+                logFormatter: Optional[logging.Formatter]=None, debug_print=True):
     """ builds a logger
     
     from pyphocorehelpers.print_helpers import build_run_log_task_identifier, build_logger
 
     """
-    logFormatter = logging.Formatter("%(relativeCreated)d %(name)s]  [%(levelname)-5.5s]  %(message)s")
-    task_logger: logging.Logger = logging.getLogger(full_logger_string) # create logger
+    if logFormatter is None:
+        logFormatter = logging.Formatter("%(relativeCreated)d %(name)s]  [%(levelname)-5.5s]  %(message)s")
+    
+    task_logger: logging.Logger = logging.getLogger(full_logger_string, logFormatter=logFormatter) # create logger
     print(f'build_logger(full_logger_string="{full_logger_string}", file_logging_dir: {file_logging_dir}):')
     if debug_print:
         print(f'\t task_logger.handlers: {task_logger.handlers}')
@@ -1449,69 +1458,6 @@ def build_logger(full_logger_string: str, file_logging_dir=Path('EXTERNAL/TESTIN
     task_logger.setLevel(logging.DEBUG)
     task_logger.info(f'==========================================================================================\n========== Logger INIT "{task_logger.name}" ==============================')
     return task_logger
-
-
-def build_module_logger(module_name='Spike3D.notebook', file_logging_dir=Path('EXTERNAL/TESTING/Logging'), debug_print=False):
-    """ Builds a logger for a specific module that logs to console output and a file. 
-    
-    TODO: see `from pyphoplacecellanalysis.General.Batch.runBatch import build_task_logger` as a replacement
-    
-    Testing:
-    
-        module_logger.debug (f'DEBUG: module_logger: "com.PhoHale.Spike3D.notebook"')
-        module_logger.info(f'INFO: module_logger: "com.PhoHale.Spike3D.notebook"')
-        module_logger.warning(f'WARNING: module_logger: "com.PhoHale.Spike3D.notebook"')
-        module_logger.error(f'ERROR: module_logger: "com.PhoHale.Spike3D.notebook"')
-        module_logger.critical(f'CRITICAL: module_logger: "com.PhoHale.Spike3D.notebook"')
-        module_logger.exception(f'EXCEPTION: module_logger: "com.PhoHale.Spike3D.notebook"')
-
-    """
-    # logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] %(name)s [%(levelname)-5.5s]  %(message)s")
-    logFormatter = logging.Formatter("%(relativeCreated)d %(name)s]  [%(levelname)-5.5s]  %(message)s")
-
-
-    logger_full_task: str = build_batch_processing_session_task_identifier(session_context, logging_root_FQDN=None)
-    
-    module_logger = logging.getLogger(f'com.PhoHale.{module_name}') # create logger
-    print(f'build_module_logger(module_name="{module_name}"):')
-    if debug_print:
-        print(f'\t module_logger.handlers: {module_logger.handlers}')
-    module_logger.handlers = []
-    # module_logger.removeHandler()
-
-    if file_logging_dir is not None:
-        # file logging enabled:
-        # Create logging directory if it doesn't exist
-        file_logging_dir.mkdir(parents=True, exist_ok=True)
-
-        # file_logging_dir = Path('EXTERNAL/TESTING/Logging') # 'C:\Users\pho\repos\PhoPy3DPositionAnalysis2021\EXTERNAL\TESTING\Logging'
-        module_logging_path = file_logging_dir.joinpath(f'debug_{module_logger.name}.log') # module_logger.name # 'com.PhoHale.Spike3D.notebook'
-
-        # File Logging:    
-        print(f'\t Module logger {module_logger.name} has file logging enabled and will log to {str(module_logging_path)}')
-        fileHandler = logging.FileHandler(module_logging_path)
-        fileHandler.setFormatter(logFormatter)
-        module_logger.addHandler(fileHandler)
-
-    # consoleHandler = logging.StreamHandler(sys.stdout)
-    # consoleHandler.setFormatter(logFormatter)
-    # # module_logger.addHandler(consoleHandler)
-
-    # General Logger Setup:
-    module_logger.setLevel(logging.DEBUG)
-    module_logger.info(f'==========================================================================================\n========== Module Logger INIT "{module_logger.name}" ==============================')
-    return module_logger
-
-
-
-
-def get_system_hostname(enable_print:bool=False) -> str:
-    hostname = socket.gethostname()
-    if enable_print:
-        print(f"Hostname: {hostname}") # Hostname: LNX00052
-    return hostname
-
-
 
 
 # ==================================================================================================================== #

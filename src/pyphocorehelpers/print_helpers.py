@@ -1422,7 +1422,7 @@ def build_logger(full_logger_string: str, file_logging_dir=Path('EXTERNAL/TESTIN
     if logFormatter is None:
         logFormatter = logging.Formatter("%(relativeCreated)d %(name)s]  [%(levelname)-5.5s]  %(message)s")
     
-    task_logger: logging.Logger = logging.getLogger(full_logger_string, logFormatter=logFormatter) # create logger
+    task_logger: logging.Logger = logging.getLogger(full_logger_string) # create logger
     print(f'build_logger(full_logger_string="{full_logger_string}", file_logging_dir: {file_logging_dir}):')
     if debug_print:
         print(f'\t task_logger.handlers: {task_logger.handlers}')

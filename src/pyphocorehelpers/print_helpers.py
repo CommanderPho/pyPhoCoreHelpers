@@ -1,5 +1,5 @@
 import socket # for getting hostname
-from typing import Union, List, Dict, Set, Any, Optional, OrderedDict  # for OrderedMeta
+from typing import Union, List, Dict, Tuple, Set, Any, Optional, OrderedDict, Callable  # for OrderedMeta
 
 from datetime import datetime, date, timedelta # for `get_now_day_str`
 import time # for `get_now_time_str`, `get_now_time_precise_str`
@@ -1359,10 +1359,102 @@ def document_active_variables(params, include_explicit_values=False, enable_prin
 
 
 
+def build_run_log_task_identifier(run_context: Union[str, List[str]], logging_root_FQDN: str = f'com.PhoHale.Spike3D', include_curr_time_str: bool=True, include_hostname:bool=True, additional_suffix:Optional[str]=None) -> str:
+    """ Builds an identifier string for logging task progress like 'LNX00052.kdiba.gor01.two.2006-6-07_16-40-19'
+    
+
+    Usage:    
+        from pyphocorehelpers.print_helpers import build_run_log_task_identifier
+
+        build_run_log_task_identifier('test')
+        
+        >>> '2024-05-01_14-05-31.Apogee.com.PhoHale.Spike3D.test'
+
+        build_run_log_task_identifier('test', logging_root_FQDN='Spike3D') # '2024-05-01_14-05-26.Apogee.Spike3D.test'
+    
+    """
+    _out_parts = []
+
+    if include_curr_time_str:
+        # runtime_start_str: str = f'{datetime.now().strftime("%Y%m%d%H%M%S")}'
+        runtime_start_str: str = get_now_time_precise_str()
+        _out_parts.append(runtime_start_str)
+    
+    if include_hostname:
+        import socket
+        hostname: str = socket.gethostname() # get the system's hostname
+        # print(f"Hostname: {hostname}") # Hostname: LNX00052
+        _out_parts.append(hostname)
+
+
+    if (logging_root_FQDN is not None) and (len(logging_root_FQDN) > 0):
+        _out_parts.append(logging_root_FQDN)
+
+    ## add the main content name
+    if isinstance(run_context, (list, tuple)):
+        _out_parts.extend(run_context)
+    elif hasattr(run_context, 'get_description'):
+        _out_parts.append(str(run_context.get_description(separator='.'))) # 'kdiba.gor01.two.2006-6-07_16-40-19'
+    else:
+        _out_parts.append(str(run_context))
+
+    ## build the output string
+    out_str: str = '.'.join(_out_parts)
+
+    if additional_suffix is not None:
+        out_str = f"{out_str}.{additional_suffix.lstrip('.')}"
+
+    return out_str
+
+def build_logger(full_logger_string: str, file_logging_dir=Path('EXTERNAL/TESTING/Logging'), debug_print=True):
+    """ builds a logger
+    
+    from pyphocorehelpers.print_helpers import build_run_log_task_identifier, build_logger
+
+    """
+    logFormatter = logging.Formatter("%(relativeCreated)d %(name)s]  [%(levelname)-5.5s]  %(message)s")
+    task_logger: logging.Logger = logging.getLogger(full_logger_string) # create logger
+    print(f'build_logger(full_logger_string="{full_logger_string}", file_logging_dir: {file_logging_dir}):')
+    if debug_print:
+        print(f'\t task_logger.handlers: {task_logger.handlers}')
+    task_logger.handlers = []
+    # task_logger.removeHandler()
+
+    if file_logging_dir is not None:
+        # file logging enabled:
+        if file_logging_dir.is_file():
+            # file_logging_dir is an entire logging file:
+            module_logging_path = file_logging_dir.resolve()
+            file_logging_dir = module_logging_path.parent.resolve() # get the parent of the log file provided as the logging directory
+        else:
+            # file_logging_dir = Path('EXTERNAL/TESTING/Logging') # 'C:\Users\pho\repos\PhoPy3DPositionAnalysis2021\EXTERNAL\TESTING\Logging'
+            module_logging_path = file_logging_dir.joinpath(f'debug_{task_logger.name}.log') # task_logger.name # 'com.PhoHale.Spike3D.notebook'
+
+        # Create logging directory if it doesn't exist
+        file_logging_dir.mkdir(parents=True, exist_ok=True)
+
+        # File Logging:    
+        print(f'\t Task logger "{task_logger.name}" has file logging enabled and will log to "{str(module_logging_path)}"')
+        fileHandler: logging.FileHandler = logging.FileHandler(module_logging_path)
+        fileHandler.setFormatter(logFormatter)
+        
+        # fileHandler.baseFilename
+        task_logger.addHandler(fileHandler)
+
+    # consoleHandler = logging.StreamHandler(sys.stdout)
+    # consoleHandler.setFormatter(logFormatter)
+    # # task_logger.addHandler(consoleHandler)
+
+    # General Logger Setup:
+    task_logger.setLevel(logging.DEBUG)
+    task_logger.info(f'==========================================================================================\n========== Logger INIT "{task_logger.name}" ==============================')
+    return task_logger
+
+
 def build_module_logger(module_name='Spike3D.notebook', file_logging_dir=Path('EXTERNAL/TESTING/Logging'), debug_print=False):
     """ Builds a logger for a specific module that logs to console output and a file. 
     
-    TODO: see `from pyphoplacecellanalysis.General.Batch.runBatch import build_batch_task_logger` as a replacement
+    TODO: see `from pyphoplacecellanalysis.General.Batch.runBatch import build_task_logger` as a replacement
     
     Testing:
     
@@ -1377,6 +1469,9 @@ def build_module_logger(module_name='Spike3D.notebook', file_logging_dir=Path('E
     # logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] %(name)s [%(levelname)-5.5s]  %(message)s")
     logFormatter = logging.Formatter("%(relativeCreated)d %(name)s]  [%(levelname)-5.5s]  %(message)s")
 
+
+    logger_full_task: str = build_batch_processing_session_task_identifier(session_context, logging_root_FQDN=None)
+    
     module_logger = logging.getLogger(f'com.PhoHale.{module_name}') # create logger
     print(f'build_module_logger(module_name="{module_name}"):')
     if debug_print:

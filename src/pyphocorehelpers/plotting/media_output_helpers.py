@@ -13,18 +13,20 @@ from matplotlib.figure import FigureBase
 # from pyphoplacecellanalysis.SpecificResults.PendingNotebookCode import copy_image_to_clipboard # required for `fig_to_clipboard`
 
 
-
-def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png') -> (Image, Path):
-    """ Exports a numpy array to file as a colormapped image
+def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False) -> Image:
+    """ Like `save_array_as_image` except it skips the saving. Converts a numpy array to file as a colormapped image
     
     # Usage:
     
-        from pyphocorehelpers.plotting.media_output_helpers import save_array_as_image
+        from pyphocorehelpers.plotting.media_output_helpers import get_array_as_image
     
-        image, out_path = save_array_as_image(img_data, desired_height=100, desired_width=None, skip_img_normalization=True)
+        image = get_array_as_image(img_data, desired_height=100, desired_width=None, skip_img_normalization=True)
         image
                 
     """
+
+    
+
     # Assuming `your_array` is your numpy array
     # For the colormap, you can use any colormap from matplotlib. 
     # In this case, 'hot' is used.
@@ -43,6 +45,9 @@ def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_h
     # Convert to PIL image and remove alpha channel
     image = Image.fromarray((image_array[:, :, :3] * 255).astype(np.uint8))
 
+    if ((desired_width is None) and (desired_height is None)):
+        desired_width = 1024 # set a default arbitrarily
+
     if desired_width is not None:
         # Specify width
         assert desired_height is None, f"please don't provide both width and height, the other will be calculated automatically."
@@ -59,6 +64,22 @@ def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_h
     # Resize image
     # image = image.resize((new_width, new_height), Image.LANCZOS)
     image = image.resize((desired_width, desired_height), Image.NEAREST)
+
+    return image
+
+
+def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png') -> (Image, Path):
+    """ Exports a numpy array to file as a colormapped image
+    
+    # Usage:
+    
+        from pyphocorehelpers.plotting.media_output_helpers import save_array_as_image
+    
+        image, out_path = save_array_as_image(img_data, desired_height=100, desired_width=None, skip_img_normalization=True)
+        image
+                
+    """
+    image: Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, colormap=colormap, skip_img_normalization=skip_img_normalization)
 
     out_path = Path(out_path).resolve()
     # Save image to file

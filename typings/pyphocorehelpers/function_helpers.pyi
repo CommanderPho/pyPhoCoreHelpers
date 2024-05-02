@@ -59,22 +59,7 @@ def add_method(cls): # -> Callable[..., Any]:
     ...
 
 _custom_function_metadata_attribute_names = ...
-def global_function(is_global: bool = ...): # -> Callable[..., Any]:
-    """Adds function attributes to a function that marks it as global
-
-    ```python
-        from pyphocorehelpers.function_helpers import global_function
-
-        @global_function()
-        def _perform_time_dependent_pf_sequential_surprise_computation(computation_result, debug_print=False):
-            # function body
-    ```
-
-    func.is_global
-    """
-    ...
-
-def function_attributes(short_name=..., tags=..., creation_date=..., input_requires=..., output_provides=..., uses=..., used_by=..., related_items=..., conforms_to=..., is_global: bool = ..., validate_computation_test: Optional[Callable] = ..., requires_global_keys=..., provides_global_keys=...): # -> Callable[..., Any]:
+def function_attributes(short_name=..., tags=..., creation_date=..., input_requires=..., output_provides=..., uses=..., used_by=..., related_items=..., conforms_to=..., is_global: bool = ..., validate_computation_test: Optional[Callable] = ..., requires_global_keys=..., provides_global_keys=..., **kwargs): # -> Callable[..., Any]:
     """Adds function attributes to a function or class
 
     ```python

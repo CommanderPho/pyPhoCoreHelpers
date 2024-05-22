@@ -187,6 +187,9 @@ def fig_to_clipboard(a_fig: Union[PlotlyFigure, FigureBase], format="png", **kwa
     if isinstance(a_fig, FigureBase):
         # Matplotlib Figure:
         _fig_save_fn = a_fig.savefig
+        if format == 'png':
+            kwargs.setdefault('bbox_inches', 'tight') # crops off the empty white margins
+
     elif isinstance(a_fig, PlotlyFigure):
         # Plotly Figure:
         _fig_save_fn = a_fig.write_image

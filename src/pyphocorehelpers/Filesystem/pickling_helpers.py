@@ -40,7 +40,8 @@ class RenameUnpickler(pickle.Unpickler):
         renamed_module = module
         assert self._move_modules_list is not None
         
-        found_full_replacement_name = self._move_modules_list.get(original_full_name, None)        
+        found_full_replacement_name = self._move_modules_list.get(original_full_name, None)
+        found_full_replacement_import_name = None
         if found_full_replacement_name is not None:
             found_full_replacement_module, found_full_replacement_import_name = found_full_replacement_name.rsplit('.', 1)
             renamed_module = found_full_replacement_module
@@ -51,7 +52,10 @@ class RenameUnpickler(pickle.Unpickler):
             key = (module, name)
             renamed_module, name = self._pandas_rename_map.get(key, key)
     
-        return super(RenameUnpickler, self).find_class(renamed_module, name)
+        if found_full_replacement_import_name is not None:
+            return super(RenameUnpickler, self).find_class(renamed_module, found_full_replacement_import_name)
+        else:
+            return super(RenameUnpickler, self).find_class(renamed_module, name)
 
     def __init__(self, *args, **kwds):
         # settings = pickle.Pickler.settings

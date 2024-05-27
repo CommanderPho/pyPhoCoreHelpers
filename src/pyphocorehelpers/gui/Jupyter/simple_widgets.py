@@ -223,3 +223,50 @@ def build_dropdown_selection_widget(all_items: List[Path], on_user_update_item_s
     
     return context_selection_dropdown
 
+
+def code_block_widget(contents: str, label: str="Code:"):
+    """
+    Create a code block widget with a copy-to-clipboard button.
+    
+    Parameters:
+    contents (str): The initial text/content to display in the code block.
+    label (str): The label for the code block textarea.
+
+    Usage:
+
+        from pyphocorehelpers.gui.Jupyter.simple_widgets import code_block_widget
+
+        # Create and display the code block widget
+        slurm_code_block = code_block_widget(initial_code, label="Python Code:")
+    
+    """
+    # Create the code block text area widget
+    code_textarea = widgets.Textarea(
+        value=contents,
+        placeholder='Type code here',
+        description=label,
+        disabled=False,
+        layout=widgets.Layout(width='100%', height='200px')  # Adjust the size as needed
+    )
+    
+    # Create the copy-to-clipboard button
+    copy_button = widgets.Button(
+        description='Copy to Clipboard',
+        button_style='success',  # Possible styles: 'success', 'info', 'warning', 'danger' or ''
+        tooltip='Copy code to clipboard',
+        layout={'width': '150px'}  # Adjust the width of the button as needed
+    )
+    
+    # Function to perform the copy to clipboard action
+    def on_copy_button_clicked(b):
+        payload = f"navigator.clipboard.writeText(`{code_textarea.value}`)"
+        js_command = f"eval({payload})"
+        display(widgets.HTML(value=f'<img src onerror="{js_command}">'))
+    
+    # Attach the function to the click event of the button
+    copy_button.on_click(on_copy_button_clicked)
+    
+    # Use a horizontal box (HBox) to place the button next to the text area
+    hbox = widgets.HBox([code_textarea, copy_button])
+    display(hbox)
+    return hbox

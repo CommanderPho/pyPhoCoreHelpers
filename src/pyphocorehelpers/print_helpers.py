@@ -1412,15 +1412,19 @@ def build_run_log_task_identifier(run_context: Union[str, List[str]], logging_ro
 
     return out_str
 
-def build_logger(full_logger_string: str, file_logging_dir=Path('EXTERNAL/TESTING/Logging'),
+
+def build_logger(full_logger_string: str, file_logging_dir=None,
                 logFormatter: Optional[logging.Formatter]=None, debug_print=True):
     """ builds a logger
     
     from pyphocorehelpers.print_helpers import build_run_log_task_identifier, build_logger
 
+    Default used to be:
+        file_logging_dir=Path('EXTERNAL/TESTING/Logging')
     """
     if logFormatter is None:
-        logFormatter = logging.Formatter("%(relativeCreated)d %(name)s]  [%(levelname)-5.5s]  %(message)s")
+        # logFormatter = logging.Formatter("%(relativeCreated)d %(name)s]  [%(levelname)-5.5s]  %(message)s")
+        logFormatter = logging.Formatter("%(asctime)s %(name)s]  [%(levelname)-5.5s]  %(message)s")
     
     task_logger: logging.Logger = logging.getLogger(full_logger_string) # create logger
     print(f'build_logger(full_logger_string="{full_logger_string}", file_logging_dir: {file_logging_dir}):')

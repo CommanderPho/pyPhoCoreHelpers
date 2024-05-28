@@ -23,8 +23,6 @@ class RenameUnpickler(pickle.Unpickler):
                     'pyphoplacecellanalysis.SpecificResults.PhoDiba2023Paper.InstantaneousSpikeRateGroupsComputation':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.InstantaneousSpikeRateGroupsComputation',
                     }
 
-    
-        
     Usage:
         from pyphocorehelpers.Filesystem.pickling_helpers import RenameUnpickler, renamed_load
     
@@ -75,29 +73,6 @@ def renamed_load(file_obj, move_modules_list:Dict=None, **kwargs):
 def renamed_loads(pickled_bytes):
     file_obj = io.BytesIO(pickled_bytes)
     return renamed_load(file_obj)
-
-
-
-# def update_module_path_in_pickled_object(pickle_path: str, old_module_path: str, new_module: ModuleType) -> None:
-#     """Update a python module's dotted path in a pickle dump if the
-#     corresponding file was renamed.
-
-#     Implements the advice in https://stackoverflow.com/a/2121918.
-
-#     Args:
-#         pickle_path (str): Path to the pickled object.
-#         old_module_path (str): The old.dotted.path.to.renamed.module.
-#         new_module (ModuleType): from new.location import module.
-#     """
-#     sys.modules[old_module_path] = new_module
-
-#     dic = pickle.load(open(pickle_path, "rb"))
-#     # dic = torch.load(pickle_path, map_location="cpu")
-
-#     del sys.modules[old_module_path]
-
-#     pickle.dump(dic, open(pickle_path, "wb"))
-#     # torch.save(dic, pickle_path)
 
 
 exclude_modules_list = ['pyphoplacecellanalysis.External.pyqtgraph'] # , 'pyphoplacecellanalysis.External.pyqtgraph.Qt.QtWidgets', 'pyphoplacecellanalysis.External.pyqtgraph.Qt.QtWidgets.QApplication'

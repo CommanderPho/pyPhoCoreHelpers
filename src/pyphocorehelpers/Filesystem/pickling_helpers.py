@@ -16,6 +16,13 @@ move_modules_list = {'pyphoplacecellanalysis.SpecificResults.PhoDiba2023Paper.Si
     }
 
 
+# Custom unpickling to remove property 'b'
+def remove_property(obj_dict):
+    if 'b' in obj_dict:
+        del obj_dict['b']
+    return obj_dict
+
+
 class RenameUnpickler(pickle.Unpickler):
     """ 
     # global_move_modules_list: Dict[str, str] - a dict with keys equal to the old full path to a class and values equal to the updated (replacement) full path to the class. Used to update the path to class definitions for loading previously pickled results after refactoring.

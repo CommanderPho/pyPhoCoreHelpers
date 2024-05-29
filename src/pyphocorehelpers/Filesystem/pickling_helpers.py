@@ -191,4 +191,52 @@ def custom_dumps(obj, protocol=None, byref=None, fmode=None, recurse=None, **kwd
 #         pickler.dump(obj)
         
 
+# @function_attributes(short_name=None, tags=['pickle', 'dill', 'debug', 'tool'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-01-01 00:00', related_items=[])
+def diagnose_pickling_issues(object_to_pickle):
+   """Intellegently diagnoses which property on an object is causing pickling via Dill to fail.
+   
+   Usage:
+        import dill as pickle
+        from pyphocorehelpers.Filesystem.pickling_helpers import diagnose_pickling_issues
+
+        diagnose_pickling_issues(curr_active_pipeline.global_computation_results.computed_data['RankOrder'])
+   """
+
+   try:
+       # Attempt to pickle the object directly
+       pickle.dumps(object_to_pickle)
+   except pickle.PicklingError as e:
+       # If pickling fails, initiate a diagnostic process
+       print(f"Pickling error encountered: {e}")
+
+       # Gather information about the object's attributes
+       object_attributes = [attr for attr in dir(object_to_pickle) if not attr.startswith("__")]
+
+       # Isolate problematic attributes through iterative testing
+       problematic_attribute = None
+       for attribute in object_attributes:
+           try:
+               pickle.dumps(getattr(object_to_pickle, attribute))
+           except pickle.PicklingError:
+               problematic_attribute = attribute
+               break
+
+       # Provide informative output
+       if problematic_attribute:
+           print(f"Identified problematic attribute: {problematic_attribute}")
+           print("Potential causes:")
+           print("- Attribute contains unpicklable data types (e.g., lambda functions, file objects).")
+           print("- Attribute refers to external resources (e.g., database connections).")
+           print("- Attribute has circular references within the object's structure.")
+       else:
+           print("Unable to isolate the specific attribute causing the pickling error.")
+           print("Consider:")
+           print("- Examining the object's structure and dependencies for potential conflicts.")
+           print("- Providing a minimal reproducible example for further analysis.")
+
+   else:
+       # If pickling succeeds, indicate no issues found
+       print("No pickling issues detected.")
+
+
 

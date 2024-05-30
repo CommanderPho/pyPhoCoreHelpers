@@ -28,6 +28,9 @@ import itertools
 import objsize # python -m pip install objsize==0.6.1
 
 # from pyphocorehelpers.function_helpers import function_attributes # # function_attributes causes circular import issue :[
+import numpy as np
+import dask.array as da
+from IPython.display import display, HTML
 
 
 # @function_attributes(short_name=None, tags=['unused', 'repr', 'str', 'string_representation', 'preview'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-11-28 12:43', related_items=[])
@@ -1475,4 +1478,66 @@ def build_logger(full_logger_string: str, file_logging_dir=None,
 # ==================================================================================================================== #
 # PPRINTING                                                                                                            #
 # ==================================================================================================================== #
+
+
+
+# ==================================================================================================================== #
+# 2024-05-30 - Custom Formatters                                                                                       #
+# ==================================================================================================================== #
+
+def array_preview_with_shape(arr):
+    """ Text-only Represntation that prints np.shape(arr) 
+    
+        from pyphocorehelpers.print_helpers import array_preview_with_shape
+
+        # Register the custom display function for numpy arrays
+        import IPython
+        ip = IPython.get_ipython()
+        ip.display_formatter.formatters['text/html'].for_type(np.ndarray, array_preview_with_shape) # only registers for NDArray
+
+        # Example usage
+        arr = np.random.rand(3, 4)
+        display(arr)
+
+    """
+    if isinstance(arr, np.ndarray):
+        display(HTML(f"<pre>array{arr.shape} of dtype {arr.dtype}</pre>"))
+    elif isinstance(arr, (list, tuple)):
+        display(HTML(f"<pre>native-python list {len(arr)}</pre>"))
+    elif isinstance(arr, pd.DataFrame):
+        display(HTML(f"<pre>DataFrame with {len(arr)} rows and {len(arr.columns)} columns</pre>"))
+    else:
+        raise ValueError("The input is not a NumPy array.")
+
+
+def array_preview_with_graphical_shape_repr_html(arr):
+    """Generate an HTML representation for a NumPy array, similar to Dask.
+        
+    from pyphocorehelpers.print_helpers import array_preview_with_graphical_shape_repr_html
+    
+    # Register the custom display function for NumPy arrays
+    import IPython
+    ip = IPython.get_ipython()
+    ip.display_formatter.formatters['text/html'].for_type(np.ndarray, lambda arr: array_preview_with_graphical_shape_repr_html(arr))
+
+    # Example usage
+    arr = np.random.rand(3, 4)
+    display(arr)
+
+
+    arr = np.random.rand(9, 64)
+    display(arr)
+
+    arr = np.random.rand(9, 64, 4)
+    display(arr)
+
+    """
+    if isinstance(arr, np.ndarray):
+        arr = da.array(arr)
+        return display(arr)
+        # shape_str = ' &times; '.join(map(str, arr.shape))
+        # dtype_str = arr.dtype
+        # return f"<pre>array[{shape_str}] dtype={dtype_str}</pre>"
+    else:
+        raise ValueError("The input is not a NumPy array.")
 

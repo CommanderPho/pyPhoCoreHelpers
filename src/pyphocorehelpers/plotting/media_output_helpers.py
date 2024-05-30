@@ -92,7 +92,7 @@ def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_h
 
 #TODO 2023-09-27 19:54: - [ ] saving
 
-def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr_curves_frames.mp4', fps=30.0, isColor=False, debug_print=False, progress_print=True):
+def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr_curves_frames.mp4', fps=30.0, isColor=False, colormap=cv2.COLORMAP_VIRIDIS, skip_img_normalization=False, debug_print=False, progress_print=True):
     """
     Save a 3D numpy array as a grayscale video.
 
@@ -112,6 +112,12 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
         print(f'video_out_path: {video_out_path}')
         reveal_in_system_file_manager(video_out_path)
     """
+    if skip_img_normalization:
+        array = array
+    else:
+        # Normalize your array to 0-1
+        array = (array - np.nanmin(array, axis=(1,2,), keepdims=True)) / np.ptp(array, axis=(1,2,), keepdims=True)
+    
     gray_frames = cv2.normalize(array, None, 255, 0, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U) # same size as array
     if debug_print:
         print(f'array.shape: {array.shape}')
@@ -134,7 +140,12 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
             print(f'saving frame {i}/{n_frames}')
         gray = np.squeeze(gray_frames[i,:,:]) # single frame
         gray_3c = cv2.merge([gray, gray, gray])
-        out.write(gray_3c)
+        if isColor and (colormap is not None):
+            # NEW: apply colormap if provided and isColor is True
+            color_array = cv2.applyColorMap(gray_3c, colormap)
+            out.write(color_array)
+        else:
+            out.write(gray_3c)
 
     # close out the video writer
     out.release()

@@ -88,53 +88,116 @@ def array_repr_with_graphical_shape(ip: "ipykernel.zmqshell.ZMQInteractiveShell"
     ip.display_formatter.formatters['text/html'].for_type(np.ndarray, lambda arr: array_preview_with_graphical_shape_repr_html(arr))
     return ip
 
-    
+
+from IPython.display import display, HTML, Javascript
+from ipywidgets import widgets, VBox
+
+
+
+
+
+
+
+
+
 def dataframe_show_more_button(ip: "ipykernel.zmqshell.ZMQInteractiveShell") -> "ipykernel.zmqshell.ZMQInteractiveShell":
-    """Adds a functioning "show more" button below each displayed dataframe to show more rows
-            
+    """Adds a functioning 'show more' button below each displayed dataframe to show more rows.
+
     Usage:
-        from pyphocorehelpers.preferences_helpers import array_repr_with_graphical_shape, dataframe_show_more_button
-
         ip = get_ipython()
-
-        ip = array_repr_with_graphical_shape(ip=ip)
         ip = dataframe_show_more_button(ip=ip)
-
-
     """
-    # Register the custom display function for NumPy arrays
-    # ip.display_formatter.formatters['text/html'].for_type(pd.DataFrame, lambda df: ????(df))
+    def _subfn_dataframe_show_more(df, initial_rows=10):
+        """Generate an HTML representation for a Pandas DataFrame with a 'show more' button."""
+        total_rows = df.shape[0]
+        if total_rows <= initial_rows:
+            return df.to_html()
 
-    def show_more(df, show_rows=5, _id=None):
-        # Generate a default id based on the object id if not specified
-        _id = f"df-{id(df)}" if _id is None else _id
-        return f"""
-        <div id="{_id}" class="dataframe-container">
-            {df.head(show_rows).to_html()}
-            <button onclick="showMoreRows('{_id}', {show_rows})">Show More</button>
-        </div>
-        <script>
-        function showMoreRows(id, showRows) {{
-            var dfContainer = document.getElementById(id);
-            var currentRows = dfContainer.getElementsByTagName('table')[0].rows.length - 1; // Subtract 1 for the header
-            var totalRows = {len(df)};
-            var newRows = Math.min(totalRows, currentRows + showRows);
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', `/_show_more?id=${id}&rows=${newRows}`, false); // Synchronous request for simplicity
-            xhr.send();
-            if (xhr.status === 200) {{
-                dfContainer.innerHTML = xhr.responseText + dfContainer.innerHTML;
+        # Create the initial view
+        initial_view = df.head(initial_rows).to_html()
+
+        # Escape backticks in the DataFrame HTML to ensure proper JavaScript string
+        full_view = df.to_html().replace("`", r"\`").replace("\n", "\\n")
+
+        # Generate the script for the 'show more' button
+        script = f"""
+        <script type="text/javascript">
+            function showMore() {{
+                var div = document.getElementById('dataframe-more');
+                div.innerHTML = `{full_view}`;
             }}
-        }}
         </script>
         """
 
-    # Register the custom display function for pandas DataFrames
-    ip.display_formatter.formatters['text/html'].for_type(
-        pd.DataFrame, lambda df, show_rows=5, unique_id=None:
-        show_more(df, show_rows, unique_id)
-    )
+        # Create the 'show more' button
+        button = f"""
+        <button onclick="showMore()">Show more</button>
+        <div id="dataframe-more"></div>
+        """
 
+        # Combine everything into the final HTML
+        html = f"""
+        {script}
+        {initial_view}
+        {button}
+        """
+        return HTML(html)
+
+    ip.display_formatter.formatters['text/html'].for_type(pd.DataFrame, lambda df: display(_subfn_dataframe_show_more(df)))
     return ip
+
+
+
+# Usage example
+
+
+
+# def dataframe_show_more_button(ip: "ipykernel.zmqshell.ZMQInteractiveShell") -> "ipykernel.zmqshell.ZMQInteractiveShell":
+#     """Adds a functioning "show more" button below each displayed dataframe to show more rows
+            
+#     Usage:
+#         from pyphocorehelpers.preferences_helpers import array_repr_with_graphical_shape, dataframe_show_more_button
+
+#         ip = get_ipython()
+
+#         ip = array_repr_with_graphical_shape(ip=ip)
+#         ip = dataframe_show_more_button(ip=ip)
+
+
+#     """
+#     # Register the custom display function for NumPy arrays
+#     # ip.display_formatter.formatters['text/html'].for_type(pd.DataFrame, lambda df: ????(df))
+
+#     def show_more(df, show_rows=5, _id=None):
+#         # Generate a default id based on the object id if not specified
+#         _id = f"df-{id(df)}" if _id is None else _id
+#         return f"""
+#         <div id="{_id}" class="dataframe-container">
+#             {df.head(show_rows).to_html()}
+#             <button onclick="showMoreRows('{_id}', {show_rows})">Show More</button>
+#         </div>
+#         <script>
+#         function showMoreRows(id, showRows) {{
+#             var dfContainer = document.getElementById(id);
+#             var currentRows = dfContainer.getElementsByTagName('table')[0].rows.length - 1; // Subtract 1 for the header
+#             var totalRows = {len(df)};
+#             var newRows = Math.min(totalRows, currentRows + showRows);
+#             var xhr = new XMLHttpRequest();
+#             xhr.open('GET', `/_show_more?id=${id}&rows=${newRows}`, false); // Synchronous request for simplicity
+#             xhr.send();
+#             if (xhr.status === 200) {{
+#                 dfContainer.innerHTML = xhr.responseText + dfContainer.innerHTML;
+#             }}
+#         }}
+#         </script>
+#         """
+
+#     # Register the custom display function for pandas DataFrames
+#     ip.display_formatter.formatters['text/html'].for_type(
+#         pd.DataFrame, lambda df, show_rows=5, unique_id=None:
+#         show_more(df, show_rows, unique_id)
+#     )
+
+#     return ip
 
     

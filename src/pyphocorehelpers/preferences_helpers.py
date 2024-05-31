@@ -107,7 +107,44 @@ def dataframe_show_more_button(ip: "ipykernel.zmqshell.ZMQInteractiveShell") -> 
         ip = get_ipython()
         ip = dataframe_show_more_button(ip=ip)
     """
-    def _subfn_dataframe_show_more(df, initial_rows=10):
+    # def _subfn_dataframe_show_more(df, initial_rows=10):
+    #     """Generate an HTML representation for a Pandas DataFrame with a 'show more' button."""
+    #     total_rows = df.shape[0]
+    #     if total_rows <= initial_rows:
+    #         return df.to_html()
+
+    #     # Create the initial view
+    #     initial_view = df.head(initial_rows).to_html()
+
+    #     # Escape backticks in the DataFrame HTML to ensure proper JavaScript string
+    #     full_view = df.to_html().replace("`", r"\`").replace("\n", "\\n")
+
+    #     # Generate the script for the 'show more' button
+    #     script = f"""
+    #     <script type="text/javascript">
+    #         function showMore() {{
+    #             var div = document.getElementById('dataframe-more');
+    #             div.innerHTML = `{full_view}`;
+    #         }}
+    #     </script>
+    #     """
+
+    #     # Create the 'show more' button
+    #     button = f"""
+    #     <button onclick="showMore()">Show more</button>
+    #     <div id="dataframe-more"></div>
+    #     """
+
+    #     # Combine everything into the final HTML
+    #     html = f"""
+    #     {script}
+    #     {initial_view}
+    #     {button}
+    #     """
+    #     return HTML(html)
+    
+
+    def _subfn_dataframe_show_more(df, initial_rows=10, default_more_rows=50):
         """Generate an HTML representation for a Pandas DataFrame with a 'show more' button."""
         total_rows = df.shape[0]
         if total_rows <= initial_rows:
@@ -116,21 +153,39 @@ def dataframe_show_more_button(ip: "ipykernel.zmqshell.ZMQInteractiveShell") -> 
         # Create the initial view
         initial_view = df.head(initial_rows).to_html()
 
-        # Escape backticks in the DataFrame HTML to ensure proper JavaScript string
-        full_view = df.to_html().replace("`", r"\`").replace("\n", "\\n")
+        # Escape backticks and newlines in the DataFrame HTML to ensure proper JavaScript string
+        df_html = df.to_html().replace("`", "\\`").replace("\n", "\\n")
 
-        # Generate the script for the 'show more' button
+        # Generate the script for the 'show more' button with input for number of rows
         script = f"""
         <script type="text/javascript">
             function showMore() {{
+                var numRows = document.getElementById('num-rows').value;
+                if (numRows === "") {{
+                    numRows = {default_more_rows};
+                }} else {{
+                    numRows = parseInt(numRows);
+                }}
                 var div = document.getElementById('dataframe-more');
-                div.innerHTML = `{full_view}`;
+                var df_html = `{df_html}`;
+                var parser = new DOMParser();
+                var doc = parser.parseFromString(df_html, 'text/html');
+                var rows = doc.querySelectorAll('tbody tr');
+                for (var i = 0; i < rows.length; i++) {{
+                    if (i >= numRows) {{
+                        rows[i].style.display = 'none';
+                    }} else {{
+                        rows[i].style.display = '';
+                    }}
+                }}
+                div.innerHTML = doc.body.innerHTML;
             }}
         </script>
         """
 
-        # Create the 'show more' button
-        button = f"""
+        # Create the 'show more' button and input field with default value
+        button_and_input = f"""
+        <input type="number" id="num-rows" placeholder="Enter number of rows to display" value="{default_more_rows}">
         <button onclick="showMore()">Show more</button>
         <div id="dataframe-more"></div>
         """
@@ -139,9 +194,10 @@ def dataframe_show_more_button(ip: "ipykernel.zmqshell.ZMQInteractiveShell") -> 
         html = f"""
         {script}
         {initial_view}
-        {button}
+        {button_and_input}
         """
         return HTML(html)
+
 
     ip.display_formatter.formatters['text/html'].for_type(pd.DataFrame, lambda df: display(_subfn_dataframe_show_more(df)))
     return ip

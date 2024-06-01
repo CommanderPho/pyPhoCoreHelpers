@@ -143,7 +143,6 @@ def dataframe_show_more_button(ip: "ipykernel.zmqshell.ZMQInteractiveShell") -> 
     #     """
     #     return HTML(html)
     
-
     def _subfn_dataframe_show_more(df, initial_rows=10, default_more_rows=50):
         """Generate an HTML representation for a Pandas DataFrame with a 'show more' button."""
         total_rows = df.shape[0]

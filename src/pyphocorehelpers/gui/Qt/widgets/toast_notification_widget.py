@@ -27,8 +27,23 @@ class ToastWidget(QWidget):
         self.adjustSize()
         self.setFixedSize(self.size())
         
+        self._should_position_to_parent_window = False
         self.durationMs = 2000
         QTimer.singleShot(self.durationMs, self.close)
+
+    @property
+    def toast_widget(self) -> bool:
+        """The toast_widget property."""
+        return self.toast
+
+    @property
+    def should_position_to_parent_window(self) -> bool:
+        """The should_position_to_parent_window property."""
+        return self._should_position_to_parent_window
+    @should_position_to_parent_window.setter
+    def should_position_to_parent_window(self, value: bool):
+        self._should_position_to_parent_window = value
+
 
     def show_message(self, message, durationMs: Optional[int]=None):
         if durationMs is not None:
@@ -40,20 +55,30 @@ class ToastWidget(QWidget):
 
         # Position the toast in the bottom-right corner of the parent
         if self.parent():
-            parent_size = self.parent().size()
+            
+            if self.should_position_to_parent_window:
+                parent_item = self.parent().window()
+            else:
+                parent_item = self.parent()
+
+            # parent_size = self.parent().window().size()
             self.move(
-                self.parent().frameGeometry().topLeft().x() + parent_size.width() - self.width() - 10,
-                self.parent().frameGeometry().topLeft().y() + parent_size.height() - self.height() - 10
+                parent_item.frameGeometry().bottomRight().x() - self.width(),
+                parent_item.frameGeometry().bottomRight().y() - self.height()
             )
+
+        else:
+            print(f'WARNING: ToastWidget has no parent!')
+
+    
 
         QTimer.singleShot(self.durationMs, self.close)
         self.show()
 
 
 
-
 class ToastShowingWidgetMixin:
-    """ implementors contain a toast widget
+    """ implementors contain a toast widget and must call `self._init_ToastShowingWidgetMixin() during startup
     
     """
     @property
@@ -62,40 +87,13 @@ class ToastShowingWidgetMixin:
         return self.toast
     
     def _init_ToastShowingWidgetMixin(self):
-        self.toast = ToastWidget('Hello, PyQt5!', self)
+        self.toast = ToastWidget('Hello, PyQt5!', parent=self)
 
 
     def show_toast_message(self, message: str, durationMs:int=2000):
         """ shows a temporary toast message
         """
         self.toast_widget.show_message(message, durationMs=int(durationMs))
-
-    @classmethod
-    def conform(cls, obj):
-        """ makes the object conform to this mixin by adding its properties. 
-        Usage:
-            from pyphoplacecellanalysis.General.Pipeline.Stages.Computation import PipelineWithComputedPipelineStageMixin, ComputedPipelineStage
-            from pyphoplacecellanalysis.General.Pipeline.Stages.Display import PipelineWithDisplayPipelineStageMixin, PipelineWithDisplaySavingMixin
-            from pyphoplacecellanalysis.General.Pipeline.Stages.Filtering import FilteredPipelineMixin
-            from pyphoplacecellanalysis.General.Pipeline.Stages.Loading import PipelineWithInputStage, PipelineWithLoadableStage
-            from pyphoplacecellanalysis.General.Pipeline.Stages.BaseNeuropyPipelineStage import PipelineStage
-            from pyphoplacecellanalysis.General.Pipeline.NeuropyPipeline import NeuropyPipeline
-
-            ToastShowingWidgetMixin.conform(curr_active_pipeline)
-
-        """
-        def conform_to_implementing_method(func):
-            """ captures 'obj', 'cls'"""
-            setattr(type(obj), func.__name__, func)
-            
-        conform_to_implementing_method(cls._init_ToastShowingWidgetMixin)
-        conform_to_implementing_method(cls.show_toast_message)
-        # conform_to_implementing_method(cls.write_figure_to_daily_programmatic_session_output_path)
-        # conform_to_implementing_method(cls.write_figure_to_output_path)
-        # setattr(type(cls.toast_widget), 'toast_widget', cls.toast_widget)
-        obj._init_ToastShowingWidgetMixin() 
-
-
 
 
 
@@ -120,9 +118,6 @@ class ExampleApp(ToastShowingWidgetMixin, QWidget):
         self._init_ToastShowingWidgetMixin()
         self.show()
         
-        # Show the toast
-        # QTimer.singleShot(1000, self.show_toast)  # Show toast after 1 second
-
     def show_toast(self):
         message = 'This is a toast message!'
         self.toast_widget.show_message(message)

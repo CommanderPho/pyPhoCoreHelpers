@@ -106,6 +106,38 @@ class DayDateWithVariantSuffixParser(BaseMatchParser):
 # datetime.now().strftime("%Y%m%d%H%M%S")
 # r'?(?P<datetime_str>\d{14})'
 
+@define(slots=False)
+class RoundedTimeParser(BaseMatchParser):
+    def try_parse(self, filename: str) -> Optional[Dict]:
+        # Define the regex pattern for matching the filename
+        pattern = r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})_(?P<hour>0[1-9]|1[0-2])(?P<time_separator>.+)(?P<minute>00|05|10|15|20|25|30|35|40|45|50|55)(?P<meridian>AM|PM)"
+        match = re.match(pattern, filename)
+        if match is None:
+            return None  # pattern did not match
+        
+        parsed_output_dict = match.groupdict()
+
+        # Construct the 'export_datetime' key based on the matched datetime components
+        try:
+            export_datetime_str = f"{parsed_output_dict['year']}-{parsed_output_dict['month']}-{parsed_output_dict['day']}_{parsed_output_dict['hour']}{parsed_output_dict['minute']}{parsed_output_dict['meridian']}"
+            export_datetime = datetime.strptime(export_datetime_str, "%Y-%m-%d_%I%M%p")
+            parsed_output_dict['export_datetime'] = export_datetime
+        except ValueError as e:
+            print(f'ERR: Could not parse date-time string: "{export_datetime_str}"')
+            return None  # datetime parsing failed
+
+        # Optionally, remove individual components if not needed in the final output
+        del parsed_output_dict['year']
+        del parsed_output_dict['month']
+        del parsed_output_dict['day']
+        del parsed_output_dict['hour']
+        del parsed_output_dict['minute']
+        del parsed_output_dict['meridian']
+        # Note: Depending on use case, keep or remove 'time_separator'
+
+        return parsed_output_dict
+            
+        
 
 @define(slots=False)
 class AutoVersionedUniqueFilenameParser(BaseMatchParser):

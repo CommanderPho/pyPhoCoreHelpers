@@ -44,6 +44,13 @@ class DayDateWithVariantSuffixParser(BaseMatchParser):
 
 
 @define(slots=False)
+class RoundedTimeParser(BaseMatchParser):
+    def try_parse(self, filename: str) -> Optional[Dict]:
+        ...
+    
+
+
+@define(slots=False)
 class AutoVersionedUniqueFilenameParser(BaseMatchParser):
     """ '20221109173951-loadedSessPickle.pkl' """
     def build_unique_filename(self, file_to_save_path, additional_postfix_extension=...) -> str:

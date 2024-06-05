@@ -164,7 +164,7 @@ class DocumentationFilePrinter:
     def reveal_output_files_in_system_file_manager(self): # -> None:
         ...
     
-    def display_widget(self): # -> VBox:
+    def display_widget(self):
         """ Display an interactive jupyter-widget that allows you to open/reveal the generated files in the fileystem or default system display program. 
         """
         ...
@@ -283,7 +283,7 @@ def print_dataframe_memory_usage(df, enable_print=...):
     """
     ...
 
-def print_object_memory_usage(obj, enable_print=...): # -> float:
+def print_object_memory_usage(obj, enable_print=...):
     """ prints the size of the passed in object in MB (Megabytes)
     Usage:
         print_object_memory_usage(curr_bapun_pipeline.sess)
@@ -395,7 +395,7 @@ def strip_type_str_to_classname(a_type_str: str) -> str:
     """
     ...
 
-def safe_get_variable_shape(a_value): # -> _Shape | tuple[()] | int | None:
+def safe_get_variable_shape(a_value): # -> tuple[()] | int | None:
     """ generally and safely tries several methods of determining a_value's shape 
     
     assert safe_get_variable_shape(active_one_step_decoder.time_bin_size) is None
@@ -600,6 +600,49 @@ def build_logger(full_logger_string: str, file_logging_dir=..., logFormatter: Op
     """ builds a logger
     
     from pyphocorehelpers.print_helpers import build_run_log_task_identifier, build_logger
+
+    Default used to be:
+        file_logging_dir=Path('EXTERNAL/TESTING/Logging')
+    """
+    ...
+
+def array_preview_with_shape(arr): # -> None:
+    """ Text-only Represntation that prints np.shape(arr) 
+    
+        from pyphocorehelpers.print_helpers import array_preview_with_shape
+
+        # Register the custom display function for numpy arrays
+        import IPython
+        ip = IPython.get_ipython()
+        ip.display_formatter.formatters['text/html'].for_type(np.ndarray, array_preview_with_shape) # only registers for NDArray
+
+        # Example usage
+        arr = np.random.rand(3, 4)
+        display(arr)
+
+    """
+    ...
+
+def array_preview_with_graphical_shape_repr_html(arr):
+    """Generate an HTML representation for a NumPy array, similar to Dask.
+        
+    from pyphocorehelpers.print_helpers import array_preview_with_graphical_shape_repr_html
+    
+    # Register the custom display function for NumPy arrays
+    import IPython
+    ip = IPython.get_ipython()
+    ip.display_formatter.formatters['text/html'].for_type(np.ndarray, lambda arr: array_preview_with_graphical_shape_repr_html(arr))
+
+    # Example usage
+    arr = np.random.rand(3, 4)
+    display(arr)
+
+
+    arr = np.random.rand(9, 64)
+    display(arr)
+
+    arr = np.random.rand(9, 64, 4)
+    display(arr)
 
     """
     ...

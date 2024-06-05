@@ -55,7 +55,7 @@ class MatplotlibRenderPlots(RenderPlots):
         return cls(figures=[fig], axes=axes)
 
 
-
+@function_attributes(short_name=None, tags=['collector', 'figure', 'output'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-06-05 17:27', related_items=[])
 class FigureCollector:
     """ 2023-12-27 - Very useful context-manger helper for capturing matplotlib figures, axes, and other outputs.
     

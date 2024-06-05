@@ -194,6 +194,7 @@ class PhoActiveFigureManager2D(object):
         )
 
 
+@function_attributes(short_name=None, tags=['matplotlib', 'figures', 'function_decorator'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-06-05 17:05', related_items=[])
 def capture_new_figures_decorator(func):
     """ a decorator that's supposed to capture all matplotlib figures generated within the function that it decorates by comparing the global plt.get_fignums() before and after that function's executions. Won't detect updated figures, and hasn't been thoroughly tested. 
     

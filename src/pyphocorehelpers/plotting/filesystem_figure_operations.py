@@ -5,7 +5,7 @@ from PIL import Image
 from pyphocorehelpers.function_helpers import function_attributes
 
 
-@function_attributes(short_name=None, tags=['image', 'stack', 'batch', 'file', 'stack'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-06-05 17:06', related_items=[])
+@function_attributes(short_name=None, tags=['image', 'stack', 'batch', 'file', 'stack'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-01-12 00:00', related_items=[])
 def render_image_stack(images: List[Path], offset=10, single_image_alpha_level:float=0.5):
    """ 
     Given a list of equally sized figures, how do I overlay them in a neat looking stack and produce an output graphic from that?

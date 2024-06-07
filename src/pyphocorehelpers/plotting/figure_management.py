@@ -1,14 +1,17 @@
+from typings import Optional, List, Dict, Tuple
 import numpy as np
 from copy import deepcopy
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure, FigureBase # FigureBase: both Figure and SubFigure
+from matplotlib.backend_bases import FigureCanvasBase, FigureManagerBase
+
 from pyphocorehelpers.programming_helpers import metadata_attributes
 from pyphocorehelpers.function_helpers import function_attributes
 
 
-
-@metadata_attributes(short_name=None, tags=['matplotlib', 'figures', 'manager', 'helper', 'plotting'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-05-08 14:53', related_items=[])
+@metadata_attributes(short_name=None, tags=['matplotlib', 'figures', 'manager', 'helper', 'plotting'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-05-08 14:53',
+                      related_items=['DataStructure.RenderPlots.MatplotLibRenderPlots.FigureCollector'])
 class PhoActiveFigureManager2D(object):
     """Offers convenience methods for accessing and updating the extent (size and position on the screen) for the current Matplotlib figures (via its current_figure_manager property.
     
@@ -39,7 +42,7 @@ class PhoActiveFigureManager2D(object):
     debug_print = False
     
     @property
-    def current_figure_manager(self):
+    def current_figure_manager(self) -> Optional[FigureManagerBase]:
         """The current_figure_manager property."""
         return plt.get_current_fig_manager() # get the active figure manager
  

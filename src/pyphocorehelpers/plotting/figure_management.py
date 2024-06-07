@@ -1,4 +1,4 @@
-from typings import Optional, List, Dict, Tuple
+from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 import numpy as np
 from copy import deepcopy
 import matplotlib as mpl

@@ -534,7 +534,8 @@ class IPythonHelpers:
             """
             assert module_locals is not None, f"Must be called like: `notebook_name = _vscode_jupyter_extract_notebook_path(IPython.extract_module_locals())`"
             try:
-                return "/".join(module_locals[1]["__vsc_ipynb_file__"].split("/")[-5:])
+                # return "/".join(module_locals[1]["__vsc_ipynb_file__"].split("/")[-5:])
+                return "/".join(module_locals[1]["__vsc_ipynb_file__"].split("/"))
             except KeyError:
                 return None
 

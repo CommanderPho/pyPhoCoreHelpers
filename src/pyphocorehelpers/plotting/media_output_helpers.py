@@ -13,8 +13,10 @@ from matplotlib.figure import FigureBase
 # from pyphoplacecellanalysis.SpecificResults.PendingNotebookCode import copy_image_to_clipboard # required for `fig_to_clipboard`
 
 
-def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False) -> Image:
-    """ Like `save_array_as_image` except it skips the saving. Converts a numpy array to file as a colormapped image
+
+
+def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False) -> Image.Image:
+    """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
     
     # Usage:
     
@@ -24,9 +26,6 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
         image
                 
     """
-
-    
-
     # Assuming `your_array` is your numpy array
     # For the colormap, you can use any colormap from matplotlib. 
     # In this case, 'hot' is used.
@@ -67,8 +66,7 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
 
     return image
 
-
-def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png') -> (Image, Path):
+def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png') -> Tuple[Image.Image, Path]:
     """ Exports a numpy array to file as a colormapped image
     
     # Usage:
@@ -79,13 +77,92 @@ def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_h
         image
                 
     """
-    image: Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, colormap=colormap, skip_img_normalization=skip_img_normalization)
+    image: Image.Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, colormap=colormap, skip_img_normalization=skip_img_normalization)
 
     out_path = Path(out_path).resolve()
     # Save image to file
     image.save(out_path)
 
     return image, out_path
+
+
+def get_array_as_image_stack(imgs: List[Image.Image], offset=10, single_image_alpha_level:float=0.5) -> Image.Image:
+   """ Handles 3D images
+    Given a list of equally sized figures, how do I overlay them in a neat looking stack and produce an output graphic from that?
+    I want them offset slightly from each other to make a visually appealing stack
+
+    single_image_alpha_level = 0.5 - adjust this value to set the desired transparency level (0.0 to 1.0)
+    offset = 10  # your desired offset
+
+    2024-01-12 - works well
+
+    Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import get_array_as_image_stack, save_array_as_image_stack
+
+        # Let's assume you have a list of images
+        images = ['image1.png', 'image2.png', 'image3.png']  # replace this with actual paths to your images
+        output_img, output_path = render_image_stack(out_figs_paths, offset=55, single_image_alpha_level=0.85)
+
+   """
+   # Make a general alpha adjustment to the images
+   if (single_image_alpha_level is None) or (single_image_alpha_level == 1.0):
+      # Open the images
+      pass
+
+   else:
+      print(f'WARNING: transparency mode is very slow! This took ~50sec for ~30 images')
+      # only do this if transparency of layers is needed, as this is very slow (~50sec)
+      imgs = [img.convert("RGBA") for img in imgs] # convert to RGBA explicitly, seems to be very slow.
+      for i in range(len(imgs)):
+         for x in range(imgs[i].width):
+            for y in range(imgs[i].height):
+                  r, g, b, a = imgs[i].getpixel((x, y))
+                  imgs[i].putpixel((x, y), (r, g, b, int(a * single_image_alpha_level)))
+
+   # Assume all images are the same size
+   width, height = imgs[0].size
+
+   # Create a new image with size larger than original ones, considering offsets
+   output_width = width + offset * (len(imgs) - 1)
+   output_height = height + offset * (len(imgs) - 1)
+
+   output_img = Image.new('RGBA', (output_width, output_height))
+
+   # Overlay images with offset
+   for i, img in enumerate(imgs):
+      output_img.paste(img, (i * offset, i * offset), img)
+
+   return output_img
+
+
+# @function_attributes(short_name=None, tags=['image', 'stack', 'batch', 'file', 'stack'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-01-12 00:00', related_items=[])
+def save_array_as_image_stack(images: List[Path], offset=10, single_image_alpha_level:float=0.5):
+    """ 
+    Given a list of equally sized figures, how do I overlay them in a neat looking stack and produce an output graphic from that?
+    I want them offset slightly from each other to make a visually appealing stack
+
+
+    single_image_alpha_level = 0.5 - adjust this value to set the desired transparency level (0.0 to 1.0)
+    offset = 10  # your desired offset
+
+    2024-01-12 - works well
+
+    Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import save_array_as_image_stack
+
+        # Let's assume you have a list of images
+        images = ['image1.png', 'image2.png', 'image3.png']  # replace this with actual paths to your images
+        output_img, output_path = render_image_stack(out_figs_paths, offset=55, single_image_alpha_level=0.85)
+
+    """
+    # Open the images
+    imgs = [Image.open(i) for i in images]
+
+    output_img = get_array_as_image_stack(imgs, offset=offset, single_image_alpha_level=single_image_alpha_level)
+
+    output_path: Path = Path('output/stacked_images.png').resolve()
+    output_img.save(output_path)
+    return output_img, output_path
 
 
 

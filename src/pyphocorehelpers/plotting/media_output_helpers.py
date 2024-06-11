@@ -6,12 +6,29 @@ from pathlib import Path
 import cv2
 
 import matplotlib.pyplot as plt # for export_array_as_image
-from PIL import Image # for export_array_as_image
+from PIL import Image, ImageOps, ImageFilter # for export_array_as_image
 
 from plotly.graph_objects import Figure as PlotlyFigure # required for `fig_to_clipboard`
 from matplotlib.figure import FigureBase
 # from pyphoplacecellanalysis.SpecificResults.PendingNotebookCode import copy_image_to_clipboard # required for `fig_to_clipboard`
 
+
+def add_border(image: Image.Image, border_size: int = 5, border_color: tuple = (0, 0, 0)) -> Image.Image:
+    return ImageOps.expand(image, border=border_size, fill=border_color)
+
+def add_shadow(image: Image.Image, offset: int = 5, background_color: tuple = (0, 0, 0, 0), shadow_color: tuple = (0, 0, 0, 255)) -> Image.Image:
+    total_width = image.width + offset
+    total_height = image.height + offset
+
+    shadow = Image.new('RGBA', (total_width, total_height), background_color)
+    shadow.paste(image, (offset, offset))
+
+    shadow_layer = Image.new('RGBA', (total_width, total_height), shadow_color)
+    shadow_layer = shadow_layer.filter(ImageFilter.GaussianBlur(radius=offset))
+
+    shadow = Image.alpha_composite(shadow_layer, shadow)
+
+    return shadow
 
 
 
@@ -86,8 +103,13 @@ def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_h
     return image, out_path
 
 
-def get_array_as_image_stack(imgs: List[Image.Image], offset=10, single_image_alpha_level:float=0.5) -> Image.Image:
-   """ Handles 3D images
+def get_array_as_image_stack(imgs: List[Image.Image], offset=10, single_image_alpha_level:float=0.5,
+                            #   border_size: Optional[int] = 5, shadow_offset: Optional[int] = 10,
+                              should_add_border: bool = False, border_size: int = 5, border_color: Tuple[int, int, int] = (0, 0, 0),
+                              should_add_shadow: bool = False, shadow_offset: int = 10, shadow_color: Tuple[int, int, int, int] = (0, 0, 0, 255),
+                              ) -> Image.Image:
+   
+    """ Handles 3D images
     Given a list of equally sized figures, how do I overlay them in a neat looking stack and produce an output graphic from that?
     I want them offset slightly from each other to make a visually appealing stack
 
@@ -103,36 +125,58 @@ def get_array_as_image_stack(imgs: List[Image.Image], offset=10, single_image_al
         images = ['image1.png', 'image2.png', 'image3.png']  # replace this with actual paths to your images
         output_img, output_path = render_image_stack(out_figs_paths, offset=55, single_image_alpha_level=0.85)
 
-   """
-   # Make a general alpha adjustment to the images
-   if (single_image_alpha_level is None) or (single_image_alpha_level == 1.0):
-      # Open the images
-      pass
+    """
+    # Make a general alpha adjustment to the images
+    if (single_image_alpha_level is None) or (single_image_alpha_level == 1.0):
+        # Open the images
+        pass
 
-   else:
-      print(f'WARNING: transparency mode is very slow! This took ~50sec for ~30 images')
-      # only do this if transparency of layers is needed, as this is very slow (~50sec)
-      imgs = [img.convert("RGBA") for img in imgs] # convert to RGBA explicitly, seems to be very slow.
-      for i in range(len(imgs)):
-         for x in range(imgs[i].width):
-            for y in range(imgs[i].height):
-                  r, g, b, a = imgs[i].getpixel((x, y))
-                  imgs[i].putpixel((x, y), (r, g, b, int(a * single_image_alpha_level)))
+    else:
+        print(f'WARNING: transparency mode is very slow! This took ~50sec for ~30 images')
+        # only do this if transparency of layers is needed, as this is very slow (~50sec)
+        imgs = [img.convert("RGBA") for img in imgs] # convert to RGBA explicitly, seems to be very slow.
+        for i in range(len(imgs)):
+            for x in range(imgs[i].width):
+                for y in range(imgs[i].height):
+                    r, g, b, a = imgs[i].getpixel((x, y))
+                    imgs[i].putpixel((x, y), (r, g, b, int(a * single_image_alpha_level)))
 
-   # Assume all images are the same size
-   width, height = imgs[0].size
+    # Assume all images are the same size
+    width, height = imgs[0].size
 
-   # Create a new image with size larger than original ones, considering offsets
-   output_width = width + offset * (len(imgs) - 1)
-   output_height = height + offset * (len(imgs) - 1)
+    # Create a new image with size larger than original ones, considering offsets
+    output_width = width + offset * (len(imgs) - 1)
+    output_height = height + offset * (len(imgs) - 1)
 
-   output_img = Image.new('RGBA', (output_width, output_height))
+    output_img = Image.new('RGBA', (output_width, output_height))
 
-   # Overlay images with offset
-   for i, img in enumerate(imgs):
-      output_img.paste(img, (i * offset, i * offset), img)
+    should_add_border = (should_add_border and (border_size is not None) and (border_size > 0))
+    should_add_shadow = (should_add_shadow and (shadow_offset is not None) and (shadow_offset > 0))
+    # Overlay images with offset
+    #    for i, img in enumerate(imgs):
+    #       output_img.paste(img, (i * offset, i * offset), img)
 
-   return output_img
+    if should_add_border:
+        width += 2 * border_size
+        height += 2 * border_size
+
+    if should_add_shadow:
+        width += shadow_offset
+        height += shadow_offset
+
+    output_width = width + offset * (len(imgs) - 1)
+    output_height = height + offset * (len(imgs) - 1)
+
+    output_img = Image.new('RGBA', (output_width, output_height))
+
+    for i, img in enumerate(imgs):
+        if add_border:
+            img = add_border(img, border_size=border_size, border_color=border_color)
+        if add_shadow:
+            img = add_shadow(img, offset=shadow_offset, shadow_color=shadow_color)
+        output_img.paste(img, (i * offset, i * offset), img)
+
+    return output_img
 
 
 # @function_attributes(short_name=None, tags=['image', 'stack', 'batch', 'file', 'stack'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-01-12 00:00', related_items=[])

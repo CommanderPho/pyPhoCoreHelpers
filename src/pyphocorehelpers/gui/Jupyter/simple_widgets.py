@@ -270,3 +270,31 @@ def code_block_widget(contents: str, label: str="Code:"):
     hbox = widgets.HBox([code_textarea, copy_button])
     display(hbox)
     return hbox
+
+
+
+def filesystem_path_folder_contents_widget(a_path: Union[Path, str], on_file_open=None):
+    """ Returns a simple clickable Path that works on Windows and for paths containing spaces.
+    
+    Call like:
+        from pyphocorehelpers.gui.Jupyter.simple_widgets import filesystem_path_folder_contents_widget
+
+        curr_collected_outputs_folder = Path(output_path_dicts['neuron_replay_stats_table']['.csv']).resolve().parent        
+        filesystem_path_folder_contents_widget(curr_collected_outputs_folder)
+    
+    """
+    import solara # `pip install "solara[assets]`
+
+    if not isinstance(a_path, Path):
+        a_path = Path(a_path).resolve() # we need a Path
+    assert a_path.exists(), f'a_path: "{a_path} does not exist!"'
+
+
+    if on_file_open is None:
+        on_file_open = print
+
+    return widgets.VBox(
+            children=[
+                solara.FileBrowser.widget(directory=a_path, on_file_open=on_file_open)
+            ]
+        )

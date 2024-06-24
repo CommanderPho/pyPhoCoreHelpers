@@ -1,6 +1,6 @@
 from collections import namedtuple
 from itertools import islice
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from nptyping import NDArray
 import numpy as np
 import pandas as pd
@@ -768,7 +768,7 @@ def join_on_index(*dfs, join_index='aclu', suffixes_list=None) -> pd.DataFrame:
 
 
 
-def reorder_columns(df: pd.DataFrame, column_name_desired_index_dict: Dict[str, int]) -> pd.DataFrame:
+def reorder_columns(df: pd.DataFrame, column_name_desired_index_dict: Union[List[str], Dict[str, int]]) -> pd.DataFrame:
     """Reorders specified columns in a DataFrame while preserving other columns.
     
     Pure: Does not modify the df
@@ -796,8 +796,12 @@ def reorder_columns(df: pd.DataFrame, column_name_desired_index_dict: Dict[str, 
         result_df
                 
     """
+    if isinstance(column_name_desired_index_dict, (list, tuple)):
+        # not a dict, assume the provided list specifies the order of the first elements
+        column_name_desired_index_dict = dict(zip(column_name_desired_index_dict, np.arange(len(column_name_desired_index_dict))))
+
     # Validate column names
-    missing_columns = set(column_name_desired_index_dict.keys()) - set(df.columns)
+    missing_columns: bool = set(column_name_desired_index_dict.keys()) - set(df.columns)
     if missing_columns:
         raise ValueError(f"Columns {missing_columns} not found in the DataFrame.")
 
@@ -847,10 +851,20 @@ def reorder_columns_relative(df: pd.DataFrame, column_names: list[str], relative
         result_df = reorder_columns_relative(result_df, column_names=list(filter(lambda column: column.endswith('_peak_heights'), existing_columns)), relative_mode='end')
         result_df
                 
+        
+    Usage 2:
+        # move the specified columns to the start of the df:
+        neuron_replay_stats_table = reorder_columns_relative(neuron_replay_stats_table, column_names=['neuron_uid', 'format_name', 'animal', 'exper_name', 'session_name', 'neuron_type', 'aclu', 'session_uid', 'session_datetime'],
+                                                    relative_mode='start')
+
+
     """
-    if relative_mode == 'end':
-        existing_columns = list(df.columns)
+    existing_columns = list(df.columns)
+
+    if relative_mode == 'end':    
         return reorder_columns(df, column_name_desired_index_dict=dict(zip(column_names, np.arange(len(existing_columns)-4, len(existing_columns)))))
+    elif relative_mode == 'start':    
+        return reorder_columns(df, column_name_desired_index_dict=column_names)    
     else:
         raise NotImplementedError
     

@@ -164,7 +164,7 @@ class DocumentationFilePrinter:
     def reveal_output_files_in_system_file_manager(self): # -> None:
         ...
     
-    def display_widget(self):
+    def display_widget(self): # -> VBox:
         """ Display an interactive jupyter-widget that allows you to open/reveal the generated files in the fileystem or default system display program. 
         """
         ...
@@ -283,7 +283,7 @@ def print_dataframe_memory_usage(df, enable_print=...):
     """
     ...
 
-def print_object_memory_usage(obj, enable_print=...):
+def print_object_memory_usage(obj, enable_print=...): # -> float:
     """ prints the size of the passed in object in MB (Megabytes)
     Usage:
         print_object_memory_usage(curr_bapun_pipeline.sess)
@@ -395,7 +395,7 @@ def strip_type_str_to_classname(a_type_str: str) -> str:
     """
     ...
 
-def safe_get_variable_shape(a_value): # -> tuple[()] | int | None:
+def safe_get_variable_shape(a_value): # -> _Shape | tuple[()] | int | None:
     """ generally and safely tries several methods of determining a_value's shape 
     
     assert safe_get_variable_shape(active_one_step_decoder.time_bin_size) is None
@@ -623,7 +623,7 @@ def array_preview_with_shape(arr): # -> None:
     """
     ...
 
-def array_preview_with_graphical_shape_repr_html(arr):
+def array_preview_with_graphical_shape_repr_html(arr): # -> DisplayHandle | None:
     """Generate an HTML representation for a NumPy array, similar to Dask.
         
     from pyphocorehelpers.print_helpers import array_preview_with_graphical_shape_repr_html

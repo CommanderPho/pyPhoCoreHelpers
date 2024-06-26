@@ -45,7 +45,7 @@ def is_point_in_rect(test_point, rect) -> bool:
 def min_max_1d(data): # -> tuple[Any, Any]:
     ...
 
-def compute_data_extent(xpoints, *other_1d_series):
+def compute_data_extent(xpoints, *other_1d_series): # -> NDArray[float64]:
     """Computes the outer bounds, or "extent" of one or more 1D data series.
 
     Args:
@@ -66,7 +66,7 @@ def compute_data_extent(xpoints, *other_1d_series):
     """
     ...
 
-def corner_points_from_extents(extents, debug_print=...):
+def corner_points_from_extents(extents, debug_print=...): # -> NDArray[Any]:
     """  Gets the corner points of the bounding shape specified by extents.
     Usage:
         xmin=23.923329354140844, xmax=263.92332935414083, ymin=123.85967782096927, ymax=153.85967782096927
@@ -141,7 +141,7 @@ class BoundsRect(UnpackableMixin):
         ...
     
     @property
-    def corner_points(self):
+    def corner_points(self): # -> NDArray[Any]:
         ...
     
     @property
@@ -169,7 +169,7 @@ class BoundsRect(UnpackableMixin):
     
 
 
-def find_ranges_in_window(epoch_starts, epoch_ends, active_window): # -> tuple[Any, Any, Any, Any, Any]:
+def find_ranges_in_window(epoch_starts, epoch_ends, active_window): # -> tuple[Any, NDArray[intp], Any, Any, Any]:
     """ finds the epochs that lie either wholly or partially within the active_Window.
     This can be used for example to find the epochs that fall within the visualization window to know which rectangles to draw.
     

@@ -148,7 +148,7 @@ class WrappingMessagePrinter(object):
 class CustomTreeFormatters:
 
     @classmethod
-    def basic_custom_tree_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False) -> str:
+    def basic_custom_tree_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False) -> str:
         """ For use with `print_keys_if_possible` to render a neat and pretty tree
 
             from pyphocorehelpers.print_helpers import CustomTreeFormatters
@@ -355,24 +355,61 @@ class DocumentationFilePrinter:
 
     # private methods ____________________________________________________________________________________________________ #
     @classmethod
-    def _default_plain_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+    def never_string_rep(cls, value_rep: str):
+        """ always returns None indicating no string-rep of the value should be included """
+        return None
+
+    @classmethod
+    def string_rep_if_short_enough(cls, value_rep: str, max_length:int=280, max_num_lines:int=1):
+        """ returns the formatted str-rep of the value if it meets the criteria, otherwise nothing. """
+        if (len(value_rep) <= max_length) and (len(value_rep.splitlines()) <= max_num_lines):
+            # valid rep, include the value
+            return f' = {value_rep}'
+        else:
+            return None
+        
+    @classmethod
+    def _default_plain_text_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_string_rep_fn=None):
         """       """
-        return CustomTreeFormatters.basic_custom_tree_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=type_name, is_omitted_from_expansion=is_omitted_from_expansion)
+        if value_string_rep_fn is None:
+            # value_string_rep_fn = cls.never_string_rep
+            value_string_rep_fn = cls.string_rep_if_short_enough
+
+        return CustomTreeFormatters.basic_custom_tree_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=type_string, type_name=type_name, is_omitted_from_expansion=is_omitted_from_expansion)
     
     @classmethod
-    def _default_rich_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+    def _default_rich_text_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_string_rep_fn=None):
         """ formats using ANSI_Coloring for rich colored output """
+        if value_string_rep_fn is None:
+            # value_string_rep_fn = cls.never_string_rep
+            value_string_rep_fn = cls.string_rep_if_short_enough
+            
         key_color = ANSI_COLOR_STRINGS.OKBLUE
         variable_type_color = ANSI_COLOR_STRINGS.LIGHTGREEN # looks better on screen
         # variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA # converts to greyscale for printing better
-        return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC) if is_omitted_from_expansion else ''}"
+        if is_omitted_from_expansion:
+            value_str = f"{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC)}"
+        else:
+            ## try to get the value:
+            value_str = value_string_rep_fn(str(curr_value))
+            if (value_str is not None) and (len(value_str) > 0):
+                value_str = f"{(ANSI_COLOR_STRINGS.WARNING + value_str + ANSI_COLOR_STRINGS.ENDC)}"
+            else:
+                value_str = ""
+
+        return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}{value_str}"
 
     @classmethod
-    def _default_rich_text_greyscale_print_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+    def _default_rich_text_greyscale_print_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_string_rep_fn=None):
+        if value_string_rep_fn is None:
+            # value_string_rep_fn = cls.never_string_rep
+            value_string_rep_fn = cls.string_rep_if_short_enough
+    
         """ formats using ANSI_Coloring for rich colored output """
         key_color = ANSI_COLOR_STRINGS.OKBLUE
         variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA # converts to greyscale for printing better
-        return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}"
+        value_str = f"{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC) if is_omitted_from_expansion else (value_string_rep_fn(str(curr_value)) or '')}"
+        return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}{value_str}"
 
 
 
@@ -1021,12 +1058,12 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         depth (int, optional): _description_. Defaults to 0.
         additional_excluded_item_classes (list, optional): A list of class types to exclude
         non_expanded_item_keys (list, optional): a list of keys which will not be expanded, no matter their type, only themselves printed.
-        custom_item_formater (((depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False) -> str), optional): e.g. , custom_item_formatter=(lambda depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False: f"{depth_string}- {curr_key}: {type_name}")
+        custom_item_formater (((depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False) -> str), optional): e.g. , custom_item_formatter=(lambda depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False: f"{depth_string}- {curr_key}: {type_name}")
 
             custom_item_formater Examples:
                 from pyphocorehelpers.print_helpers import TypePrintMode
-                print_keys_if_possible('computation_config', curr_active_pipeline.computation_results['maze1'].computation_config, custom_item_formatter=(lambda depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False: f"{depth_string}- {curr_key}: <{TypePrintMode.FULL_TYPE_STRING.convert(type_string, new_type=TypePrintMode.TYPE_NAME_ONLY)}>{' (children omitted)' if is_omitted_from_expansion else ''}))
-                ! See DocumentationFilePrinter._plain_text_format_curr_value and DocumentationFilePrinter._rich_text_format_curr_value for further examples 
+                print_keys_if_possible('computation_config', curr_active_pipeline.computation_results['maze1'].computation_config, custom_item_formatter=(lambda depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False: f"{depth_string}- {curr_key}: <{TypePrintMode.FULL_TYPE_STRING.convert(type_string, new_type=TypePrintMode.TYPE_NAME_ONLY)}>{' (children omitted)' if is_omitted_from_expansion else ''}))
+                ! See `DocumentationFilePrinter._plain_text_format_curr_value` and `DocumentationFilePrinter._rich_text_format_curr_value` for further examples 
 
     Returns:
         None
@@ -1070,7 +1107,7 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
                 - all_pairwise_overlaps: <class 'numpy.ndarray'> - (741, 59, 21)
         
         ## Defining custom formatting functions:
-            def _format_curr_value(depth_string, curr_key, type_string, type_name):
+            def _format_curr_value(depth_string, curr_key, curr_value, type_string, type_name):
                 return f"{depth_string}['{curr_key}']: {type_name}"                
         
             print_keys_if_possible('active_firing_rate_trends', active_firing_rate_trends, custom_item_formatter=_format_curr_value)
@@ -1121,12 +1158,12 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
             # Define default print format function if no custom one is provided:
             # see DocumentationFilePrinter._plain_text_format_curr_value and DocumentationFilePrinter._rich_text_format_curr_value for examples
             custom_item_formatter = DocumentationFilePrinter._default_plain_text_formatter
-        # e.g. lambda depth_string, curr_key, type_string, type_name, is_omitted_from_expansion: f"{depth_string}- {curr_key}: {type_name}"
+        # e.g. lambda depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion: f"{depth_string}- {curr_key}: {type_name}"
 
         if isinstance(curr_value, tuple(_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES)) or (curr_value_type_string in _GLOBAL_DO_NOT_EXPAND_CLASSNAMES) or (curr_value_type_string in (additional_excluded_item_classes or [])) or (is_non_expanded_item):
             # Non-expanded items (won't recurrsively call `print_keys_if_possible` but will print unless omit_curr_item_print is True:
             if not omit_curr_item_print:
-                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=True)
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=True)
                 # Recommendationa against using hasattr suggested here: https://hynek.me/articles/hasattr/
                 try:
                     print(f"{curr_item_str} - {curr_value.shape}")
@@ -1135,7 +1172,7 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         elif isinstance(curr_value, (np.ndarray, list, tuple)): 
             # Objects that are considered list-like are for example Python lists, tuples, sets, NumPy arrays, and Pandas Series.
             if not omit_curr_item_print:
-                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
                 print(f"{curr_item_str} - {safe_get_variable_shape(curr_value)}") ## Shape only
                 
         else:
@@ -1146,13 +1183,13 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
                 if not omit_curr_item_print:
                     # Get value type since they're all the same
                     # dict_values_type_string:str = str(type(list(curr_value.values())[0]))
-                    curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=True) + f"(all scalar values) - size: {len(curr_value)}"
+                    curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=True) + f"(all scalar values) - size: {len(curr_value)}"
                     print(curr_item_str)
                 return  # Return early, don't print individual items
             else:
                 # Typical case where we can't proclude expansion.
                 if not omit_curr_item_print:
-                    curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
+                    curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
                     print(curr_item_str)
 
 

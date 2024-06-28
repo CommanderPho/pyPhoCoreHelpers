@@ -693,6 +693,18 @@ class NotebookProcessor:
         return [{'content': cell['source'], 'tags': cell['metadata'].get('tags')}
                 for cell in self.cells if (tag in cell['metadata'].get('tags', []))]
 
+    def get_cells_with_images(self):
+        cells_with_images = []
+        for cell in self.cells:
+            cell_content = cell['source']
+            cell_attachments = cell.get('attachments', None)
+            if cell_attachments:
+                cells_with_images.append({'content': cell_content, 'attachments': cell_attachments})
+
+        return cells_with_images
+
+
+
     def get_empty_cells(self):
         return [cell for cell in self.cells if not cell['source'] or cell['source'].isspace()]
 

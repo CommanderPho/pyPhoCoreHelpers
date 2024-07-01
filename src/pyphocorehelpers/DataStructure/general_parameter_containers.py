@@ -16,17 +16,29 @@ class DebugHelper(iPythonKeyCompletingMixin, DynamicParameters):
 #TODO 2023-06-13 10:59: - [ ] Convert to an attrs-based class instead of inheriting from DynamicParameters
 # @attrs.define(slots=False)
 class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
+    """
+    from pyphocorehelpers.DataStructure.general_parameter_containers import RenderPlots
+
+    """
     _display_library:str = 'unknown'
     def __init__(self, name, context=None, **kwargs) -> None:
         super(RenderPlots, self).__init__(name=name, context=context, **kwargs)
 
     @classmethod
-    def non_data_keys(cls) -> List[str]:
+    def get_non_data_keys(cls) -> List[str]:
         """ a list of the non-user-contributed keys. """
         return ['name', 'context'] # , '_display_library'
 
+    @property
     def data_keys(self):
-        return [k for k in self.keys() if k not in self.non_data_keys] 
+        """The data_keys property."""
+        return [k for k in self.keys() if k not in self.get_non_data_keys()]
+
+
+    def data_items(self):
+        return {k:v for k, v in self.items() if k in self.data_keys}.items()
+
+
 
     # Display Library Test Functions _____________________________________________________________________________________ #
     @classmethod

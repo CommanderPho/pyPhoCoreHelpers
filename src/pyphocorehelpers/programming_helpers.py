@@ -2094,3 +2094,118 @@ def get_python_environment(active_venv_path: Path, debug_print:bool=True):
     return active_venv_path, python_executable, activate_script_path
 
 
+@metadata_attributes(short_name=None, tags=['tracing', 'variable', 'changes', 'proxy'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-07-02 14:25', related_items=[])
+class AccessLogger:
+    """ Proxy object that logs reads/writes to object that its a proxy of
+
+    Usage:
+        from pyphocorehelpers.programming_helpers import AccessLogger
+        logged_object = AccessLogger(curr_active_pipeline)
+        _outputs = some_convoluted_function(logged_object, ...)
+        print("Accessed properties:", logged_object.get_accessed()) # Accessed properties: {'sess', 'find_LongShortGlobal_epoch_names', 'filtered_sessions', 'computation_results'}
+        print("Modified properties:", logged_object.get_modified()) # Modified properties: set()
+
+    """
+    def __init__(self, obj):
+        super().__setattr__('_obj', obj)
+        super().__setattr__('_accessed', set())
+        super().__setattr__('_modified', set())
+
+    def __getattr__(self, name):
+        self._accessed.add(name)
+        return getattr(self._obj, name)
+
+    def __setattr__(self, name, value):
+        self._modified.add(name)
+        setattr(self._obj, name, value)
+
+    def __delattr__(self, name):
+        self._modified.add(name)
+        delattr(self._obj, name)
+
+    def get_accessed(self):
+        return self._accessed
+
+    def get_modified(self):
+        return self._modified
+
+    # def __init__(self, obj, parent=None, parent_key=None):
+    #     super().__setattr__('_obj', obj)
+    #     super().__setattr__('_parent', parent)
+    #     super().__setattr__('_parent_key', parent_key)
+    #     super().__setattr__('_accessed', set())
+    #     super().__setattr__('_modified', set())
+    #     super().__setattr__('_children', {})
+
+    # def __getattr__(self, name):
+    #     self._accessed.add(name)
+    #     attr = getattr(self._obj, name)
+    #     if isinstance(attr, (list, tuple, dict)) or hasattr(attr, '__dict__'):
+    #         if name not in self._children:
+    #             self._children[name] = AccessLogger(attr, parent=self, parent_key=name)
+    #         return self._children[name]
+    #     return attr
+
+    # def __setattr__(self, name, value):
+    #     self._modified.add(name)
+    #     if name in self._children:
+    #         del self._children[name]  # Remove child logger if it exists
+    #     setattr(self._obj, name, value)
+    #     if isinstance(value, (list, tuple, dict)) or hasattr(value, '__dict__'):
+    #         self._children[name] = AccessLogger(value, parent=self, parent_key=name)
+
+    # def __delattr__(self, name):
+    #     self._modified.add(name)
+    #     if name in self._children:
+    #         del self._children[name]  # Remove child logger if it exists
+    #     delattr(self._obj, name)
+
+    # def __getitem__(self, key):
+    #     self._accessed.add(key)
+    #     item = self._obj[key]
+    #     if isinstance(item, (list, tuple, dict)) or hasattr(item, '__dict__'):
+    #         if key not in self._children:
+    #             self._children[key] = AccessLogger(item, parent=self, parent_key=key)
+    #         return self._children[key]
+    #     return item
+
+    # def __setitem__(self, key, value):
+    #     self._modified.add(key)
+    #     if key in self._children:
+    #         del self._children[key]  # Remove child logger if it exists
+    #     self._obj[key] = value
+    #     if isinstance(value, (list, tuple, dict)) or hasattr(value, '__dict__'):
+    #         self._children[key] = AccessLogger(value, parent=self, parent_key=key)
+
+    # def __delitem__(self, key):
+    #     self._modified.add(key)
+    #     if key in self._children:
+    #         del self._children[key]  # Remove child logger if it exists
+    #     del self._obj[key]
+
+    # def get_accessed(self):
+    #     accessed = set(self._accessed)
+    #     for child in self._children.values():
+    #         child_accessed = child.get_accessed()
+    #         if isinstance(child_accessed, set):
+    #             accessed.update(child_accessed)
+    #         else:
+    #             accessed.add(child_accessed)
+    #     return accessed
+
+    # def get_modified(self):
+    #     modified = set(self._modified)
+    #     for child in self._children.values():
+    #         child_modified = child.get_modified()
+    #         if isinstance(child_modified, set):
+    #             modified.update(child_modified)
+    #         else:
+    #             modified.add(child_modified)
+    #     return modified
+
+    # def __call__(self, *args, **kwargs):
+    #     return self._obj(*args, **kwargs)
+
+    # def __repr__(self):
+    #     return f"<AccessLogger wrapping {repr(self._obj)}>"
+    

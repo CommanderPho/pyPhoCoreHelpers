@@ -360,29 +360,43 @@ class DocumentationFilePrinter:
         return None
 
     @classmethod
-    def string_rep_if_short_enough(cls, value_rep: str, max_length:int=280, max_num_lines:int=1):
-        """ returns the formatted str-rep of the value if it meets the criteria, otherwise nothing. """
-        if (len(value_rep) <= max_length) and (len(value_rep.splitlines()) <= max_num_lines):
+    def string_rep_if_short_enough(cls, value: Any, max_length:int=280, max_num_lines:int=1):
+        """ returns the formatted str-rep of the value if it meets the criteria, otherwise nothing. An example `value_formatting_fn` """
+        if not isinstance(value, str):
+            value = str(value)
+            
+        if (len(value) <= max_length) and (len(value.splitlines()) <= max_num_lines):
             # valid rep, include the value
-            return f' = {value_rep}'
+            return f' = {value}'
         else:
             return None
-        
+
     @classmethod
-    def _default_plain_text_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_string_rep_fn=None):
+    def value_memory_usage_MB(cls, value: Any):
+        """ returns the formatted memory size in MB. An example `value_formatting_fn` """
+        if value is not None:
+            memory_size_str_value: str = f"{print_object_memory_usage(value, enable_print=False):0.3f} MB"
+            return memory_size_str_value        
+        else:
+            return None
+
+
+    # Default formatters _________________________________________________________________________________________________ #
+    @classmethod
+    def _default_plain_text_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_formatting_fn=None):
         """       """
-        if value_string_rep_fn is None:
+        if value_formatting_fn is None:
             # value_string_rep_fn = cls.never_string_rep
-            value_string_rep_fn = cls.string_rep_if_short_enough
+            value_formatting_fn = cls.string_rep_if_short_enough
 
         return CustomTreeFormatters.basic_custom_tree_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=type_string, type_name=type_name, is_omitted_from_expansion=is_omitted_from_expansion)
     
     @classmethod
-    def _default_rich_text_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_string_rep_fn=None):
+    def _default_rich_text_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_formatting_fn=None):
         """ formats using ANSI_Coloring for rich colored output """
-        if value_string_rep_fn is None:
+        if value_formatting_fn is None:
             # value_string_rep_fn = cls.never_string_rep
-            value_string_rep_fn = cls.string_rep_if_short_enough
+            value_formatting_fn = cls.string_rep_if_short_enough
             
         key_color = ANSI_COLOR_STRINGS.OKBLUE
         variable_type_color = ANSI_COLOR_STRINGS.LIGHTGREEN # looks better on screen
@@ -391,7 +405,7 @@ class DocumentationFilePrinter:
             value_str = f"{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC)}"
         else:
             ## try to get the value:
-            value_str = value_string_rep_fn(str(curr_value))
+            value_str = value_formatting_fn(curr_value)
             if (value_str is not None) and (len(value_str) > 0):
                 value_str = f"{(ANSI_COLOR_STRINGS.WARNING + value_str + ANSI_COLOR_STRINGS.ENDC)}"
             else:
@@ -400,15 +414,15 @@ class DocumentationFilePrinter:
         return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}{value_str}"
 
     @classmethod
-    def _default_rich_text_greyscale_print_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_string_rep_fn=None):
-        if value_string_rep_fn is None:
+    def _default_rich_text_greyscale_print_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_formatting_fn=None):
+        if value_formatting_fn is None:
             # value_string_rep_fn = cls.never_string_rep
-            value_string_rep_fn = cls.string_rep_if_short_enough
+            value_formatting_fn = cls.string_rep_if_short_enough
     
         """ formats using ANSI_Coloring for rich colored output """
         key_color = ANSI_COLOR_STRINGS.OKBLUE
         variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA # converts to greyscale for printing better
-        value_str = f"{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC) if is_omitted_from_expansion else (value_string_rep_fn(str(curr_value)) or '')}"
+        value_str = f"{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC) if is_omitted_from_expansion else (value_formatting_fn(curr_value) or '')}"
         return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}{value_str}"
 
 

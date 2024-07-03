@@ -317,6 +317,9 @@ class NotebookProcessor:
     def get_cells_with_tag(self, tag): # -> list[dict[str, Any]]:
         ...
     
+    def get_cells_with_images(self): # -> list[Any]:
+        ...
+    
     def get_empty_cells(self): # -> list[Any]:
         ...
     
@@ -899,7 +902,7 @@ import pyphocorehelpers.programming_helpers                >>> pyphocorehelpers.
 
 @function_attributes(short_name=None, tags=['attrs', 'class', 'make_class', 'dict'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-11-15 00:00', related_items=[])
 @classmethod
-def create_class_from_dict(cls, class_name, input_dict): # -> type:
+def create_class_from_dict(cls, class_name, input_dict):
     """ Programmatic Attr Class Generation with attr.ib     
     TempGraphicsOutput = create_class_from_dict('TempGraphicsOutput', _out)
     TempGraphicsOutput
@@ -929,4 +932,36 @@ def get_python_environment(active_venv_path: Path, debug_print: bool = ...): # -
     
     """
     ...
+
+@metadata_attributes(short_name=None, tags=['tracing', 'variable', 'changes', 'proxy'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-07-02 14:25', related_items=[])
+class AccessLogger:
+    """ Proxy object that logs reads/writes to object that its a proxy of
+
+    Usage:
+        from pyphocorehelpers.programming_helpers import AccessLogger
+        logged_object = AccessLogger(curr_active_pipeline)
+        _outputs = some_convoluted_function(logged_object, ...)
+        print("Accessed properties:", logged_object.get_accessed()) # Accessed properties: {'sess', 'find_LongShortGlobal_epoch_names', 'filtered_sessions', 'computation_results'}
+        print("Modified properties:", logged_object.get_modified()) # Modified properties: set()
+
+    """
+    def __init__(self, obj) -> None:
+        ...
+    
+    def __getattr__(self, name): # -> Any:
+        ...
+    
+    def __setattr__(self, name, value): # -> None:
+        ...
+    
+    def __delattr__(self, name): # -> None:
+        ...
+    
+    def get_accessed(self): # -> Any:
+        ...
+    
+    def get_modified(self): # -> Any:
+        ...
+    
+
 

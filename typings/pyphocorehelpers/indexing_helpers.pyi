@@ -49,7 +49,7 @@ def is_consecutive_no_gaps(arr, enable_debug_print=...): # -> bool:
     """
     ...
 
-def bidirectional_setdiff1d(arr0, arr1): # -> tuple[NDArray[Any], NDArray[Any]]:
+def bidirectional_setdiff1d(arr0, arr1): # -> tuple[Any, Any]:
     """ returns a tuple containing the bidirectional setdiff1D in each direction (they can differ) """
     ...
 
@@ -98,7 +98,7 @@ def build_pairwise_indicies(target_indicies, debug_print=...): # -> list[tuple[A
     """
     ...
 
-def interleave_elements(start_points, end_points, debug_print: bool = ...): # -> NDArray[Any]:
+def interleave_elements(start_points, end_points, debug_print: bool = ...):
     """ Given two equal sized arrays, produces an output array of double that size that contains elements of start_points interleaved with elements of end_points
     Example:
         a_starts = ['A','B','C','D']
@@ -256,14 +256,14 @@ def safe_numpy_index(arr, idxs: np.ndarray): # -> list[Any]:
     """ tries to prevent errors when arr is a list and idxs is a numpy array. """
     ...
 
-def safe_np_vstack(arr): # -> NDArray[Any]:
+def safe_np_vstack(arr):
     """ a version of np.vstack that doesn't throw a ValueError on empty lists
         from pyphocorehelpers.indexing_helpers import safe_np_vstack
 
     """
     ...
 
-def safe_np_hstack(arr): # -> NDArray[Any]:
+def safe_np_hstack(arr):
     """ a version of np.hstack that doesn't throw a ValueError on empty lists
         from pyphocorehelpers.indexing_helpers import safe_np_hstack
 
@@ -479,7 +479,7 @@ def get_bin_centers(bin_edges):
     """ For a series of 1D bin edges given by bin_edges, returns the center of the bins. Output will have one less element than bin_edges. """
     ...
 
-def get_bin_edges(bin_centers): # -> NDArray[Any]:
+def get_bin_edges(bin_centers):
     """ For a series of 1D bin centers given by bin_centers, returns the edges of the bins. Output will have one more element than bin_centers
         Reciprocal of get_bin_centers(bin_edges)
     """
@@ -517,7 +517,7 @@ class BinningContainer:
     
 
 
-def compute_spanning_bins(variable_values, num_bins: int = ..., bin_size: float = ..., variable_start_value: float = ..., variable_end_value: float = ...): # -> tuple[NDArray[floating[Any]], BinningInfo]:
+def compute_spanning_bins(variable_values, num_bins: int = ..., bin_size: float = ..., variable_start_value: float = ..., variable_end_value: float = ...): # -> tuple[Any, BinningInfo]:
     """[summary]
 
     Args:
@@ -546,7 +546,7 @@ def compute_spanning_bins(variable_values, num_bins: int = ..., bin_size: float 
     """
     ...
 
-def compute_position_grid_size(*any_1d_series, num_bins: tuple): # -> tuple[NDArray[float64], list[Any], list[Any]]:
+def compute_position_grid_size(*any_1d_series, num_bins: tuple): # -> tuple[Any, list[Any], list[Any]]:
     """  Computes the required bin_sizes from the required num_bins (for each dimension independently)
     Usage:
     out_grid_bin_size, out_bins, out_bins_infos = compute_position_grid_size(curr_kdiba_pipeline.sess.position.x, curr_kdiba_pipeline.sess.position.y, num_bins=(64, 64))
@@ -585,7 +585,7 @@ def compute_paginated_grid_config(num_required_subplots, max_num_columns, max_su
     """
     ...
 
-def build_spanning_grid_matrix(x_values, y_values, debug_print=...): # -> tuple[NDArray[Any], list[tuple[Any, ...]], tuple[int, int]]:
+def build_spanning_grid_matrix(x_values, y_values, debug_print=...): # -> tuple[Any, list[tuple[Any, ...]], tuple[int, int]]:
     """ builds a 2D matrix with entries spanning x_values across axis 0 and spanning y_values across axis 1.
         
         For example, used to build a grid of position points from xbins and ybins.
@@ -639,7 +639,7 @@ class Paginator:
     nItemsToShow: int = ...
     num_pages: int = ...
     @property
-    def num_items_per_page(self): # -> NDArray[Any]:
+    def num_items_per_page(self):
         """The number of items displayed on each page (one number per page).
         e.g. array([20, 20, 20, 20, 20,  8])
         """
@@ -657,7 +657,7 @@ class Paginator:
         """ creates a Paginator object from a tuple of equal length sequences using `compute_paginated_grid_config`"""
         ...
     
-    def get_page_data(self, page_idx: int): # -> tuple[NDArray[Any], tuple[Any | list[Any], ...]]:
+    def get_page_data(self, page_idx: int): # -> tuple[Any, tuple[Any | list[Any], ...]]:
         """ 
         Usage:
             # If a paginator was constructed with `sequencesToShow = (rr_aclus, rr_laps, rr_replays)`, then:
@@ -669,7 +669,7 @@ class Paginator:
     
 
 
-def np_ffill_1D(arr: np.ndarray, debug_print=...): # -> Any:
+def np_ffill_1D(arr: np.ndarray, debug_print=...):
     '''  'forward-fill' the nan values in array arr. 
     By that I mean replacing each nan value with the nearest valid value from the left.
     row-wise by default
@@ -694,7 +694,7 @@ def np_ffill_1D(arr: np.ndarray, debug_print=...): # -> Any:
     '''
     ...
 
-def np_bfill_1D(arr: np.ndarray): # -> Any:
+def np_bfill_1D(arr: np.ndarray):
     """ backfills the np.nan values instead of forward filling them 
     Simple solution for bfill provided by financial_physician in comment below
     """

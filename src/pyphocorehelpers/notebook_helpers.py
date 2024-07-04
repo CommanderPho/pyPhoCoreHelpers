@@ -29,6 +29,7 @@ class NotebookCellExecutionLogger:
     """ Logs jupyter notebook execution activity and history
     
     Usage:
+        import IPython
         from pyphocorehelpers.programming_helpers import IPythonHelpers
         from pyphocorehelpers.notebook_helpers import NotebookCellExecutionLogger
 
@@ -40,15 +41,38 @@ class NotebookCellExecutionLogger:
     enable_logging_to_file: bool = field(default=True)
     log_file: Path = field(default=None, init=False)
     cell_info: Dict[str, CellInfo] = field(default=Factory(dict))
+    use_logging_subdirectory: bool = field(default=True, metadata={'notes': "if true, logs to the notebook's parent folder/._cell_execution_logs subdirectory"}) # 
 
     def __attrs_post_init__(self):
+        _did_logging_file_change: bool = self.rebuild_logging_file_info()
+        self.record_execution_details()
+
+
+    def rebuild_logging_file_info(self) -> bool:
+        """ called when options change to recompute the logging output variables:
+
+        Updates:
+            self.log_file
+
+        """
         assert self.notebook_path.exists()
         notebook_directory = self.notebook_path.parent.resolve()
         notebook_filename: str = self.notebook_path.stem
         log_filename = f"_cell_execution_log_{notebook_filename}.json"
         log_filename: str = sanitize_filename_for_Windows(log_filename)
-        self.log_file = notebook_directory.joinpath(log_filename)
-        self.record_execution_details()
+        
+        if self.use_logging_subdirectory:
+            log_directory = notebook_directory.joinpath('._cell_execution_logs').resolve()
+            log_directory.mkdir(exist_ok=True)
+        else:
+            log_directory = notebook_directory
+
+        new_log_File_directory = log_directory.joinpath(log_filename).resolve()
+
+        did_logging_file_change: bool = ((self.log_file is None) or (self.log_file != new_log_File_directory))
+        self.log_file = log_directory.joinpath(log_filename) # update the logging file
+        return did_logging_file_change
+
 
     
     def update_log_file(self):

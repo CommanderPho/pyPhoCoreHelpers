@@ -951,7 +951,7 @@ def sanitize_filename_for_Windows(original_proposed_filename: str) -> str:
         good_filename
     
     """
-    file_sep_replace_dict = {":":"-"}
+    file_sep_replace_dict = {":":"-", "?":"X"}
     refined_filename: str = original_proposed_filename
     for k, v in file_sep_replace_dict.items():
         refined_filename = refined_filename.replace(k, v)

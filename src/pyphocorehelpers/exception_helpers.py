@@ -47,6 +47,7 @@ class CapturedException:
 class ExceptionPrintingContext(ContextDecorator):
     """ A context manager that prints any exceptions that occur in its body, optionally suppressing them by default
     
+    #TODO 2024-07-05 09:27: - [ ] This class makes debugging much harder.
     
 
     Related Notebook:

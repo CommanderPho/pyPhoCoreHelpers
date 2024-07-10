@@ -39,15 +39,16 @@ class CellExecution:
     output: str = field(default="", metadata={'notes': 'Added field to store output history'})  # Added field to store output history
 
     def to_dict(self):
-        return attr.asdict(self, recurse=True, value_serializer=self.serializer)
+        return attr.asdict(self, recurse=True)
+        # return attr.asdict(self, recurse=True, value_serializer=self.serializer)
 
-    @staticmethod
-    def serializer(value, attr, obj, is_key):
-        if isinstance(value, datetime):
-            return value.isoformat()
-        if isinstance(value, (list, dict)):
-            return value
-        return str(value)
+    # @staticmethod
+    # def serializer(value, attr, obj, is_key):
+    #     if isinstance(value, datetime):
+    #         return value.isoformat()
+    #     if isinstance(value, (list, dict)):
+    #         return value
+    #     return str(value)
     
 
 
@@ -59,15 +60,15 @@ class CellInfo:
     executions: List[CellExecution] = field(factory=list)
 
     def to_dict(self):
-        return attr.asdict(self, recurse=True, value_serializer=self.serializer)
+        return attr.asdict(self, recurse=True) # , value_serializer=self.serializer
 
-    @staticmethod
-    def serializer(value, attr, obj, is_key):
-        if isinstance(value, datetime):
-            return value.isoformat()
-        if isinstance(value, (list, dict)):
-            return value
-        return str(value)
+    # @staticmethod
+    # def serializer(value, attr, obj, is_key):
+    #     if isinstance(value, datetime):
+    #         return value.isoformat()
+    #     if isinstance(value, (list, dict)):
+    #         return value
+    #     return str(value)
     
 
 

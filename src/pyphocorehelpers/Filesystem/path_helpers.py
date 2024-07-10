@@ -30,6 +30,8 @@ class BaseMatchParser:
 
 @define(slots=False)
 class DayDateTimeParser(BaseMatchParser):
+    """ parses a generic datetime 
+    """  
     def try_parse(self, filename: str) -> Optional[Dict]:
         pattern = r"(?P<export_datetime_str>.*_\d{2}\d{2}[APMF]{2})-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))"
         match = re.match(pattern, filename)
@@ -233,6 +235,10 @@ class AutoVersionedExtantFileBackupFilenameParser(BaseMatchParser):
 
 def try_datetime_detect_by_split(a_filename: str, split_parts_delimiter: str = '_'):
     """ tries to find a datetime-parsable component anywhere in the string after splitting by `split_parts_delimiter` 
+
+    from pyphocorehelpers.Filesystem.path_helpers import try_datetime_detect_by_split
+
+    parsed_output_dict, (successfully_parsed_to_date_split_filename_parts, non_date_split_filename_parts) = 
     """
     split_filename_parts = a_filename.split(split_parts_delimiter)
     day_date_pattern = r"(?P<export_datetime_str>\d{4}-\d{2}-\d{2})"
@@ -240,9 +246,13 @@ def try_datetime_detect_by_split(a_filename: str, split_parts_delimiter: str = '
     # non_datetime_filename_parts = []
     # valid_datetime_filename_parts = []
 
+    successfully_parsed_to_date_split_filename_parts = []
+    non_date_split_filename_parts = []
+
     for a_split_token in split_filename_parts:
         a_day_date_match = re.match(day_date_pattern, a_split_token) # '2024-01-04-kdiba_gor01_one_2006-6-08_14-26'        
         if a_day_date_match is None:
+            non_date_split_filename_parts.append(a_split_token)
             continue
         # parse the datetime from the export_datetime_str and convert it to datetime object
         try:
@@ -250,10 +260,13 @@ def try_datetime_detect_by_split(a_filename: str, split_parts_delimiter: str = '
             export_datetime = datetime.strptime(export_datetime_str, "%Y-%m-%d")
             # parsed_output_dict['detected_datetime'] = export_datetime
             parsed_output_dict['detected_datetime'] = export_datetime
+            successfully_parsed_to_date_split_filename_parts.append(a_split_token)
+
         except ValueError as e:
+            non_date_split_filename_parts.append(a_split_token)
             continue
 
-    return parsed_output_dict
+    return parsed_output_dict, (successfully_parsed_to_date_split_filename_parts, non_date_split_filename_parts)
 
 
 def try_detect_full_file_export_filename(a_filename: str):

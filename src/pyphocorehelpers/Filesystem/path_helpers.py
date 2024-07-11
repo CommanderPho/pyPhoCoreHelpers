@@ -333,14 +333,24 @@ def try_parse_chain(basename: str, debug_print:bool=False):
     _filename_parsers_list = (AutoVersionedExtantFileBackupFilenameParser(), AutoVersionedUniqueFilenameParser(), DayDateTimeParser(), DayDateOnlyParser(), DayDateWithVariantSuffixParser())
     final_parsed_output_dict = None
     for a_test_parser in _filename_parsers_list:
-        a_parsed_output_dict = a_test_parser.try_parse(basename)
-        if a_parsed_output_dict is not None:
-            ## best parser, stop here
-            if debug_print:
-                print(f'got parsed output {a_test_parser} - result: {a_parsed_output_dict}, basename: {basename}')
-            final_parsed_output_dict = a_parsed_output_dict
-            return final_parsed_output_dict
-        
+        if final_parsed_output_dict is None:
+            a_parsed_output_dict = a_test_parser.try_parse(basename)
+            if a_parsed_output_dict is not None:
+                ## best parser, stop here
+                if debug_print:
+                    print(f'got parsed output {a_test_parser} - result: {a_parsed_output_dict}, basename: {basename}')
+                final_parsed_output_dict = a_parsed_output_dict
+
+    if final_parsed_output_dict is not None:
+        ## Get the custom replay types:
+        a_session_str = final_parsed_output_dict.get('session_str', None)
+        if a_session_str is not None:
+            ## try to parse for custom replay types:
+            _tmp_splits = final_parsed_output_dict['session_str'].split('__', maxsplit=1)
+            if len(_tmp_splits) > 1:
+                final_parsed_output_dict['session_str'] = _tmp_splits[0]
+                final_parsed_output_dict['custom_replay_name'] = _tmp_splits[1] # remainder of the list
+
     return final_parsed_output_dict
 
 # ==================================================================================================================== #

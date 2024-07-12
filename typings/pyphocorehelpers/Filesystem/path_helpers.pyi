@@ -24,6 +24,8 @@ class BaseMatchParser:
 
 @define(slots=False)
 class DayDateTimeParser(BaseMatchParser):
+    """ parses a generic datetime 
+    """
     def try_parse(self, filename: str) -> Optional[Dict]:
         ...
     
@@ -74,8 +76,12 @@ class AutoVersionedExtantFileBackupFilenameParser(BaseMatchParser):
     
 
 
-def try_datetime_detect_by_split(a_filename: str, split_parts_delimiter: str = ...): # -> dict[Any, Any]:
+def try_datetime_detect_by_split(a_filename: str, split_parts_delimiter: str = ...): # -> tuple[dict[Any, Any], tuple[list[Any], list[Any]]]:
     """ tries to find a datetime-parsable component anywhere in the string after splitting by `split_parts_delimiter` 
+
+    from pyphocorehelpers.Filesystem.path_helpers import try_datetime_detect_by_split
+
+    parsed_output_dict, (successfully_parsed_to_date_split_filename_parts, non_date_split_filename_parts) = 
     """
     ...
 

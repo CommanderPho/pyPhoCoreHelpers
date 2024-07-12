@@ -902,7 +902,7 @@ import pyphocorehelpers.programming_helpers                >>> pyphocorehelpers.
 
 @function_attributes(short_name=None, tags=['attrs', 'class', 'make_class', 'dict'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-11-15 00:00', related_items=[])
 @classmethod
-def create_class_from_dict(cls, class_name, input_dict):
+def create_class_from_dict(cls, class_name, input_dict): # -> type:
     """ Programmatic Attr Class Generation with attr.ib     
     TempGraphicsOutput = create_class_from_dict('TempGraphicsOutput', _out)
     TempGraphicsOutput

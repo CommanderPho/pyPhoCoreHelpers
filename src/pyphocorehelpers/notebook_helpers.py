@@ -12,6 +12,9 @@ from ipywidgets import get_ipython # required for IPythonHelpers.cell_vars
 
 def _safely_remove_all_module_registered_callbacks():
     """ safely remove all callbacks registered by my custom module even if we lost references to them
+
+    from pyphocorehelpers.notebook_helpers import _safely_remove_all_module_registered_callbacks
+
     """
     ip = get_ipython()
     # print(f"ip.events.callbacks: {ip.events.callbacks}")
@@ -162,11 +165,14 @@ class NotebookCellExecutionLogger:
                 if result.result is None:
                     exec_info.output = ''
                 else:
-                    if isinstance(result.result, str):
-                        exec_info.output = result.result # Capture the output. A list of things
-                    else:
+                    # Capture the output. A list of things
+                    try:
                         # might be a list/tuple of strings
-                        exec_info.output = '_________________________________________________________________ \n'.join([str(v) for v in result.result]) # combine multiple outputs into a single cell
+                        exec_info.output = '_________________________________________________________________ \n'.join([str(v) for v in result.result]) # combine multiple outputs into a single cell # bool object is not iterable
+                    except BaseException as err:
+                        # not iterable most likely
+                        exec_info.output = str(result.result) 
+    
                     if self.debug_print:
                         print(f"Cell executed in: {_format_time(exec_info.duration)}")
 

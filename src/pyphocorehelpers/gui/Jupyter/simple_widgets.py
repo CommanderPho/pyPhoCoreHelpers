@@ -1,4 +1,4 @@
-from typing import Callable, Optional, List, Dict, Union
+from typing import Callable, Optional, List, Dict, Union, Any
 import ipywidgets as widgets
 from ipywidgets import HBox, VBox
 from IPython.display import display, HTML, Javascript
@@ -298,3 +298,49 @@ def filesystem_path_folder_contents_widget(a_path: Union[Path, str], on_file_ope
                 solara.FileBrowser.widget(directory=a_path, on_file_open=on_file_open)
             ]
         )
+
+
+
+def create_tab_widget(display_dict: Dict[str, Any]) -> widgets.Tab:
+    """
+    Creates an ipywidgets Tab widget that allows tabbing between multiple display items.
+
+    Args:
+        display_dict (Dict[str, Any]): A dictionary where keys are titles (str) and values are display items (Any).
+
+    Returns:
+        widgets.Tab: An ipywidgets Tab widget.
+        
+    Usage:
+        from pyphocorehelpers.gui.Jupyter.simple_widgets import create_tab_widget
+        df1 = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+        df2 = pd.DataFrame({'X': [7, 8, 9], 'Y': [10, 11, 12]})
+
+        tab_widget = create_tab_widget({"DataFrame 1": df1, "DataFrame 2": df2})
+        display(tab_widget)
+
+    """
+    tab = widgets.Tab()
+    children = []
+    titles = list(display_dict.keys())
+    items = list(display_dict.values())
+    
+    for item in items:
+        children.append(widgets.Output())
+    
+    tab.children = children
+    
+    for i, title in enumerate(titles):
+        tab.set_title(i, title)
+    
+    for i, item in enumerate(items):
+        with children[i]:
+            display(item)
+    
+    return tab
+
+
+
+
+
+

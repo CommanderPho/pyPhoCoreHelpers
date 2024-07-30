@@ -345,7 +345,7 @@ class DocumentationFilePrinter:
             ])
 
         _out_row_md = JupyterButtonRowWidget.init_from_button_defns(button_defns=[("Open generated .md Documentation", lambda _: open_file_with_system_default(str(self.output_md_file.resolve())), default_kwargs),
-        		("Reveal Generated .md Documentation", lambda _: reveal_in_system_file_manager(self.output_md_file), default_kwargs),
+                ("Reveal Generated .md Documentation", lambda _: reveal_in_system_file_manager(self.output_md_file), default_kwargs),
             ])
 
         return widgets.VBox([_out_row.root_widget,
@@ -360,12 +360,82 @@ class DocumentationFilePrinter:
         return None
 
     @classmethod
-    def string_rep_if_short_enough(cls, value: Any, max_length:int=280, max_num_lines:int=1):
-        """ returns the formatted str-rep of the value if it meets the criteria, otherwise nothing. An example `value_formatting_fn` """
+    def string_rep_if_short_enough(cls, value: Any, max_length:int=280, max_num_lines:int=1, allow_reformatting:bool=True, allow_ellipsis_fill_too_long_regions:bool=True, debug_print:bool=False):
+        """ returns the formatted str-rep of the value if it meets the criteria, otherwise nothing. An example `value_formatting_fn` 
+        
+        allow_reformatting: if True, allows removing lines to meet max_num_lines requirements so long as max_length is short enough
+        
+        
+        Usage:
+            from functools import partial
+            from pyphocorehelpers.print_helpers import DocumentationFilePrinter
+
+            custom_value_formatting_fn = partial(DocumentationFilePrinter.string_rep_if_short_enough, max_length=280, max_num_lines=1)
+            new_custom_item_formatter = partial(DocumentationFilePrinter._default_rich_text_formatter, value_formatting_fn=custom_value_formatting_fn)
+            print_keys_if_possible('context', context, max_depth=4, custom_item_formatter=new_custom_item_formatter)
+
+
+        """
         if not isinstance(value, str):
             value = str(value)
             
-        if (len(value) <= max_length) and (len(value.splitlines()) <= max_num_lines):
+        reformatting_line_replacement_str: str = '<br>'
+        # reformatting_line_replacement_str: str = '\t'
+        
+        
+        ellipsis_join_chars: str = '...'
+        
+
+        does_repr_have_too_many_lines: bool = (len(value.splitlines()) > max_num_lines)
+        
+        if (does_repr_have_too_many_lines and allow_reformatting):
+            _val_arr = value.splitlines()
+            _original_num_lines: int = len(_val_arr)
+            _num_lines_to_combine: int = _original_num_lines - max_num_lines
+                
+            if (max_num_lines == 1) and (_original_num_lines > 1):
+                if allow_ellipsis_fill_too_long_regions:
+                    _reformatted_value = reformatting_line_replacement_str.join(_val_arr) ## join all lines
+                else:
+                    _reformatted_value = reformatting_line_replacement_str.join(_val_arr)
+    
+            elif (max_num_lines >= 3) and (_original_num_lines >= 3):
+                _first_line = _val_arr.pop(0)
+                _last_line = _val_arr.pop(-1) # remove the last line
+                _middle_lines = _val_arr # remaining lines
+                if allow_ellipsis_fill_too_long_regions:
+                    _reformatted_value = '\n'.join((_first_line, ellipsis_join_chars, _last_line))  ## join extra lines after that                    
+                else:
+                    _reformatted_value = '\n'.join((_first_line, reformatting_line_replacement_str.join(_middle_lines), _last_line))  ## join extra lines after that
+            else:
+                raise NotImplementedError(f"_original_num_lines: {_original_num_lines}, max_num_lines: {max_num_lines}, _val_arr: {_val_arr}")
+
+            does_repr_have_too_many_lines: bool = (len(_reformatted_value.splitlines()) > max_num_lines)
+            assert (not does_repr_have_too_many_lines), f"string_rep_if_short_enough(...): ERROR:\n even after reformatting the _reformatted_value has too many lines! max_num_lines: {max_num_lines}\n len(_reformatted_value.splitlines()): {len(_reformatted_value.splitlines())}\n _reformatted_value: {_reformatted_value}\n value: {value}"
+            ## update value if needed
+            if value != _reformatted_value:
+                if debug_print:
+                    print(f'string_rep_if_short_enough(...): valueChanged:\n value: {value}\n\n _reformatted_value: {_reformatted_value}')
+            value = _reformatted_value
+
+        is_repr_too_long: bool = (len(value) > max_length)
+        if is_repr_too_long and allow_ellipsis_fill_too_long_regions:
+            # replaces all characters following the allowed max_length with ellipses
+            characters_to_ellipses: int = (max_length-len(ellipsis_join_chars)) - len(value) # characters needed to be replaced by elipses
+            _value_start = value[:(max_length-len(ellipsis_join_chars))]
+            _reformatted_value = f"{_value_start}{ellipsis_join_chars}"
+            is_repr_too_long: bool = (len(_reformatted_value) > max_length)
+            
+            assert (not is_repr_too_long), f"string_rep_if_short_enough(...): ERROR:\n even after replacing with ellipses the _reformatted_value has too many chars! max_length: {max_length}\n len(_reformatted_value): {len(_reformatted_value)}\n _reformatted_value: {_reformatted_value}\n value: {value}"
+            ## update value if needed
+            if (value != _reformatted_value):
+                if debug_print:
+                    print(f'string_rep_if_short_enough(...): valueChanged:\n value: {value}\n\n _reformatted_value: {_reformatted_value}')
+            value = _reformatted_value
+
+
+        is_repr_good_as_is: bool = (not does_repr_have_too_many_lines) and (not is_repr_too_long)
+        if is_repr_good_as_is:
             # valid rep, include the value
             return f' = {value}'
         else:
@@ -480,12 +550,12 @@ def get_now_time_str(time_separator='-') -> str:
 def get_now_time_precise_str(time_separator='-') -> str:
     return str(time.strftime(f"%Y-%m-%d_%H{time_separator}%m{time_separator}%S", time.localtime(time.time())))
 def get_now_rounded_time_str(rounded_minutes:float=2.5, time_separator='') -> str:
-	""" rounded_minutes:float=2.5 - nearest previous minute mark to round to
-	"""
-	current_time = datetime.now()
-	rounded_time = (current_time - timedelta(minutes=current_time.minute % rounded_minutes)).replace(second=0, microsecond=0)
-	formatted_time = rounded_time.strftime(f"%Y-%m-%d_%I{time_separator}%M%p")
-	return formatted_time
+    """ rounded_minutes:float=2.5 - nearest previous minute mark to round to
+    """
+    current_time = datetime.now()
+    rounded_time = (current_time - timedelta(minutes=current_time.minute % rounded_minutes)).replace(second=0, microsecond=0)
+    formatted_time = rounded_time.strftime(f"%Y-%m-%d_%I{time_separator}%M%p")
+    return formatted_time
 
 # TODO: enable simple backup-filename output
 # current_time = datetime.now()

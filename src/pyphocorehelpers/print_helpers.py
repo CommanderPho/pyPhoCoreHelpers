@@ -1,3 +1,4 @@
+from functools import partial
 import socket # for getting hostname
 from typing import Union, List, Dict, Tuple, Set, Any, Optional, OrderedDict, Callable  # for OrderedMeta
 
@@ -148,7 +149,7 @@ class WrappingMessagePrinter(object):
 class CustomTreeFormatters:
 
     @classmethod
-    def basic_custom_tree_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False) -> str:
+    def basic_custom_tree_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_formatting_fn=None) -> str:
         """ For use with `print_keys_if_possible` to render a neat and pretty tree
 
             from pyphocorehelpers.print_helpers import CustomTreeFormatters
@@ -162,7 +163,28 @@ class CustomTreeFormatters:
         depth_string_with_link = depth_string + link_char
         formatted_string = f"{depth_string_with_link}{prefix}{curr_key}: {type_name}"
         if is_omitted_from_expansion:
+            value_str = f"{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC)}"
+        else:
+            ## try to get the value:
+            value_str = value_formatting_fn(curr_value)
+            if (value_str is not None) and (len(value_str) > 0):
+                value_str = f"{(ANSI_COLOR_STRINGS.WARNING + value_str + ANSI_COLOR_STRINGS.ENDC)}"
+            else:
+                value_str = ""
+    
+        if is_omitted_from_expansion:
             formatted_string += ' (children omitted)'
+        else:
+            ## try to get the value:
+            if value_formatting_fn is None:
+                # value_string_rep_fn = DocumentationFilePrinter.never_string_rep
+                value_formatting_fn = DocumentationFilePrinter.string_rep_if_short_enough
+            
+            value_str = value_formatting_fn(curr_value)
+            if (value_str is not None) and (len(value_str) > 0):
+                ## add the value str
+                formatted_string += f' {value_str}'
+
         return formatted_string
 
 
@@ -456,10 +478,9 @@ class DocumentationFilePrinter:
     def _default_plain_text_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_formatting_fn=None):
         """       """
         if value_formatting_fn is None:
-            # value_string_rep_fn = cls.never_string_rep
             value_formatting_fn = cls.string_rep_if_short_enough
 
-        return CustomTreeFormatters.basic_custom_tree_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=type_string, type_name=type_name, is_omitted_from_expansion=is_omitted_from_expansion)
+        return CustomTreeFormatters.basic_custom_tree_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=type_string, type_name=type_name, is_omitted_from_expansion=is_omitted_from_expansion, value_formatting_fn=value_formatting_fn)
     
     @classmethod
     def _default_rich_text_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_formatting_fn=None):
@@ -1241,7 +1262,15 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         if custom_item_formatter is None:
             # Define default print format function if no custom one is provided:
             # see DocumentationFilePrinter._plain_text_format_curr_value and DocumentationFilePrinter._rich_text_format_curr_value for examples
-            custom_item_formatter = DocumentationFilePrinter._default_plain_text_formatter
+            # custom_item_formatter = DocumentationFilePrinter._default_plain_text_formatter
+            ## Plaintext:
+            custom_value_formatting_fn = partial(DocumentationFilePrinter.string_rep_if_short_enough, max_length=280, max_num_lines=1)
+            custom_item_formatter = partial(DocumentationFilePrinter._default_plain_text_formatter, value_formatting_fn=custom_value_formatting_fn)
+            
+            # ## Rich:
+            # custom_value_formatting_fn = partial(DocumentationFilePrinter.string_rep_if_short_enough, max_length=280, max_num_lines=1)
+            # custom_item_formatter = partial(DocumentationFilePrinter._default_rich_text_formatter, value_formatting_fn=custom_value_formatting_fn)
+
         # e.g. lambda depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion: f"{depth_string}- {curr_key}: {type_name}"
 
         if isinstance(curr_value, tuple(_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES)) or (curr_value_type_string in _GLOBAL_DO_NOT_EXPAND_CLASSNAMES) or (curr_value_type_string in (additional_excluded_item_classes or [])) or (is_non_expanded_item):

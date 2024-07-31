@@ -1,3 +1,5 @@
+import os
+import sys
 import attr
 from attrs import define, field, Factory
 from pathlib import Path
@@ -8,7 +10,13 @@ from IPython.core.magics.execution import _format_time
 from datetime import datetime
 import json
 from pyphocorehelpers.Filesystem.path_helpers import sanitize_filename_for_Windows
+from pyphocorehelpers.programming_helpers import IPythonHelpers
 from ipywidgets import get_ipython # required for IPythonHelpers.cell_vars
+import nbformat
+from nbconvert.preprocessors import ExecutePreprocessor
+import requests # used by NotebookProcessor.get_running_notebook_path(...)
+from IPython.display import display, Javascript
+
 
 def _safely_remove_all_module_registered_callbacks():
     """ safely remove all callbacks registered by my custom module even if we lost references to them
@@ -219,3 +227,172 @@ class NotebookCellExecutionLogger:
                 _safely_remove_all_module_registered_callbacks
                 self._callback_references = {} # empty
 
+
+@define(slots=False)
+class NotebookProcessor:
+    """ processes Jupyter Notebooks
+
+    from pyphocorehelpers.notebook_helpers import NotebookProcessor
+
+    notebook_path = Path(r"C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/ReviewOfWork_2024-01-22.ipynb").resolve()
+    processor = NotebookProcessor(path=notebook_path)
+
+    History:
+        `pyphocorehelpers.programming_helpers.NotebookProcessor` -> `pyphocorehelpers.notebook_helpers.NotebookProcessor`
+        
+    """
+    path: Path = field()
+    cells: List = field(default=Factory(list))
+
+    def __attrs_post_init__(self):
+        self.load_cells()
+
+    def load_cells(self):
+        self.cells = IPythonHelpers.extract_cells(self.path)
+        print(self.cells)
+
+    def get_cells_with_tags(self) -> Dict[str, List]:
+        """ returns a dictionary with keys equal to all tags, and values containing the list of cells containing those tags.
+        """
+        # _out = []
+        _out = {}
+        for i, cell in enumerate(self.cells):
+            _curr_tags = cell['metadata'].get('tags', [])
+            for a_tag in _curr_tags:
+                if a_tag not in _out:
+                    _out[a_tag] = [] # init to new array
+                # update the value:
+                _curr_cell = {'i': i, 'content': cell['source'], 'tags': cell['metadata'].get('tags', [])}
+                _out[a_tag].append(_curr_cell)            
+            # _out.append(_curr_cell)
+        return _out
+    
+    
+    def get_cells_with_any_tags(self) -> List:
+        """ returns all cells containing any tags.
+        """
+        return [{'i': i, 'content': cell['source'], 'tags': cell['metadata'].get('tags', [])}
+                 for i, cell in enumerate(self.cells) if cell['metadata'].get('tags', [])]
+    
+
+    def get_cells_with_tag(self, tag: str) -> List:
+        return [{'i': i, 'content': cell['source'], 'tags': cell['metadata'].get('tags')}
+                for i, cell in enumerate(self.cells) if (tag in cell['metadata'].get('tags', []))]
+
+
+    def get_cells_with_run_groups(self) -> Dict[str, List]:
+        """
+        
+        "metadata": {
+            "notebookRunGroups": {
+                "groupValue": "1"
+            }
+        },
+        
+        """
+        _out = {}
+        for i, cell in enumerate(self.cells):
+            # _curr_run_groups = cell['metadata'].get('notebookRunGroups', {}).get("groupValue", None)
+            a_run_group = cell['metadata'].get('notebookRunGroups', {}).get("groupValue", None)
+            if a_run_group is not None:
+            # for a_run_group in _curr_run_groups:
+                if a_run_group not in _out:
+                    _out[a_run_group] = [] # init to new array
+                # update the value:
+                _curr_cell = {'i': i, 'content': cell['source'], 'notebookRunGroups': cell['metadata'].get('notebookRunGroups'),
+                            #   'tags': cell['metadata'].get('tags', []),
+                              }
+                _out[a_run_group].append(_curr_cell)            
+            # _out.append(_curr_cell)
+        return _out
+    
+
+    def get_cells_with_images(self):
+        cells_with_images = []
+        for i, cell in enumerate(self.cells):
+            cell_content = cell['source']
+            cell_attachments = cell.get('attachments', None)
+            if cell_attachments:
+                cells_with_images.append({'i': i, 'content': cell_content, 'attachments': cell_attachments})
+
+        return cells_with_images
+
+
+
+    def get_empty_cells(self):
+        return [cell for i, cell in enumerate(self.cells) if not cell['source'] or cell['source'].isspace()]
+
+
+    def remove_empty_cells_and_save(self, new_path):
+        """
+        ## Remove all empty cells, and save the resultant notebook as the current notebook with the '_cleaned' filename suffix (but same extention)
+        new_path = processor.path.with_stem(f'{processor.path.stem}_cleaned').resolve()
+        processor.remove_empty_cells_and_save(new_path=new_path)
+
+
+        """
+        # spawn a new list omitting empty cells
+        original_n_cells = len(self.cells)
+        cleaned_cells = [cell for i, cell in enumerate(self.cells) if cell['source'] and not cell['source'].isspace()]
+        post_clean_n_cells = len(cleaned_cells)
+        n_changed_cells = original_n_cells - post_clean_n_cells
+        if n_changed_cells > 0:
+            print(f'original_n_cells: {original_n_cells}, post_clean_n_cells: {post_clean_n_cells}, n_changed_cells: {n_changed_cells} cells changed. Saving to {new_path}...')
+            # Commit changes back to a notebook
+            IPythonHelpers.write_notebook(cleaned_cells, new_path)
+            print(f"Cleaned notebook saved to: {new_path}")
+        else:
+            print(f'no cells changed.')
+
+    @classmethod
+    def get_running_notebook_path(cls, debug_print=True):
+        """ 
+        
+        NotebookProcessor.get_running_notebook_path()
+        
+        """
+        import ipykernel
+        import os
+        import re
+        from notebook import notebookapp
+        fullpath_connection_file = ipykernel.get_connection_file()
+        connection_file = os.path.basename(fullpath_connection_file)
+        kernel_id = connection_file.split('-', 1)[1].split('.')[0]
+        
+        jupyter_runtime_dir = Path(notebookapp.jupyter_runtime_dir()).resolve()
+        assert jupyter_runtime_dir.exists()
+        jupyter_running_servers = list(notebookapp.list_running_servers(runtime_dir=jupyter_runtime_dir))
+        
+
+        if debug_print:
+            print(f'jupyter_runtime_dir: "{jupyter_runtime_dir}"')
+            print(f'fullpath_connection_file: "{fullpath_connection_file}"')
+            print(f'connection_file: "{connection_file}"')
+            print(f'kernel_id: "{kernel_id}"')
+            print(f'jupyter_running_servers: "{jupyter_running_servers}"')
+        
+        # for srv in notebookapp.list_running_servers():
+        for srv in jupyter_running_servers:
+            if debug_print:
+                print(f'srv: {srv}')
+            response = requests.get(os.path.join(srv['url'], 'api/sessions'), params={'token': srv.get('token', '')})
+            for sess in response.json():
+                if sess['kernel']['id'] == kernel_id:
+                    return os.path.join(srv['notebook_dir'], sess['notebook']['path'])
+        return None
+
+
+    # from IPython.display import display, Javascript
+
+    # def add_cell_below():
+    # 	# js_code = """
+    # 	# var cell = Jupyter.notebook.insert_cell_below();
+    # 	# """
+    # 	# display(Javascript(js_code))
+    # 	## VSCode:
+    # 	display({
+    # 	"cell.insertCodeBelow": {
+    # 		"code": 'print("This is a new cell")'
+    # 	}
+    # 	}, raw=True)
+    

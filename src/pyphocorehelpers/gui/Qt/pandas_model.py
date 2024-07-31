@@ -1,5 +1,9 @@
 import sys
 import pandas as pd
+from typing import Dict, List, Tuple, Optional, Callable, Union, Any
+from nptyping import NDArray
+
+import pyphoplacecellanalysis.External.pyqtgraph as pg
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableView
 from PyQt5 import QtCore
 # from PyQt5.QtCore import QAbstractTableModel, Qt
@@ -132,6 +136,63 @@ class SimplePandasModel(QtCore.QAbstractTableModel):
 ## 
 # TypeError: Don't know how to iterate over data type: <class 'pandas.core.frame.DataFrame'>
 # TypeError: Don't know how to iterate over data type: <class 'pyphocorehelpers.gui.Qt.pandas_model.SimplePandasModel'>
+
+# ==================================================================================================================== #
+# Helper functions                                                                                                     #
+# ==================================================================================================================== #
+# from pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.ContainerBased.RankOrderRastersDebugger import _debug_plot_directional_template_rasters, build_selected_spikes_df, add_selected_spikes_df_points_to_scatter_plot
+
+def create_tabbed_table_widget(dataframes_dict: Dict[str, pd.DataFrame]) -> Tuple[pg.QtWidgets.QTabWidget, Dict[str, SimplePandasModel], Dict[str, pg.QtWidgets.QTableView]]:
+    """
+    Creates a tabbed widget with three tables within the given layout.
+
+    Args:
+    ctrl_layout: The layout to add the tab widget to.
+    dataframes: A list of three pandas.DataFrame objects to populate the tables.
+
+    Returns:
+    A QTabWidget containing the three tables.
+    
+    Usage:
+        from pyphocorehelpers.gui.Qt.pandas_model import SimplePandasModel, create_tabbed_table_widget
+
+        ctrl_layout = pg.LayoutWidget()
+        ctrl_widgets_dict = dict()
+                                                                                          
+        # Tabbled table widget:
+        tab_widget, views_dict, models_dict = create_tabbed_table_widget(dataframes_dict={'epochs': active_epochs_df.copy(),
+                                                                                          'spikes': global_spikes_df.copy(), 
+                                                                                           'combined_epoch_stats': pd.DataFrame()})
+        ctrl_widgets_dict['tables_tab_widget'] = tab_widget
+        ctrl_widgets_dict['views_dict'] = views_dict
+        ctrl_widgets_dict['models_dict'] = models_dict
+
+        # Add the tab widget to the layout
+        ctrl_layout.addWidget(tab_widget, row=2, rowspan=1, col=1, colspan=1)
+
+    """
+
+    # Create the tab widget and dictionaries
+    tab_widget = pg.QtWidgets.QTabWidget()
+    models_dict = {}
+    views_dict = {}
+
+    # Define tab names
+    
+    # Add tabs and corresponding views
+    for i, (a_name, df) in enumerate(dataframes_dict.items()):
+        # Create SimplePandasModel for each DataFrame
+        models_dict[a_name] = SimplePandasModel(df.copy())
+
+        # Create and associate view with model
+        view = pg.QtWidgets.QTableView()
+        view.setModel(models_dict[a_name])
+        views_dict[a_name] = view
+
+        # Add tab with view
+        tab_widget.addTab(view, a_name)
+
+    return tab_widget, views_dict, models_dict
 
 
 

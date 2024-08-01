@@ -191,6 +191,9 @@ def create_tabbed_table_widget(dataframes_dict: Dict[str, pd.DataFrame]) -> Tupl
 
         # Add tab with view
         tab_widget.addTab(view, a_name)
+        
+        # Adjust the column widths to fit the contents
+        view.resizeColumnsToContents()
 
     return tab_widget, views_dict, models_dict
 

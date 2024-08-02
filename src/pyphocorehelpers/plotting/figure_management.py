@@ -286,7 +286,7 @@ class FigureFormatter2D(object):
 
     
 
-
+@function_attributes(short_name=None, tags=['window', 'foreground', 'focus', 'gui', 'figure'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-08-02 16:30', related_items=['qt_win_to_foreground'])
 def raise_window(figname=None):
     """ find the backend and use the appropriate method """
     def _raise_window_Qt(figname=None):

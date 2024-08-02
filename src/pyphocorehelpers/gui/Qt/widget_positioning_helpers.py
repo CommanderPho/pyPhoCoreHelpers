@@ -266,3 +266,19 @@ class WidgetPositioningHelpers:
   
   
   
+    # @function_attributes(short_name=None, tags=['window', 'foreground', 'focus', 'gui'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-08-02 16:28', related_items=['pyphocorehelpers.plotting.figure_management.raise_window'])
+    @classmethod
+    def qt_win_to_foreground(cls, win):
+        """ Brings the window to the foreground. Works where others fail.
+        
+        """
+        from qtpy import QtCore
+        
+        win.setWindowFlags(win.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+        win.show()
+        win.raise_()
+        win.activateWindow()
+        # Reset the window flags to normal after showing it on top
+        win.setWindowFlags(win.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)
+        win.show()
+

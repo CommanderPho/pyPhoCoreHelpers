@@ -1743,48 +1743,61 @@ def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizont
     if isinstance(arr, np.ndarray):
         heatmap_image = _subfn_display_heatmap(arr, **kwargs)
         
-        if horizontal_layout:
-            ## Lays out side-by-side:
-            # Convert the IPython Image object to a base64-encoded string
-            heatmap_image_data = heatmap_image.data
-            b64_image = base64.b64encode(heatmap_image_data).decode('utf-8')
-            # Create an HTML widget for the heatmap
-            heatmap_image_HTML = widgets.HTML(
-                value=f'<img src="data:image/png;base64,{b64_image}" style="background:transparent;"/>'
-            )
-
-            if include_shape:
-                dask_array_widget = widgets.HTML(value=da.array(arr)._repr_html_())
-                widget_list = [dask_array_widget, heatmap_image_HTML]
-            else:
-                widget_list = [heatmap_image_HTML]
-
-            if include_plaintext_repr:
-                assert include_shape
-                orientation = "row" if horizontal_layout else "column"
-                plaintext_repr = np.array2string(arr, edgeitems=3, threshold=5)  # Adjust these parameters as needed
-                
-                html = f"""
-                <div style="display: flex; flex-direction: {orientation}; align-items: center;">
-                    {heatmap_image_HTML}
-                    <div style="margin-left: 10px;">
-                        <span>{dask_array_widget}</span>
-                        <pre>{plaintext_repr}</pre>
-                    </div>
+        orientation = "row" if horizontal_layout else "column"
+        ## Lays out side-by-side:
+        # Convert the IPython Image object to a base64-encoded string
+        heatmap_image_data = heatmap_image.data
+        b64_image = base64.b64encode(heatmap_image_data).decode('utf-8')
+        # Create an HTML widget for the heatmap
+        # heatmap_image_HTML: widgets.HTML = widgets.HTML(
+        #     value=f'<img src="data:image/png;base64,{b64_image}" style="background:transparent;"/>'
+        # )
+        heatmap_html = f'<img src="data:image/png;base64,{b64_image}" style="background:transparent;"/>'
+        
+        # height="{height}"
+        dask_array_widget_html = ""
+        plaintext_html = ""
+        
+        if include_shape:
+            dask_array_widget: widgets.HTML = widgets.HTML(value=da.array(arr)._repr_html_())
+            dask_array_widget_html: str = dask_array_widget.value
+            dask_array_widget_html = f"""
+                <div style="margin-left: 10px;">
+                    {dask_array_widget_html}
                 </div>
-                """
-                return html ## BREAK
-            else:
-                # Display widgets side-by-side
-                hbox = widgets.HBox(widget_list)
-                display(hbox)
+            """
 
+        if include_plaintext_repr:                
+            # plaintext_repr = np.array2string(arr, edgeitems=3, threshold=5)  # Adjust these parameters as needed
+            plaintext_repr = np.array2string(arr)
+            plaintext_html = f"<pre>{plaintext_repr}</pre>"
+            plaintext_html = f"""
+                <div style="margin-left: 10px;">
+                    {plaintext_html}
+                </div>
+            """
+            
+        # Combine both HTML representations
+        if horizontal_layout:
+            combined_html = f"""
+            <div style="display: flex; flex-direction: row; align-items: flex-start;">
+                <div>{heatmap_html}</div>
+                {dask_array_widget_html}
+                {plaintext_html}
+            </div>
+            """
         else:
-            ## renders as a vertical stack:
-            if include_shape:
-                display(da.array(arr), heatmap_image)
-            else:
-                display(heatmap_image)
+            combined_html = f"""
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <div>{heatmap_html}</div>
+                <div style="margin-top: 10px;">
+                    {dask_array_widget_html}
+                    {plaintext_html}
+                </div>
+            </div>
+            """
+        return combined_html
+
     else:
         raise ValueError("The input is not a NumPy array.")
 

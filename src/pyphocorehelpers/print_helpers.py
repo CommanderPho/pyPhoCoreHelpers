@@ -1,6 +1,7 @@
 from functools import partial
 import socket # for getting hostname
 from typing import Union, List, Dict, Tuple, Set, Any, Optional, OrderedDict, Callable  # for OrderedMeta
+from nptyping import NDArray
 
 from datetime import datetime, date, timedelta # for `get_now_day_str`
 import time # for `get_now_time_str`, `get_now_time_precise_str`
@@ -31,7 +32,12 @@ import objsize # python -m pip install objsize==0.6.1
 # from pyphocorehelpers.function_helpers import function_attributes # # function_attributes causes circular import issue :[
 import numpy as np
 import dask.array as da
-from IPython.display import display, HTML
+from IPython.display import Image, display, HTML
+
+from io import BytesIO
+import base64
+import ipywidgets as widgets
+
 
 
 # @function_attributes(short_name=None, tags=['unused', 'repr', 'str', 'string_representation', 'preview'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-11-28 12:43', related_items=[])
@@ -1692,14 +1698,10 @@ def array_preview_with_graphical_shape_repr_html(arr):
         raise ValueError("The input is not a NumPy array.")
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-from io import BytesIO
-import ipywidgets as widgets
-from IPython.display import Image, display
 
 # Generate heatmap
-def _subfn_create_heatmap(data) -> BytesIO:
+def _subfn_create_heatmap(data: NDArray) -> BytesIO:
+    import matplotlib.pyplot as plt
     plt.figure(figsize=(3, 3))
     plt.imshow(data, cmap='viridis')
     plt.axis('off')
@@ -1710,8 +1712,8 @@ def _subfn_create_heatmap(data) -> BytesIO:
     return buf
 
 # Convert to ipywidgets Image
-def _subfn_display_heatmap(data, **img_kwargs) -> Image:
-    """
+def _subfn_display_heatmap(data: NDArray, **img_kwargs) -> Image:
+    """ Renders a small thumbnail Image of a heatmap array
     
     """
     img_kwargs = dict(width=None, height=50, format='png') | img_kwargs
@@ -1722,7 +1724,7 @@ def _subfn_display_heatmap(data, **img_kwargs) -> Image:
     return img
 
 
-def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, **kwargs):
+def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizontal_layout=True, **kwargs):
     """ Generate an HTML representation for a NumPy array with a Dask shape preview and a thumbnail heatmap
     
         from pyphocorehelpers.print_helpers import array_preview_with_heatmap_repr_html
@@ -1739,11 +1741,34 @@ def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, **kwargs
     """
     
     if isinstance(arr, np.ndarray):
-        heatmap_widget = _subfn_display_heatmap(arr, **kwargs)
-        if include_shape:
-            display(da.array(arr), heatmap_widget)
+        heatmap_image = _subfn_display_heatmap(arr, **kwargs)
+        
+        if horizontal_layout:
+            ## Lays out side-by-side:
+            # Convert the IPython Image object to a base64-encoded string
+            heatmap_image_data = heatmap_image.data
+            b64_image = base64.b64encode(heatmap_image_data).decode('utf-8')
+            # Create an HTML widget for the heatmap
+            heatmap_image = widgets.HTML(
+                value=f'<img src="data:image/png;base64,{b64_image}" style="background:transparent;"/>'
+            )
+
+            if include_shape:
+                dask_array_widget = widgets.HTML(value=da.array(arr)._repr_html_())
+                widget_list = [dask_array_widget, heatmap_image]
+            else:
+                widget_list = [heatmap_image]
+                
+            # Display widgets side-by-side
+            hbox = widgets.HBox(widget_list)
+            display(hbox)
+
         else:
-            display(heatmap_widget)
+            ## renders as a vertical stack:
+            if include_shape:
+                display(da.array(arr), heatmap_image)
+            else:
+                display(heatmap_image)
     else:
         raise ValueError("The input is not a NumPy array.")
 

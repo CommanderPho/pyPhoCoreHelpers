@@ -1724,7 +1724,7 @@ def _subfn_display_heatmap(data: NDArray, **img_kwargs) -> Image:
     return img
 
 
-def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizontal_layout=True, **kwargs):
+def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizontal_layout=True, include_plaintext_repr:bool=False, **kwargs):
     """ Generate an HTML representation for a NumPy array with a Dask shape preview and a thumbnail heatmap
     
         from pyphocorehelpers.print_helpers import array_preview_with_heatmap_repr_html
@@ -1749,19 +1749,35 @@ def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizont
             heatmap_image_data = heatmap_image.data
             b64_image = base64.b64encode(heatmap_image_data).decode('utf-8')
             # Create an HTML widget for the heatmap
-            heatmap_image = widgets.HTML(
+            heatmap_image_HTML = widgets.HTML(
                 value=f'<img src="data:image/png;base64,{b64_image}" style="background:transparent;"/>'
             )
 
             if include_shape:
                 dask_array_widget = widgets.HTML(value=da.array(arr)._repr_html_())
-                widget_list = [dask_array_widget, heatmap_image]
+                widget_list = [dask_array_widget, heatmap_image_HTML]
             else:
-                widget_list = [heatmap_image]
+                widget_list = [heatmap_image_HTML]
+
+            if include_plaintext_repr:
+                assert include_shape
+                orientation = "row" if horizontal_layout else "column"
+                plaintext_repr = np.array2string(arr, edgeitems=3, threshold=5)  # Adjust these parameters as needed
                 
-            # Display widgets side-by-side
-            hbox = widgets.HBox(widget_list)
-            display(hbox)
+                html = f"""
+                <div style="display: flex; flex-direction: {orientation}; align-items: center;">
+                    {heatmap_image_HTML}
+                    <div style="margin-left: 10px;">
+                        <span>{dask_array_widget}</span>
+                        <pre>{plaintext_repr}</pre>
+                    </div>
+                </div>
+                """
+                return html ## BREAK
+            else:
+                # Display widgets side-by-side
+                hbox = widgets.HBox(widget_list)
+                display(hbox)
 
         else:
             ## renders as a vertical stack:

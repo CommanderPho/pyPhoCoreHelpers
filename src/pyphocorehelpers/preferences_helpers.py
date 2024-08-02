@@ -89,6 +89,17 @@ def array_repr_with_graphical_shape(ip: "ipykernel.zmqshell.ZMQInteractiveShell"
     return ip
 
 
+def array_repr_with_graphical_preview(ip: "ipykernel.zmqshell.ZMQInteractiveShell", include_shape: bool=True) -> "ipykernel.zmqshell.ZMQInteractiveShell":
+    """Generate an HTML representation for a NumPy array with a Dask shape preview and a thumbnail heatmap
+    
+    """
+    from pyphocorehelpers.print_helpers import array_preview_with_heatmap_repr_html
+    
+    # Register the custom display function for NumPy arrays
+    ip.display_formatter.formatters['text/html'].for_type(np.ndarray, lambda arr: array_preview_with_heatmap_repr_html(arr, height=50, include_shape=include_shape))
+    return ip
+
+
 from IPython.display import display, HTML, Javascript
 from ipywidgets import widgets, VBox
 

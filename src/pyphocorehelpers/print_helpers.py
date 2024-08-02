@@ -1691,3 +1691,59 @@ def array_preview_with_graphical_shape_repr_html(arr):
     else:
         raise ValueError("The input is not a NumPy array.")
 
+
+import numpy as np
+import matplotlib.pyplot as plt
+from io import BytesIO
+import ipywidgets as widgets
+from IPython.display import Image, display
+
+# Generate heatmap
+def _subfn_create_heatmap(data) -> BytesIO:
+    plt.figure(figsize=(3, 3))
+    plt.imshow(data, cmap='viridis')
+    plt.axis('off')
+    buf = BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
+    plt.close()
+    buf.seek(0)
+    return buf
+
+# Convert to ipywidgets Image
+def _subfn_display_heatmap(data, **img_kwargs) -> Image:
+    """
+    
+    """
+    img_kwargs = dict(width=None, height=50, format='png') | img_kwargs
+    buf = _subfn_create_heatmap(data)
+    # Create an IPython Image object
+    img = Image(data=buf.getvalue(), **img_kwargs)
+    # img = widgets.Image(value=buf.read(), **img_kwargs)
+    return img
+
+
+def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, **kwargs):
+    """ Generate an HTML representation for a NumPy array with a Dask shape preview and a thumbnail heatmap
+    
+        from pyphocorehelpers.print_helpers import array_preview_with_heatmap_repr_html
+
+        # Register the custom display function for numpy arrays
+        import IPython
+        ip = IPython.get_ipython()
+        ip.display_formatter.formatters['text/html'].for_type(np.ndarray, array_preview_with_heatmap) # only registers for NDArray
+
+        # Example usage
+        arr = np.random.rand(3, 4)
+        display(arr)
+
+    """
+    
+    if isinstance(arr, np.ndarray):
+        heatmap_widget = _subfn_display_heatmap(arr, **kwargs)
+        if include_shape:
+            display(da.array(arr), heatmap_widget)
+        else:
+            display(heatmap_widget)
+    else:
+        raise ValueError("The input is not a NumPy array.")
+

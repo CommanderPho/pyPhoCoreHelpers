@@ -1701,6 +1701,13 @@ def array_preview_with_graphical_shape_repr_html(arr):
 
 # Generate heatmap
 def _subfn_create_heatmap(data: NDArray) -> BytesIO:
+    """ 
+    
+    """
+    if (data.ndim < 2):
+        data = np.atleast_2d(data)
+        # fix issues with 1D data like `TypeError: Invalid shape (58,) for image data`
+    
     import matplotlib.pyplot as plt
     plt.figure(figsize=(3, 3))
     plt.imshow(data, cmap='viridis')

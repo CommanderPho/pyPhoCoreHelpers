@@ -1723,11 +1723,10 @@ def _subfn_display_heatmap(data: NDArray, **img_kwargs) -> Image:
     """ Renders a small thumbnail Image of a heatmap array
     
     """
-    img_kwargs = dict(width=None, height=50, format='png') | img_kwargs
+    img_kwargs = dict(width=None, height=img_kwargs.get('height', 100), format='png') | img_kwargs
     buf = _subfn_create_heatmap(data)
     # Create an IPython Image object
     img = Image(data=buf.getvalue(), **img_kwargs)
-    # img = widgets.Image(value=buf.read(), **img_kwargs)
     return img
 
 
@@ -1759,7 +1758,16 @@ def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizont
         # heatmap_image_HTML: widgets.HTML = widgets.HTML(
         #     value=f'<img src="data:image/png;base64,{b64_image}" style="background:transparent;"/>'
         # )
-        heatmap_html = f'<img src="data:image/png;base64,{b64_image}" style="background:transparent;"/>'
+        
+        heatmap_size_format_str: str = ''
+        width = kwargs.get('width', None)
+        if (width is not None) and (width > 0):
+            heatmap_size_format_str = heatmap_size_format_str + f'width="{width}" '
+        height = kwargs.get('height', None)
+        if (height is not None) and (height > 0):
+            heatmap_size_format_str = heatmap_size_format_str + f'height="{height}" '
+        
+        heatmap_html = f'<img src="data:image/png;base64,{b64_image}" {heatmap_size_format_str}style="background:transparent;"/>' #  width="{ndarray_preview_config.heatmap_thumbnail_width}"
         
         # height="{height}"
         dask_array_widget_html = ""

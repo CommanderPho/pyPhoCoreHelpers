@@ -217,19 +217,37 @@ def build_fn_properties_df(a_fn_dict, included_attribute_names_list:Optional[Lis
 # ==================================================================================================================== #
 # Code/Metadata Discovery                                                                                              #
 # ==================================================================================================================== #
-def discover_classes_and_functions_with_custom_metadata(module_name:str='pyphoplacecellanalysis'):
+def discover_classes_and_functions_with_custom_metadata(module_name:str='pyphoplacecellanalysis', debug_print=False):
     """ Discovers the classes and functions in the module
     
     inspect.getmembers(...)
     
+    Usage:
+    
+        from pyphocorehelpers.programming_helpers import discover_classes_and_functions_with_custom_metadata, PythonPathStr, build_metadata_tags_database
+
+        # library_name = 'pyphocorehelpers'
+        library_name = 'pyphoplacecellanalysis'
+        discovered_with_metadata, result = discover_classes_and_functions_with_custom_metadata(library_name)
+        print('Classes:', result['classes'])
+        print('Functions:', result['functions'])
+        discovered_with_metadata
+
+        print(f'discovered_with_metadata.keys(): {list(discovered_with_metadata.keys())}')
+        df = pd.DataFrame.from_dict(discovered_with_metadata)
+        df
+
+        tag_database = build_metadata_tags_database(discovered_with_metadata=discovered_with_metadata)
+        tag_database
+        
     """
     import pkgutil
     import inspect
     import importlib
     from pyphocorehelpers.function_helpers import is_decorated_with_function_attributes, get_decorated_function_attributes
 
-    discovered_general = {'classes': [], 'functions': [], 'methods': []}
-    discovered_with_metadata = {}
+    discovered_general: Dict[str, List] = {'classes': [], 'functions': [], 'methods': []}
+    discovered_with_metadata: Dict[PythonPathStr, Dict] = {}
     
     module = importlib.import_module(module_name)
     for loader, name, is_pkg in pkgutil.walk_packages(module.__path__, module.__name__ + '.'):
@@ -238,7 +256,7 @@ def discover_classes_and_functions_with_custom_metadata(module_name:str='pyphopl
             for name, obj in inspect.getmembers(submodule):
                 if inspect.isclass(obj):
                     _curr_obj_type_name: str = 'fcn'
-                    curr_key: str = f"{obj.__module__}.{obj.__name__}"
+                    curr_key: PythonPathStr = PythonPathStr(f"{obj.__module__}.{obj.__name__}")
                     discovered_general['classes'].append(curr_key)
                     ## check class metadata:
                     if is_decorated_with_metadata_attributes(obj):
@@ -250,7 +268,7 @@ def discover_classes_and_functions_with_custom_metadata(module_name:str='pyphopl
                     for method_name, method_obj in inspect.getmembers(obj):
                         if inspect.isfunction(method_obj) or inspect.ismethod(method_obj):
                             _curr_obj_type_name: str = 'fcn'
-                            curr_method_key: str = f"{obj.__module__}.{obj.__name__}.{method_name}"
+                            curr_method_key: PythonPathStr = PythonPathStr(f"{obj.__module__}.{obj.__name__}.{method_name}")
                             discovered_general['methods'].append(curr_method_key)
                             if is_decorated_with_function_attributes(method_obj):
                                 discovered_with_metadata[curr_method_key] = {'kind': _curr_obj_type_name}
@@ -260,22 +278,46 @@ def discover_classes_and_functions_with_custom_metadata(module_name:str='pyphopl
 
                 elif inspect.isfunction(obj):
                     _curr_obj_type_name: str = 'fcn'
-                    discovered_general['functions'].append(f"{obj.__module__}.{obj.__name__}")
+                    curr_key: PythonPathStr = PythonPathStr(f"{obj.__module__}.{obj.__name__}")
+                    discovered_general['functions'].append(curr_key)
                     if is_decorated_with_function_attributes(obj):
-                        discovered_with_metadata[f"{obj.__module__}.{obj.__name__}"] = {'kind': _curr_obj_type_name}
+                        discovered_with_metadata[curr_key] = {'kind': _curr_obj_type_name}
                         _curr_fn_dict = get_decorated_function_attributes(obj)
-                        discovered_with_metadata[f"{obj.__module__}.{obj.__name__}"] |= _curr_fn_dict
+                        discovered_with_metadata[curr_key] |= _curr_fn_dict
                         
                 else:
                     # Unknown type
-                    print(f"Unhandled type: type(obj): {type(obj)}")
+                    if debug_print:
+                        print(f"Unhandled type: type(obj): {type(obj)}")
 
         except Exception as e:
             print(f"Error importing {name}: {e}")
             
     return discovered_with_metadata, discovered_general
 
+def build_metadata_tags_database(discovered_with_metadata: Dict[PythonPathStr, Dict]) -> Dict:
+    """ extracts all unique tags from the `discovered_with_metadata` dict
+    returns a dict that can be indexed with a tag name and will return all found pythonpaths in the library that have that tag
+    
+    Usage:
+    
+        tag_database = build_metadata_tags_database(discovered_with_metadata=discovered_with_metadata)
+        tag_database
 
+    """
+    tag_database = {}
+    for a_key, a_metadata_dict in discovered_with_metadata.items():
+        _tags = a_metadata_dict.get('tags', [])
+        for a_tag in _tags:
+            if a_tag not in tag_database:
+                # key does not exist
+                tag_database[a_tag] = []
+            tag_database[a_tag].append(a_key)
+
+
+    tag_database = {a_key:set(v) for a_key, v in tag_database.items()}
+    sorted_tag_database = dict(sorted(tag_database.items()))
+    return sorted_tag_database	
 
 # ==================================================================================================================== #
 # Clipboard Helpers                                                                                                    #

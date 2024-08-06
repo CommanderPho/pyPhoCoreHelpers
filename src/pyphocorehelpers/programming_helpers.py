@@ -22,6 +22,13 @@ from attrs import define, field, Factory
 from pyphocorehelpers.DataStructure.enum_helpers import ExtendedEnum
 from pyphocorehelpers.function_helpers import function_attributes
 
+from typing import Dict, List, Tuple, Optional, Callable, Union, Any
+from typing_extensions import TypeAlias
+from typing import NewType
+from nptyping import NDArray
+
+PythonPathStr = NewType('PythonPathStr', str) # a python path to a specific object type: f"{obj.__module__}.{obj.__name__}"
+
 # from pyphocorehelpers.function_helpers import function_attributes, _custom_function_metadata_attribute_names
 
 # ==================================================================================================================== #
@@ -91,6 +98,30 @@ def metadata_attributes(short_name=None, tags=None, creation_date=None, input_re
 # ==================================================================================================================== #
 # Function and Class Metadata Accessors                                                                                #
 # ==================================================================================================================== #
+
+def get_decorated_metadata_attributes(obj) -> Dict:
+    """ returns the `metadata_attributes` metadata from a class decorated with the `metadata_attributes` decorator """
+    known_key_names = list(_custom_metadata_attribute_names.keys())
+    _fcn_values_dict = {}
+    for k in known_key_names:
+        if hasattr(obj, k):
+            _fcn_values_dict[k] = getattr(obj, k)
+    return _fcn_values_dict
+
+
+def is_decorated_with_metadata_attributes(obj) -> bool:
+    """ returns True if the class of obj is decorated with the metadata consistent with a `metadata_attributes` decorator
+    
+    from pyphocorehelpers.programming_helpers import is_decorated_with_metadata_attributes, get_decorated_metadata_attributes, build_fn_properties_dict, build_fn_properties_df
+    
+    """
+    known_key_names = list(_custom_metadata_attribute_names.keys())
+    for k in known_key_names:
+        if hasattr(obj, k):
+            return True
+    return False # had no attributes
+    # return hasattr(obj, 'short_name') or hasattr(obj, 'tags') or hasattr(obj, 'creation_date') or hasattr(obj, 'input_requires') or hasattr(obj, 'output_provides')
+
 
 
 def build_metadata_property_reverse_search_map(a_fn_dict, a_metadata_property_name='short_name'):
@@ -183,6 +214,72 @@ def build_fn_properties_df(a_fn_dict, included_attribute_names_list:Optional[Lis
     return df
 
 
+# ==================================================================================================================== #
+# Code/Metadata Discovery                                                                                              #
+# ==================================================================================================================== #
+def discover_classes_and_functions_with_custom_metadata(module_name:str='pyphoplacecellanalysis'):
+    """ Discovers the classes and functions in the module
+    
+    inspect.getmembers(...)
+    
+    """
+    import pkgutil
+    import inspect
+    import importlib
+    from pyphocorehelpers.function_helpers import is_decorated_with_function_attributes, get_decorated_function_attributes
+
+    discovered_general = {'classes': [], 'functions': [], 'methods': []}
+    discovered_with_metadata = {}
+    
+    module = importlib.import_module(module_name)
+    for loader, name, is_pkg in pkgutil.walk_packages(module.__path__, module.__name__ + '.'):
+        try:
+            submodule = importlib.import_module(name)
+            for name, obj in inspect.getmembers(submodule):
+                if inspect.isclass(obj):
+                    _curr_obj_type_name: str = 'fcn'
+                    curr_key: str = f"{obj.__module__}.{obj.__name__}"
+                    discovered_general['classes'].append(curr_key)
+                    ## check class metadata:
+                    if is_decorated_with_metadata_attributes(obj):
+                        discovered_with_metadata[curr_key] = {'kind': _curr_obj_type_name}
+                        _curr_class_dict = get_decorated_metadata_attributes(obj)
+                        discovered_with_metadata[curr_key] |= _curr_class_dict
+                        
+                    # get methods:
+                    for method_name, method_obj in inspect.getmembers(obj):
+                        if inspect.isfunction(method_obj) or inspect.ismethod(method_obj):
+                            _curr_obj_type_name: str = 'fcn'
+                            curr_method_key: str = f"{obj.__module__}.{obj.__name__}.{method_name}"
+                            discovered_general['methods'].append(curr_method_key)
+                            if is_decorated_with_function_attributes(method_obj):
+                                discovered_with_metadata[curr_method_key] = {'kind': _curr_obj_type_name}
+                                _curr_fn_dict = get_decorated_function_attributes(method_obj)
+                                discovered_with_metadata[curr_method_key] |= _curr_fn_dict
+
+
+                elif inspect.isfunction(obj):
+                    _curr_obj_type_name: str = 'fcn'
+                    discovered_general['functions'].append(f"{obj.__module__}.{obj.__name__}")
+                    if is_decorated_with_function_attributes(obj):
+                        discovered_with_metadata[f"{obj.__module__}.{obj.__name__}"] = {'kind': _curr_obj_type_name}
+                        _curr_fn_dict = get_decorated_function_attributes(obj)
+                        discovered_with_metadata[f"{obj.__module__}.{obj.__name__}"] |= _curr_fn_dict
+                        
+                else:
+                    # Unknown type
+                    print(f"Unhandled type: type(obj): {type(obj)}")
+
+        except Exception as e:
+            print(f"Error importing {name}: {e}")
+            
+    return discovered_with_metadata, discovered_general
+
+
+
+# ==================================================================================================================== #
+# Clipboard Helpers                                                                                                    #
+# ==================================================================================================================== #
 def copy_to_clipboard(code_str: str, message_print=True):
     """ tries a clean method that uses the jaraco.clipboard library, but falls back to Pandas for compatibility if it isn't available
     """
@@ -266,7 +363,9 @@ def copy_image_to_clipboard(image, message_print=True):
     
     
 
-
+# ==================================================================================================================== #
+# Code String Parsing                                                                                                  #
+# ==================================================================================================================== #
 class CodeParsers:
     """
 

@@ -3,7 +3,7 @@ import traceback
 from functools import reduce
 from itertools import accumulate
 from functools import wraps # This convenience func preserves name and docstring
-from typing import List, Callable, Optional # for function composition
+from typing import Dict, List, Callable, Optional # for function composition
 
 from pyphocorehelpers.exception_helpers import CapturedException
 
@@ -123,7 +123,8 @@ _custom_function_metadata_attribute_names = dict(short_name=None, tags=None, cre
                                          input_requires=None, output_provides=None,
                                          uses=None, used_by=None,
                                          related_items=None, # references to items related to this definition
-                                         conforms_to=None, is_global=False, validate_computation_test=None
+                                         conforms_to=None, is_global=False, validate_computation_test=None,
+                                         requires_global_keys=None, provides_global_keys=None,
 )
 
 
@@ -163,6 +164,26 @@ def function_attributes(short_name=None, tags=None, creation_date=None, input_re
     return decorator
 
 
+def get_decorated_function_attributes(obj) -> Dict:
+    """ returns the `function_attributes` metadata from a function or method is decorated with the `function_attributes` decorator """
+    known_key_names = list(_custom_function_metadata_attribute_names.keys())
+    _fcn_values_dict = {}
+    for k in known_key_names:
+        if hasattr(obj, k):
+            _fcn_values_dict[k] = getattr(obj, k)
+    return _fcn_values_dict
+
+
+def is_decorated_with_function_attributes(obj) -> bool:
+    """ returns True if the function or method is decorated with the metadata consistent with a `function_attributes` decorator """
+    known_key_names = list(_custom_function_metadata_attribute_names.keys())
+    for k in known_key_names:
+        if hasattr(obj, k):
+            return True
+    return False # had no attributes
+    # return hasattr(obj, 'short_name') or hasattr(obj, 'tags') or hasattr(obj, 'creation_date') or hasattr(obj, 'input_requires') or hasattr(obj, 'output_provides')
+
+    
 
 def invocation_log(func):
     """Logs before and after calling a function

@@ -1702,7 +1702,7 @@ def array_preview_with_graphical_shape_repr_html(arr):
 # Generate heatmap
 
     
-def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None) -> BytesIO: # , omission_indices: list = None
+def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None) -> Optional[BytesIO]: # , omission_indices: list = None
     """ 
     
     """
@@ -1745,10 +1745,24 @@ def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None) -> BytesIO: # ,
     #     print(f'omission_indices: {omission_indices}, breaks: {breaks}')
     if brokenaxes_kwargs:
         print(f'brokenaxes_kwargs: {brokenaxes_kwargs}')
+    try:
         
+        imshow_shared_kwargs = {
+            'origin': 'lower',
+            # 'extent': extent,
+        }
 
-        # plt.imshow(data, cmap=active_cmap)
-        # plt.axis('off')
+        # def create_fade_cmap(cmap_name, fade_ratio=0.1):
+        #     from matplotlib.colors import ListedColormap
+        #     base = plt.cm.get_cmap(cmap_name)
+        #     colors = base(np.linspace(0, 1, base.N))
+        #     alpha = np.linspace(1, 0, int(base.N * fade_ratio))
+        #     colors[-len(alpha):, -1] = alpha  # Apply the fade out effect to the last fade_ratio of the colormap
+        #     return ListedColormap(colors)
+
+            
+        active_cmap = 'viridis'
+        # active_cmap = create_fade_cmap('viridis') # fade cmap
         
         if brokenaxes_kwargs:
             # bax = brokenaxes(xlims=breaks, d=0.015)
@@ -1765,32 +1779,44 @@ def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None) -> BytesIO: # ,
             # # for start, end in breaks:
             # mid_point = (start + end) / 2
             # bax.text(mid_point, data.shape[0] / 2, '...', va='center', ha='center', color='grey', fontsize=9)
+        plt.figure(figsize=(3, 3))
             
-        else:
-            plt.imshow(data, cmap=active_cmap, **imshow_shared_kwargs)
-            plt.axis('off')
-            pass
-    else:
         plt.imshow(data, cmap=active_cmap, **imshow_shared_kwargs)
         plt.axis('off')
+            
+        buf = BytesIO()
         
-    buf = BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
-    plt.close()
-    buf.seek(0)
+        plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
+
+        buf.seek(0)
+        
+    except SystemError as err:
+        # SystemError: tile cannot extend outside image
+        print(f'Encountered error while plotting heatmap:\n\terr: {err}')
+        print(f'\tnp.shape(data): {np.shape(data)}\n\tdata: {data}')
+        buf = None
+
+    finally:
+        plt.close()        
+        # # Restore the original backend
+        # plt.switch_backend(current_backend)
+        
+    
     return buf
 
 # Convert to ipywidgets Image
-def _subfn_display_heatmap(data: NDArray, brokenaxes_kwargs=None, **img_kwargs) -> Image:
+def _subfn_display_heatmap(data: NDArray, brokenaxes_kwargs=None, **img_kwargs) -> Optional[Image]:
     """ Renders a small thumbnail Image of a heatmap array
     
     """
     img_kwargs = dict(width=None, height=img_kwargs.get('height', 100), format='png') | img_kwargs
     buf = _subfn_create_heatmap(data, brokenaxes_kwargs=brokenaxes_kwargs)
-    # Create an IPython Image object
-    img = Image(data=buf.getvalue(), **img_kwargs)
-    return img
-
+    if buf is not None:
+        # Create an IPython Image object
+        img = Image(data=buf.getvalue(), **img_kwargs)
+        return img
+    else:
+        return None
 
 def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizontal_layout=True, include_plaintext_repr:bool=False, **kwargs):
     """ Generate an HTML representation for a NumPy array with a Dask shape preview and a thumbnail heatmap
@@ -1815,27 +1841,33 @@ def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizont
             arr = arr[max_allowed_arr_elements:]
         
         heatmap_image = _subfn_display_heatmap(arr, **kwargs)
-        
-        orientation = "row" if horizontal_layout else "column"
-        ## Lays out side-by-side:
-        # Convert the IPython Image object to a base64-encoded string
-        heatmap_image_data = heatmap_image.data
-        b64_image = base64.b64encode(heatmap_image_data).decode('utf-8')
-        # Create an HTML widget for the heatmap
-        # heatmap_image_HTML: widgets.HTML = widgets.HTML(
-        #     value=f'<img src="data:image/png;base64,{b64_image}" style="background:transparent;"/>'
-        # )
-        
-        heatmap_size_format_str: str = ''
-        width = kwargs.get('width', None)
-        if (width is not None) and (width > 0):
-            heatmap_size_format_str = heatmap_size_format_str + f'width="{width}" '
-        height = kwargs.get('height', None)
-        if (height is not None) and (height > 0):
-            heatmap_size_format_str = heatmap_size_format_str + f'height="{height}" '
-        
-        heatmap_html = f'<img src="data:image/png;base64,{b64_image}" {heatmap_size_format_str}style="background:transparent;"/>' #  width="{ndarray_preview_config.heatmap_thumbnail_width}"
-        
+        if (heatmap_image is not None):
+            orientation = "row" if horizontal_layout else "column"
+            ## Lays out side-by-side:
+            # Convert the IPython Image object to a base64-encoded string
+            heatmap_image_data = heatmap_image.data
+            b64_image = base64.b64encode(heatmap_image_data).decode('utf-8')
+            # Create an HTML widget for the heatmap
+            heatmap_size_format_str: str = ''
+            width = kwargs.get('width', None)
+            if (width is not None) and (width > 0):
+                heatmap_size_format_str = heatmap_size_format_str + f'width="{width}" '
+            height = kwargs.get('height', None)
+            if (height is not None) and (height > 0):
+                heatmap_size_format_str = heatmap_size_format_str + f'height="{height}" '
+            
+            heatmap_html = f'<img src="data:image/png;base64,{b64_image}" {heatmap_size_format_str}style="background:transparent;"/>' #  width="{ndarray_preview_config.heatmap_thumbnail_width}"
+
+        else:
+            # getting image failed:
+            # Create an HTML widget for the heatmap
+            message = "Heatmap Err"
+            heatmap_html = f"""
+            <div style="text-align: center; padding: 20px; border: 1px solid #ccc;">
+                <p style="font-size: 16px; color: red;">{message}</p>
+            </div>
+            """
+
         # height="{height}"
         dask_array_widget_html = ""
         plaintext_html = ""

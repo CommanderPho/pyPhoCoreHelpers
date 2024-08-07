@@ -7,7 +7,8 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 import ipykernel # ip: "ipykernel.zmqshell.ZMQInteractiveShell)" = IPython.get_ipython()
-
+from IPython.display import display, HTML, Javascript
+from ipywidgets import widgets, VBox
 
 
 
@@ -103,6 +104,7 @@ def array_repr_with_graphical_preview(ip: "ipykernel.zmqshell.ZMQInteractiveShel
     # ## Plain-text type representation can be suppressed like:
     if include_plaintext_repr:
         # Override text formatter to prevent plaintext representation
+        ## SIDE-EFFECT: messes up printing NDARRAYs embedded in lists, dicts, other objects, etc. It seems that when rendering these they use the 'text/plain' representations
         ip.display_formatter.formatters['text/plain'].for_type(
             np.ndarray, 
             lambda arr, p, cycle: None
@@ -111,8 +113,36 @@ def array_repr_with_graphical_preview(ip: "ipykernel.zmqshell.ZMQInteractiveShel
     return ip
 
 
-from IPython.display import display, HTML, Javascript
-from ipywidgets import widgets, VBox
+#TODO 2024-08-07 13:02: - [ ] Finish custom plaintext formatting
+# # Register the custom display function for NumPy arrays
+# import IPython
+# ip = IPython.get_ipython()
+
+# def format_list_of_ndarrays(obj, p, cycle):
+#     if all(isinstance(x, np.ndarray) for x in obj):
+#         return "[" + ", ".join(np.array2string(a) for a in obj) + "]"
+#     else:
+#         # Fallback to the original formatter
+#         return p.text(repr(obj))
+#         # # Use the existing formatter if present, or default to repr
+#         # existing_formatter = ip.display_formatter.formatters['text/plain'].lookup_by_type(list)
+#         # return existing_formatter(obj, p, cycle) if existing_formatter else repr(obj)
+    
+
+# # ip.display_formatter.formatters['text/plain'].for_type(
+# #     List[NDArray], 
+# #     lambda arr, p, cycle: np.array2string(arr)
+# # )
+
+# # Register the custom formatter
+# ip.display_formatter.formatters['text/plain'].for_type(list, format_list_of_ndarrays)
+# ip.display_formatter.formatters['text/plain'].type_printers[np.ndarray]
+
+
+# ip.display_formatter.formatters['text/plain'].type_printers.pop(list, None)
+
+
+
 
 
 

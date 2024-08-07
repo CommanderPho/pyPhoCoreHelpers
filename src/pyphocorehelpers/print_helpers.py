@@ -1700,7 +1700,9 @@ def array_preview_with_graphical_shape_repr_html(arr):
 
 
 # Generate heatmap
-def _subfn_create_heatmap(data: NDArray) -> BytesIO:
+
+    
+def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None) -> BytesIO: # , omission_indices: list = None
     """ 
     
     """
@@ -1709,9 +1711,69 @@ def _subfn_create_heatmap(data: NDArray) -> BytesIO:
         # fix issues with 1D data like `TypeError: Invalid shape (58,) for image data`
     
     import matplotlib.pyplot as plt
+    from brokenaxes import brokenaxes
+    
+    # xmin, xmax, ymin, ymax = (xbin[0], xbin[-1], ybin[0], ybin[-1])
+    # # The extent keyword arguments controls the bounding box in data coordinates that the image will fill specified as (left, right, bottom, top) in data coordinates, the origin keyword argument controls how the image fills that bounding box, and the orientation in the final rendered image is also affected by the axes limits.
+    # extent = (xmin, xmax, ymin, ymax)
+    # # print(f'extent: {extent}')
+    # # extent = None
+    # # We'll also create a black background into which the pixels will fade
+    # # background_black = np.full((*curr_p_x_given_n.shape, 3), 0, dtype=np.uint8)
+
+    imshow_shared_kwargs = {
+        'origin': 'lower',
+        # 'extent': extent,
+    }
+
+    def create_fade_cmap(cmap_name, fade_ratio=0.1):
+        from matplotlib.colors import ListedColormap
+        base = plt.cm.get_cmap(cmap_name)
+        colors = base(np.linspace(0, 1, base.N))
+        alpha = np.linspace(1, 0, int(base.N * fade_ratio))
+        colors[-len(alpha):, -1] = alpha  # Apply the fade out effect to the last fade_ratio of the colormap
+        return ListedColormap(colors)
+
+        
+    active_cmap = 'viridis'
+    # active_cmap = create_fade_cmap('viridis') # fade cmap
+    
     plt.figure(figsize=(3, 3))
-    plt.imshow(data, cmap='viridis')
-    plt.axis('off')
+    # if omission_indices:
+    #     omission_indices = sorted(set(omission_indices))
+    #     breaks = [(omission_indices[i], omission_indices[i+1]-1) for i in range(len(omission_indices)-1)]
+    #     print(f'omission_indices: {omission_indices}, breaks: {breaks}')
+    if brokenaxes_kwargs:
+        print(f'brokenaxes_kwargs: {brokenaxes_kwargs}')
+        
+
+        # plt.imshow(data, cmap=active_cmap)
+        # plt.axis('off')
+        
+        if brokenaxes_kwargs:
+            # bax = brokenaxes(xlims=breaks, d=0.015)
+            bax = brokenaxes(**brokenaxes_kwargs, d=0.015)
+            bax.imshow(data, cmap=active_cmap, aspect='auto', **imshow_shared_kwargs)
+            bax.axis('off')
+            bax.draw_diags()
+            # plt.imshow(data, cmap='viridis', 
+            # plt.sca(bax)
+            # Add ellipses at break points
+            # xlims = brokenaxes_kwargs.get('xlims', None)
+            # middle_excluded_range = (xlims[0][-1], xlims[1][0])
+            # start, end = middle_excluded_range
+            # # for start, end in breaks:
+            # mid_point = (start + end) / 2
+            # bax.text(mid_point, data.shape[0] / 2, '...', va='center', ha='center', color='grey', fontsize=9)
+            
+        else:
+            plt.imshow(data, cmap=active_cmap, **imshow_shared_kwargs)
+            plt.axis('off')
+            pass
+    else:
+        plt.imshow(data, cmap=active_cmap, **imshow_shared_kwargs)
+        plt.axis('off')
+        
     buf = BytesIO()
     plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
     plt.close()
@@ -1719,12 +1781,12 @@ def _subfn_create_heatmap(data: NDArray) -> BytesIO:
     return buf
 
 # Convert to ipywidgets Image
-def _subfn_display_heatmap(data: NDArray, **img_kwargs) -> Image:
+def _subfn_display_heatmap(data: NDArray, brokenaxes_kwargs=None, **img_kwargs) -> Image:
     """ Renders a small thumbnail Image of a heatmap array
     
     """
     img_kwargs = dict(width=None, height=img_kwargs.get('height', 100), format='png') | img_kwargs
-    buf = _subfn_create_heatmap(data)
+    buf = _subfn_create_heatmap(data, brokenaxes_kwargs=brokenaxes_kwargs)
     # Create an IPython Image object
     img = Image(data=buf.getvalue(), **img_kwargs)
     return img
@@ -1745,8 +1807,13 @@ def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizont
         display(arr)
 
     """
-    
+    max_allowed_arr_elements: int = 10000
+
     if isinstance(arr, np.ndarray):
+        if np.shape(arr)[0] > max_allowed_arr_elements: 
+            # truncate 
+            arr = arr[max_allowed_arr_elements:]
+        
         heatmap_image = _subfn_display_heatmap(arr, **kwargs)
         
         orientation = "row" if horizontal_layout else "column"

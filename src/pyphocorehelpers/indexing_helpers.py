@@ -892,144 +892,6 @@ def get_bin_edges(bin_centers):
     out.append(last_edge_bin) # append the last_edge_bin to the bins.
     return np.array(out)
 
-
-@dataclass
-class BinningInfo(object):
-    """Docstring for BinningInfo."""
-    variable_extents: tuple
-    step: float
-    num_bins: int
-    bin_indicies: np.ndarray
-
-class BinningContainer(object):
-    """A container that allows accessing either bin_edges (self.edges) or bin_centers (self.centers) """
-    edges: np.ndarray
-    centers: np.ndarray
-    
-    edge_info: BinningInfo
-    center_info: BinningInfo
-    
-    def __init__(self, edges: Optional[np.ndarray]=None, centers: Optional[np.ndarray]=None, edge_info: Optional[BinningInfo]=None, center_info: Optional[BinningInfo]=None):
-        super(BinningContainer, self).__init__()
-        assert (edges is not None) or (centers is not None) # Require either centers or edges to be provided
-        if edges is not None:
-            self.edges = edges
-        else:
-            # Compute from edges
-            self.edges = get_bin_edges(centers)
-            
-        if centers is not None:
-            self.centers = centers
-        else:
-            self.centers = get_bin_centers(edges)
-            
-            
-        if edge_info is not None:
-            self.edge_info = edge_info
-        else:
-            # Otherwise try to reverse engineer edge_info:
-            self.edge_info = BinningContainer.build_edge_binning_info(self.edges)
-            
-        if center_info is not None:
-            self.center_info = center_info
-        else:
-            self.center_info = BinningContainer.build_center_binning_info(self.centers, self.edge_info.variable_extents)
-            
-            
-    @classmethod
-    def build_edge_binning_info(cls, edges):
-        # Otherwise try to reverse engineer edge_info            
-        actual_window_size = edges[2] - edges[1]
-        variable_extents = [edges[0], edges[-1]] # get first and last values as the extents
-        return BinningInfo(variable_extents, actual_window_size, len(edges), np.arange(len(edges)))
-    
-    
-    @classmethod
-    def build_center_binning_info(cls, centers, variable_extents):
-        # Otherwise try to reverse engineer center_info
-        actual_window_size = centers[2] - centers[1]
-        return BinningInfo(variable_extents, actual_window_size, len(centers), np.arange(len(centers)))
-    
-    def setup_from_edges(self, edges: np.ndarray, edge_info: Optional[BinningInfo]=None):
-        # Set the edges first:
-        self.edges = edges
-        if edge_info is not None:
-            self.edge_info = edge_info # valid edge_info provided, use that
-        else:
-            # Otherwise try to reverse engineer edge_info:
-            self.edge_info = BinningContainer.build_edge_binning_info(self.edges)
-            # actual_window_size = self.edges[2] - self.edges[1]
-            # variable_extents = [self.edges[0], self.edges[-1]] # get first and last values as the extents
-            # self.edge_info = BinningInfo(variable_extents, actual_window_size, len(self.edges), np.arange(len(self.edges)))
-        
-        
-        ## Build the Centers from the new edges:
-        self.centers = get_bin_centers(edges)
-        # actual_window_size = self.centers[2] - self.centers[1]
-        # self.center_info = BinningInfo(self.edge_info.variable_extents, actual_window_size, len(self.centers), np.arange(len(self.centers)))
-        self.center_info = BinningContainer.build_center_binning_info(self.centers, self.edge_info.variable_extents)
-            
-
-def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=None, variable_start_value:float=None, variable_end_value:float=None):
-    """[summary]
-
-    Args:
-        variable_values ([type]): The variables to be binned, used to determine the start and end edges of the returned bins.
-        num_bins (int, optional): The total number of bins to create. Defaults to None.
-        bin_size (float, optional): The size of each bin. Defaults to None.
-        variable_start_value (float, optional): The minimum value of the binned variable. If specified, overrides the lower binned limit instead of computing it from variable_values. Defaults to None.
-        variable_end_value (float, optional): The maximum value of the binned variable. If specified, overrides the upper binned limit instead of computing it from variable_values. Defaults to None.
-        debug_print (bool, optional): Whether to print debug messages. Defaults to False.
-
-    Raises:
-        ValueError: [description]
-
-    Returns:
-        np.array<float>: The computed bins
-        BinningInfo: information about how the binning was performed
-        
-    Usage:
-        ## Binning with Fixed Number of Bins:    
-        xbin_edges, xbin_edges_binning_info = compute_spanning_bins(pos_df.x.to_numpy(), bin_size=active_config.computation_config.grid_bin[0]) # bin_size mode
-        print(xbin_edges_binning_info)
-        ## Binning with Fixed Bin Sizes:
-        xbin_edges_edges, xbin_edges_binning_info = compute_spanning_bins(pos_df.x.to_numpy(), num_bins=num_bins) # num_bins mode
-        print(xbin_edges_binning_info)
-        
-    """
-    assert (num_bins is None) or (bin_size is None), 'You cannot constrain both num_bins AND bin_size. Specify only one or the other.'
-    assert (num_bins is not None) or (bin_size is not None), 'You must specify either the num_bins XOR the bin_size.'
-    
-    if variable_start_value is not None:
-        curr_variable_min_extent = variable_start_value
-    else:
-        curr_variable_min_extent = np.nanmin(variable_values)
-        
-    if variable_end_value is not None:
-        curr_variable_max_extent = variable_end_value
-    else:
-        curr_variable_max_extent = np.nanmax(variable_values)
-        
-    curr_variable_extents = (curr_variable_min_extent, curr_variable_max_extent)
-    
-    if num_bins is not None:
-        ## Binning with Fixed Number of Bins:
-        mode = 'num_bins'
-        xnum_bins = num_bins
-        xbin, xstep = np.linspace(curr_variable_extents[0], curr_variable_extents[1], num=num_bins, retstep=True)  # binning of x position
-        
-    elif bin_size is not None:
-        ## Binning with Fixed Bin Sizes:
-        mode = 'bin_size'
-        xstep = bin_size
-        xbin = np.arange(curr_variable_extents[0], (curr_variable_extents[1] + xstep), xstep, )  # binning of x position
-        # the interval does not include this value, except in some cases where step is not an integer and floating point round-off affects the length of out.
-        xnum_bins = len(xbin)
-        
-    else:
-        raise ValueError
-    
-    return xbin, BinningInfo(curr_variable_extents, xstep, xnum_bins, np.arange(xnum_bins))
             
 def compute_position_grid_size(*any_1d_series, num_bins:tuple):
     """  Computes the required bin_sizes from the required num_bins (for each dimension independently)
@@ -1038,6 +900,8 @@ def compute_position_grid_size(*any_1d_series, num_bins:tuple):
     active_grid_bin = tuple(out_grid_bin_size)
     print(f'active_grid_bin: {active_grid_bin}') # (3.776841861770752, 1.043326930905373)
     """
+    from neuropy.utils.mixins.binning_helpers import compute_spanning_bins
+    
     assert (len(any_1d_series)) == len(num_bins), f'(len(other_1d_series)) must be the same length as the num_bins tuple! But (len(other_1d_series)): {(len(any_1d_series))} and len(num_bins): {len(num_bins)}!'
     num_series = len(num_bins)
     out_bins = []
@@ -1119,44 +983,6 @@ def compute_paginated_grid_config(num_required_subplots, max_num_columns, max_su
     if debug_print:
         print(f'page_grid_sizes: {page_grid_sizes}')
     return subplot_no_pagination_configuration, included_combined_indicies_pages, page_grid_sizes
-
-def build_spanning_grid_matrix(x_values, y_values, debug_print=False):
-    """ builds a 2D matrix with entries spanning x_values across axis 0 and spanning y_values across axis 1.
-        
-        For example, used to build a grid of position points from xbins and ybins.
-    Usage:
-        from pyphocorehelpers.indexing_helpers import build_spanning_grid_matrix
-        all_positions_matrix, flat_all_positions_matrix, original_data_shape = build_spanning_grid_matrix(active_one_step_decoder.xbin_centers, active_one_step_decoder.ybin_centers)
-        
-    Outputs:
-        all_positions_matrix: a 3D matrix # .shape # (num_cols, num_rows, 2)
-        flat_all_positions_matrix: a list of 2-tuples of length num_rows * num_cols
-        original_data_shape: a tuple containing the shape of the original data (num_cols, num_rows)
-    """
-    num_rows = len(y_values)
-    num_cols = len(x_values)
-
-    original_data_shape = (num_cols, num_rows) # original_position_data_shape: (64, 29)
-    if debug_print:
-        print(f'original_position_data_shape: {original_data_shape}')
-    x_only_matrix = np.repeat(np.expand_dims(x_values, 1).T, num_rows, axis=0).T
-    # np.shape(x_only_matrix) # (29, 64)
-    flat_x_only_matrix = np.reshape(x_only_matrix, (-1, 1))
-    if debug_print:
-        print(f'np.shape(x_only_matrix): {np.shape(x_only_matrix)}, np.shape(flat_x_only_matrix): {np.shape(flat_x_only_matrix)}') # np.shape(x_only_matrix): (64, 29), np.shape(flat_x_only_matrix): (1856, 1)
-    y_only_matrix = np.repeat(np.expand_dims(y_values, 1), num_cols, axis=1).T
-    # np.shape(y_only_matrix) # (29, 64)
-    flat_y_only_matrix = np.reshape(y_only_matrix, (-1, 1))
-
-    # flat_all_positions_matrix = np.array([np.append(an_x, a_y) for (an_x, a_y) in zip(flat_x_only_matrix, flat_y_only_matrix)])
-    flat_all_entries_matrix = [tuple(np.append(an_x, a_y)) for (an_x, a_y) in zip(flat_x_only_matrix, flat_y_only_matrix)] # a list of position tuples (containing two elements)
-    # reconsitute its shape:
-    all_entries_matrix = np.reshape(flat_all_entries_matrix, (original_data_shape[0], original_data_shape[1], 2))
-    if debug_print:
-        print(f'np.shape(all_positions_matrix): {np.shape(all_entries_matrix)}') # np.shape(all_positions_matrix): (1856, 2) # np.shape(all_positions_matrix): (64, 29, 2)
-        print(f'flat_all_positions_matrix[0]: {flat_all_entries_matrix[0]}\nall_positions_matrix[0,0,:]: {all_entries_matrix[0,0,:]}')
-
-    return all_entries_matrix, flat_all_entries_matrix, original_data_shape
 
 
 # ==================================================================================================================== #

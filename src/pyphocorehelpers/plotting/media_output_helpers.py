@@ -1,9 +1,11 @@
+import os
 import io
 from typing import Optional, Union, List, Dict, Tuple
 import numpy as np
 import pandas as pd
 from pathlib import Path
 import cv2
+from glob import glob
 
 import matplotlib.pyplot as plt # for export_array_as_image
 from PIL import Image, ImageOps, ImageFilter # for export_array_as_image
@@ -299,13 +301,12 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
 
 """
 
-import cv2
-import os
-from glob import glob
+
+
 
 def create_video_from_images(image_folder: str, output_video_file: str, seconds_per_frame: float, frame_size: tuple = None, codec: str = 'mp4v') -> Path:
     """ 
-    Loads images from a folder and joins them into a video where each frame is a fixed duration (`seconds_per_frame`)
+    Loads sequence of images from a folder and joins them into a video where each frame is a fixed duration (`seconds_per_frame`)
     
     # Usage:
         from pyphocorehelpers.plotting.media_output_helpers import create_video_from_images
@@ -343,6 +344,39 @@ def create_video_from_images(image_folder: str, output_video_file: str, seconds_
         video_writer.write(img)
     
     video_writer.release()
+    return output_video_file
+
+
+def create_gif_from_images(image_folder: str, output_video_file: str, seconds_per_frame: float) -> Path:
+    """ 
+    Loads sequence of images from a folder and joins them into an animated GIF where each frame is a fixed duration (`seconds_per_frame`)
+    
+    # Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import create_gif_from_images
+        from pyphoplacecellanalysis.GUI.Napari.napari_helpers import napari_export_image_sequence
+        ## Save images from napari to disk:
+        desired_save_parent_path = Path('2024-08-08 - TransitionMatrix/PosteriorPredictions').resolve()
+        imageseries_output_directory = napari_export_image_sequence(viewer=viewer, imageseries_output_directory=desired_save_parent_path, slider_axis_IDX=0)
+        ## Build animated .gif from saved images:
+        gif_out_file = desired_save_parent_path.joinpath('output_video.gif')
+        create_gif_from_images(image_folder=imageseries_output_directory, output_video_file=gif_out_file, seconds_per_frame=0.2)
+
+    """
+    from PIL import Image # create_gif_from_images
+    
+    if not isinstance(image_folder, Path):
+        image_folder = Path(image_folder).resolve()
+    if not isinstance(output_video_file, Path):
+        output_video_file = Path(output_video_file).resolve()
+        
+    images = sorted(glob(os.path.join(image_folder, '*.png')))  # Adjust the extension if necessary
+    if not images:
+        raise ValueError("No images found in the specified folder.")
+    
+    frames = [Image.open(image) for image in images]
+    duration = int(seconds_per_frame * 1000)  # Convert seconds to milliseconds
+    
+    frames[0].save(output_video_file, format='GIF', append_images=frames[1:], save_all=True, duration=duration, loop=0)
     return output_video_file
 
 

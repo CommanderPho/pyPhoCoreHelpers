@@ -299,6 +299,53 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
 
 """
 
+import cv2
+import os
+from glob import glob
+
+def create_video_from_images(image_folder: str, output_video_file: str, seconds_per_frame: float, frame_size: tuple = None, codec: str = 'mp4v') -> Path:
+    """ 
+    Loads images from a folder and joins them into a video where each frame is a fixed duration (`seconds_per_frame`)
+    
+    # Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import create_video_from_images
+        from pyphoplacecellanalysis.GUI.Napari.napari_helpers import napari_export_image_sequence
+        ## Save images from napari to disk:
+        desired_save_parent_path = Path('2024-08-08 - TransitionMatrix/PosteriorPredictions').resolve()
+        imageseries_output_directory = napari_export_image_sequence(viewer=viewer, imageseries_output_directory=desired_save_parent_path, slider_axis_IDX=0)
+        ## Build video from saved images:
+        video_out_file = desired_save_parent_path.joinpath('output_video.mp4')
+        create_video_from_images(image_folder=imageseries_output_directory, output_video_file=video_out_file, seconds_per_frame=0.2)
+
+    """
+    if not isinstance(image_folder, Path):
+        image_folder = Path(image_folder).resolve()
+    if not isinstance(output_video_file, Path):
+        output_video_file = Path(output_video_file).resolve()
+            
+
+    images = sorted(glob(os.path.join(image_folder, '*.png')))  # Adjust the extension if necessary
+    if not images:
+        raise ValueError("No images found in the specified folder.")
+    
+    first_image = cv2.imread(images[0])
+    height, width, _ = first_image.shape
+    frame_size = frame_size or (width, height)
+
+    fourcc = cv2.VideoWriter_fourcc(*codec)
+    fps = 1 / seconds_per_frame
+    video_writer = cv2.VideoWriter(output_video_file.resolve().as_posix(), fourcc, fps, frame_size)
+    
+    for image_file in images:
+        img = cv2.imread(image_file)
+        if img.shape[1] != frame_size[0] or img.shape[0] != frame_size[1]:
+            img = cv2.resize(img, frame_size)
+        video_writer.write(img)
+    
+    video_writer.release()
+    return output_video_file
+
+
 
 
 

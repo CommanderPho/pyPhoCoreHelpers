@@ -495,6 +495,18 @@ def reorder_keys_relative(a_dict: Dict, key_names: List[str], relative_mode='end
         raise NotImplementedError
     
 
+def set_if_none(d: Dict, key, default):
+    """ similar to `setdefault(...)` for dict but even if the dictionary has the key, if its value is None it will replace it with the provided default
+    
+    Usage:
+        from pyphocorehelpers.indexing_helpers import set_if_none
+        set_if_none(a_config, key='dockAddLocationOpts', default=('bottom', ))
+    
+    """
+    if d.get(key, None) is None:
+        ## key either doesn't exist, or does exist but has a value of `None`. Set the default
+        d[key] = default
+    return d[key]
     
 
 

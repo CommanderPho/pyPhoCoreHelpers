@@ -1834,37 +1834,52 @@ def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizont
     max_allowed_arr_elements: int = 10000
 
     if isinstance(arr, np.ndarray):
-        if np.shape(arr)[0] > max_allowed_arr_elements: 
-            # truncate 
-            arr = arr[max_allowed_arr_elements:]
         
-        heatmap_image = _subfn_display_heatmap(arr, **kwargs)
-        if (heatmap_image is not None):
-            orientation = "row" if horizontal_layout else "column"
-            ## Lays out side-by-side:
-            # Convert the IPython Image object to a base64-encoded string
-            heatmap_image_data = heatmap_image.data
-            b64_image = base64.b64encode(heatmap_image_data).decode('utf-8')
-            # Create an HTML widget for the heatmap
-            heatmap_size_format_str: str = ''
-            width = kwargs.get('width', None)
-            if (width is not None) and (width > 0):
-                heatmap_size_format_str = heatmap_size_format_str + f'width="{width}" '
-            height = kwargs.get('height', None)
-            if (height is not None) and (height > 0):
-                heatmap_size_format_str = heatmap_size_format_str + f'height="{height}" '
-            
-            heatmap_html = f'<img src="data:image/png;base64,{b64_image}" {heatmap_size_format_str}style="background:transparent;"/>' #  width="{ndarray_preview_config.heatmap_thumbnail_width}"
-
-        else:
-            # getting image failed:
-            # Create an HTML widget for the heatmap
-            message = "Heatmap Err"
+        n_dim: int = np.ndim(arr)
+        if n_dim > 2:
+            print(f'WARN: n_dim: {n_dim} greater than 2 is unsupported!')
+            from pyphocorehelpers.plotting.media_output_helpers import get_array_as_image_stack
+            # #TODO 2024-08-13 05:05: - [ ] use get_array_as_image_stack to render the 3D array
+            message = f"Heatmap Err: n_dim: {n_dim} greater than 2 is unsupported!"
             heatmap_html = f"""
             <div style="text-align: center; padding: 20px; border: 1px solid #ccc;">
                 <p style="font-size: 16px; color: red;">{message}</p>
             </div>
             """
+
+        else:
+            ## n_dim == 2
+            if np.shape(arr)[0] > max_allowed_arr_elements: 
+                # truncate 
+                arr = arr[max_allowed_arr_elements:]
+            
+            heatmap_image = _subfn_display_heatmap(arr, **kwargs)
+            if (heatmap_image is not None):
+                orientation = "row" if horizontal_layout else "column"
+                ## Lays out side-by-side:
+                # Convert the IPython Image object to a base64-encoded string
+                heatmap_image_data = heatmap_image.data
+                b64_image = base64.b64encode(heatmap_image_data).decode('utf-8')
+                # Create an HTML widget for the heatmap
+                heatmap_size_format_str: str = ''
+                width = kwargs.get('width', None)
+                if (width is not None) and (width > 0):
+                    heatmap_size_format_str = heatmap_size_format_str + f'width="{width}" '
+                height = kwargs.get('height', None)
+                if (height is not None) and (height > 0):
+                    heatmap_size_format_str = heatmap_size_format_str + f'height="{height}" '
+                
+                heatmap_html = f'<img src="data:image/png;base64,{b64_image}" {heatmap_size_format_str}style="background:transparent;"/>' #  width="{ndarray_preview_config.heatmap_thumbnail_width}"
+
+            else:
+                # getting image failed:
+                # Create an HTML widget for the heatmap
+                message = "Heatmap Err"
+                heatmap_html = f"""
+                <div style="text-align: center; padding: 20px; border: 1px solid #ccc;">
+                    <p style="font-size: 16px; color: red;">{message}</p>
+                </div>
+                """
 
         # height="{height}"
         dask_array_widget_html = ""

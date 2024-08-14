@@ -34,7 +34,7 @@ def add_shadow(image: Image.Image, offset: int = 5, background_color: tuple = (0
 
 
 
-def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False) -> Image.Image:
+def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
     
     # Usage:
@@ -46,23 +46,34 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
                 
     """
     # Assuming `your_array` is your numpy array
-    # For the colormap, you can use any colormap from matplotlib. 
-    # In this case, 'hot' is used.
-    # Get the specified colormap
-    colormap = plt.get_cmap(colormap)
+    if export_grayscale:
+        # Convert to grayscale (normalize if needed)
+        if skip_img_normalization:
+            norm_array = img_data
+        else:
+            norm_array = (img_data - np.min(img_data)) / np.ptp(img_data)
 
-    if skip_img_normalization:
-        norm_array = img_data
+        # Scale to 0-255 and convert to uint8
+        image = Image.fromarray((norm_array * 255).astype(np.uint8), mode='L')
     else:
-        # Normalize your array to 0-1
-        norm_array = (img_data - np.min(img_data)) / np.ptp(img_data)
+        ## Color export mode!
+        assert (colormap is None) or (colormap == 'viridis'), f"colormap should not be specified is export_grayscale=True"
+        # Get the specified colormap
+        colormap = plt.get_cmap(colormap)
 
-    # Apply colormap
-    image_array = colormap(norm_array)
+        if skip_img_normalization:
+            norm_array = img_data
+        else:
+            # Normalize your array to 0-1
+            norm_array = (img_data - np.min(img_data)) / np.ptp(img_data)
 
-    # Convert to PIL image and remove alpha channel
-    image = Image.fromarray((image_array[:, :, :3] * 255).astype(np.uint8))
+        # Apply colormap
+        image_array = colormap(norm_array)
 
+        # Convert to PIL image and remove alpha channel
+        image = Image.fromarray((image_array[:, :, :3] * 255).astype(np.uint8))
+        
+    
     if ((desired_width is None) and (desired_height is None)):
         desired_width = 1024 # set a default arbitrarily
 
@@ -70,12 +81,12 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
         # Specify width
         assert desired_height is None, f"please don't provide both width and height, the other will be calculated automatically."
         # Calculate height to preserve aspect ratio
-        desired_height = int(desired_width * image_array.shape[0] / image_array.shape[1])
+        desired_height = int(desired_width * norm_array.shape[0] / norm_array.shape[1])
     elif (desired_height is not None):
         # Specify height:
         assert desired_width is None, f"please don't provide both width and height, the other will be calculated automatically."
         # Calculate width to preserve aspect ratio
-        desired_width = int(desired_height * image_array.shape[1] / image_array.shape[0])
+        desired_width = int(desired_height * norm_array.shape[1] / norm_array.shape[0])
     else:
         raise ValueError("you must specify width or height of the output image")
 
@@ -85,7 +96,7 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
 
     return image
 
-def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png') -> Tuple[Image.Image, Path]:
+def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png', export_grayscale:bool=False) -> Tuple[Image.Image, Path]:
     """ Exports a numpy array to file as a colormapped image
     
     # Usage:
@@ -96,7 +107,7 @@ def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_h
         image
                 
     """
-    image: Image.Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, colormap=colormap, skip_img_normalization=skip_img_normalization)
+    image: Image.Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, colormap=colormap, skip_img_normalization=skip_img_normalization, export_grayscale=export_grayscale)
 
     out_path = Path(out_path).resolve()
     # Save image to file

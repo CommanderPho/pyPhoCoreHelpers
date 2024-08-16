@@ -1768,6 +1768,32 @@ def array_preview_with_graphical_shape_repr_html(arr):
 def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None) -> Optional[BytesIO]: # , omission_indices: list = None
     """ 
     
+    #TODO 2024-08-16 04:05: - [ ] Make non-interactive and open in the background
+
+    from neuropy.utils.matplotlib_helpers import matplotlib_configuration
+    with matplotlib_configuration(is_interactive=False, backend='AGG'):
+        # Perform non-interactive Matplotlib operations with 'AGG' backend
+        plt.plot([1, 2, 3, 4], [1, 4, 9, 16])
+        plt.xlabel('X-axis')
+        plt.ylabel('Y-axis')
+        plt.title('Non-interactive Mode with AGG Backend')
+        plt.savefig('plot.png')  # Save the plot to a file (non-interactive mode)
+
+            
+    import matplotlib
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+    _bak_rcParams = mpl.rcParams.copy()
+
+    matplotlib.use('Qt5Agg')
+    # %matplotlib inline
+    # %matplotlib auto
+
+
+    # _restore_previous_matplotlib_settings_callback = matplotlib_configuration_update(is_interactive=True, backend='Qt5Agg')
+    _restore_previous_matplotlib_settings_callback = matplotlib_configuration_update(is_interactive=True, backend='Qt5Agg')
+
+        
     """
     if (data.ndim < 2):
         data = np.atleast_2d(data)

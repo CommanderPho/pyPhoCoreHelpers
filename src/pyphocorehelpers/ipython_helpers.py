@@ -48,15 +48,15 @@ class MyMagics(Magics):
         ip.register_magics(MyMagics)
 
     """
-    @cell_magic
-    def setvar(self, line, cell):
-        # Execute the cell content and set a variable in the user's namespace
-        exec(cell, self.shell.user_ns)
-        # Optionally, you can add any additional logic here
-        # For example, setting a specific variable
-        var_name = line.strip()
-        if var_name:
-            self.shell.user_ns[var_name] = eval(var_name, self.shell.user_ns)
+    # @cell_magic
+    # def setvar(self, line, cell):
+    #     # Execute the cell content and set a variable in the user's namespace
+    #     exec(cell, self.shell.user_ns)
+    #     # Optionally, you can add any additional logic here
+    #     # For example, setting a specific variable
+    #     var_name = line.strip()
+    #     if var_name:
+    #         self.shell.user_ns[var_name] = eval(var_name, self.shell.user_ns)
         
     @line_magic
     def config_ndarray_preview(self, line):

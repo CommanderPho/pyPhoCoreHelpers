@@ -1647,9 +1647,15 @@ import matplotlib.pyplot as plt
 
 def render_scrollable_colored_table(array: NDArray, cmap_name: str = 'viridis', max_height: int = 400, width: str = '100%') -> Union[HTML, str]:
     """ Takes a numpy array of values and returns a scrollable and color-coded table rendition of it
-    
-    from pyphocorehelpers.print_helpers import render_scrollable_colored_table
-    
+
+    Usage:    
+        from pyphocorehelpers.print_helpers import render_scrollable_colored_table
+
+        # Example 2D NumPy array
+        array = np.random.rand(100, 10)
+        # Draw it
+        render_scrollable_colored_table(array)
+
     """
     # Validate input array
     if not isinstance(array, np.ndarray):

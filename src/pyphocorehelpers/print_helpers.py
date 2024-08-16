@@ -1775,13 +1775,14 @@ def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None) -> Optional[Byt
         }
 
         active_cmap = 'viridis'
-        plt.figure(figsize=(3, 3))
-        plt.imshow(data, cmap=active_cmap, **imshow_shared_kwargs)
-        plt.axis('off')
+        fig = plt.figure(figsize=(3, 3), num='_jup_backend')
+        ax = fig.add_subplot(111)
+        ax.imshow(data, cmap=active_cmap, **imshow_shared_kwargs)
+        ax.axis('off')
             
         buf = BytesIO()
         
-        plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
+        fig.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
 
         buf.seek(0)
         

@@ -33,6 +33,15 @@ def add_shadow(image: Image.Image, offset: int = 5, background_color: tuple = (0
     return shadow
 
 
+def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
+    """ rescales the img_data array to 0-255 
+    
+    from pyphocorehelpers.plotting.media_output_helpers import img_data_to_greyscale
+    
+    """
+    norm_array = (img_data - np.min(img_data)) / np.ptp(img_data)
+    # Scale to 0-255 and convert to uint8
+    return (norm_array * 255).astype(np.uint8)
 
 def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
@@ -49,12 +58,11 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
     if export_grayscale:
         # Convert to grayscale (normalize if needed)
         if skip_img_normalization:
-            norm_array = img_data
-        else:
-            norm_array = (img_data - np.min(img_data)) / np.ptp(img_data)
-
+            print(f'WARN: when `export_grayscale == True`, `skip_img_normalization == True` makes no sense and will be ignored.')
+            
+        norm_array = img_data_to_greyscale(img_data)
         # Scale to 0-255 and convert to uint8
-        image = Image.fromarray((norm_array * 255).astype(np.uint8), mode='L')
+        image = Image.fromarray(norm_array, mode='L')
     else:
         ## Color export mode!
         assert (colormap is None) or (colormap == 'viridis'), f"colormap should not be specified is export_grayscale=True"

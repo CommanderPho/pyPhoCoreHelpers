@@ -1640,7 +1640,64 @@ def build_logger(full_logger_string: str, file_logging_dir=None,
 # ==================================================================================================================== #
 # 2024-05-30 - Custom Formatters                                                                                       #
 # ==================================================================================================================== #
+import numpy as np
+import pandas as pd
+from IPython.display import HTML
+import matplotlib.pyplot as plt
 
+def render_scrollable_colored_table(array: NDArray, cmap_name: str = 'viridis', max_height: int = 400, width: str = '100%') -> Union[HTML, str]:
+    """ Takes a numpy array of values and returns a scrollable and color-coded table rendition of it
+    
+    from pyphocorehelpers.print_helpers import render_scrollable_colored_table
+    
+    """
+    # Validate input array
+    if not isinstance(array, np.ndarray):
+        raise TypeError("Input must be a NumPy array.")
+    
+    if array.ndim != 2:
+        raise ValueError("Input array must be 2D.")
+    
+    # Validate colormap name
+    if cmap_name not in plt.colormaps():
+        raise ValueError(f"Invalid colormap name '{cmap_name}'. Use one of: {', '.join(plt.colormaps())}.")
+    
+    # Convert the array to a Pandas DataFrame
+    df = pd.DataFrame(array)
+
+    # Normalize the data to [0, 1] range
+    normalized_df = (df - df.min().min()) / (df.max().max() - df.min().min())
+
+    # Function to calculate luminance and return appropriate text color
+    def text_contrast(rgba):
+        r, g, b, a = rgba[:4]
+        luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        return 'black' if luminance > 0.5 else 'white'
+
+    # Define a function to apply a colormap and text color based on luminance
+    def color_map(val):
+        cmap = plt.get_cmap(cmap_name)  # Use the provided colormap
+        color = cmap(val)
+        text_color = text_contrast(color)
+        return f'background-color: rgba({color[0]*255}, {color[1]*255}, {color[2]*255}, {color[3]}); color: {text_color}'
+
+    # Apply the color map with contrast adjustment
+    styled_df = normalized_df.style.applymap(color_map)
+
+    # Render the DataFrame as a scrollable table with color-coded values
+    scrollable_table = HTML(styled_df.set_table_attributes(f'style="display:block;overflow-x:auto;max-height:{max_height}px;width:{width};border-collapse:collapse;"').render())
+
+    return scrollable_table
+
+    
+# Example usage:
+# render_scrollable_colored_table(np.random.rand(100, 10), cmap_name='plasma', max_height=500, width='80%')
+
+    
+    
+
+    
+    
 def array_preview_with_shape(arr):
     """ Text-only Represntation that prints np.shape(arr) 
     

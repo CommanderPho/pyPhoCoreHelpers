@@ -1,6 +1,7 @@
 import os
 import io
 from typing import Optional, Union, List, Dict, Tuple
+from numpy.typing import NDArray
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -38,10 +39,13 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
     
     from pyphocorehelpers.plotting.media_output_helpers import img_data_to_greyscale
     
+    norm_array = img_data_to_greyscale(img_data)
+    
     """
     norm_array = (img_data - np.min(img_data)) / np.ptp(img_data)
     # Scale to 0-255 and convert to uint8
     return (norm_array * 255).astype(np.uint8)
+
 
 def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image

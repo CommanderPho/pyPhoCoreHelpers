@@ -142,16 +142,6 @@ def array_repr_with_graphical_preview(ip: "ipykernel.zmqshell.ZMQInteractiveShel
 # ip.display_formatter.formatters['text/plain'].type_printers.pop(list, None)
 
 
-
-
-
-
-
-
-
-
-
-
 def dataframe_show_more_button(ip: "ipykernel.zmqshell.ZMQInteractiveShell") -> "ipykernel.zmqshell.ZMQInteractiveShell":
     """Adds a functioning 'show more' button below each displayed dataframe to show more rows.
 

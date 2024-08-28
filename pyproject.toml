@@ -60,6 +60,7 @@ neuropy = {path = "../NeuroPy", develop=true}
 
 
 
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

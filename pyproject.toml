@@ -19,8 +19,8 @@ mkdocs-literate-nav = "^0.6.1"
 mkdocs-section-index = "^0.3.8"
 mkdocs-matplotlib = "^0.10.1"
 mkdocs-jupyter = "^0.24.6"
-mkdocstrings = {extras = ["python"], version = "^0.24.1"}
-mkdocstrings-python = "^1.9.0"
+mkdocstrings = {extras = ["python"], version = "^0.24"}
+mkdocstrings-python = "^1.9"
 cairosvg = "^2.7.1"
 
 [tool.poetry.group.dev.dependencies]

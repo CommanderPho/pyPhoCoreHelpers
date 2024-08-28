@@ -58,5 +58,5 @@ src/cscope.files
 src/cscope.out
 src/myproject.db
 .sourcery.yaml
+**/.venv*
 
-src/.myproject.db

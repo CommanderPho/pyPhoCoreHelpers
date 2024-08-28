@@ -8,13 +8,16 @@ import tables
 ignored_keys = ['#subsystem#', '#refs#']
 
 
+
+
+
 def h5dump(path, group='/', enable_print_attributes=False):
     """ print HDF5 file metadata
     group: you can give a specific group, defaults to the root group                 
     """
     with h5py.File(path,'r') as f:
          HDF5_Helper.descend_obj(f[group], enable_print_attributes=enable_print_attributes)
-         
+
 class HDF5_Helper(object):
     """docstring for hdf5Helper."""
     
@@ -160,6 +163,72 @@ class HDF5_Helper(object):
         with h5py.File(path,'r') as f:
             cls.descend_obj(f[group], enable_print_attributes=enable_print_attributes)
             
+
+    @classmethod
+    def get_leaf_datasets(cls, file_path: Path):
+        """
+        Retrieve all leaf datasets from an HDF5 file.
+
+        Args:
+            file_path (Path): Path to the HDF5 file.
+
+        Returns:
+            list: A list of leaf dataset paths.
+            
+        Usage:
+            from pyphocorehelpers.Filesystem.HDF5.hdf5_file_helpers import HDF5_Helper
+            load_path = Path('output/all_decoded_epoch_posteriors.h5').resolve()
+            assert load_path.exists()
+            leaf_datasets = HDF5_Helper.get_leaf_datasets(load_path)
+            print(leaf_datasets)
+
+        """
+        leaf_datasets = []
+
+        def visit_func(name, node):
+            # Check if the node is a dataset and add to list if true
+            if isinstance(node, h5py.Dataset):
+                leaf_datasets.append(name)
+
+        # Open the HDF5 file in read mode and apply the visit function
+        with h5py.File(file_path, 'r') as f:
+            f.visititems(visit_func)
+
+        return leaf_datasets
+
+    @classmethod
+    def find_groups_by_name(cls, file_path: Path, group_name: str):
+        """
+        Search for groups with a specific name in an HDF5 file and return their paths.
+
+        Args:
+            file_path (Path): Path to the HDF5 file.
+            group_name (str): Name of the group to search for.
+
+        Returns:
+            list: A list of paths to groups that match the specified name.
+            
+        Usage:
+            load_path = Path('output/all_decoded_epoch_posteriors.h5').resolve()
+            assert load_path.exists()
+            found_groups = HDF5_Helper.find_groups_by_name(load_path, 'save_decoded_posteriors_to_HDF5')
+            print(found_groups) # ['kdiba/gor01/one/2006-6-08_14-26-15/save_decoded_posteriors_to_HDF5']
+
+
+        """
+        matching_groups = []
+
+        def visit_func(name, node):
+            # Check if the node is a group and its name matches the search criteria
+            if isinstance(node, h5py.Group) and name.endswith(group_name):
+                matching_groups.append(name)
+
+        # Open the HDF5 file in read mode and apply the visit function
+        with h5py.File(file_path, 'r') as f:
+            f.visititems(visit_func)
+
+        return matching_groups
+
 
 # ==================================================================================================================== #
 # 2024-04-01 - Unfinished                                                                                              #

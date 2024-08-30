@@ -5,7 +5,7 @@ from IPython.display import display, HTML, Javascript
 from pathlib import Path
 
 
-def render_colors(color_list):
+def render_colors(color_input):
     """ Renders a simple list of colors for visual previewing
     Usage:
     
@@ -33,26 +33,36 @@ def render_colors(color_list):
         
     """
     from qtpy.QtGui import QColor, QBrush, QPen
-    
+
     # color_html = ''.join([f'<div style="width:50px; height:50px; background-color:{color}; margin:5px; display:inline-block;"></div>' for color in color_list])
 
-        # Ensure color_list is a list, even if a single color is provided
-    if not isinstance(color_list, (list, tuple)):
-        color_list = [color_list]
+    # Check if input is a dictionary
+    if isinstance(color_input, dict):
+        color_items = color_input.items()
+    else:
+        # Ensure color_input is a list, even if a single color is provided
+        if not isinstance(color_input, (list, tuple)):
+            color_input = [color_input]
+        # Create a list of (label, color) where label is None for lists
+        color_items = [(None, color) for color in color_input]
 
-    # Convert colors to hex format if they are QColor objects
-    processed_colors = []
-    for color in color_list:
+    # Convert colors to hex format if they are QColor objects and prepare HTML
+    color_html = ''
+    for label, color in color_items:
         if isinstance(color, QColor):
-            processed_colors.append(color.name())
+            hex_color = color.name()
         elif isinstance(color, str):
-            # Assume it's a valid CSS color name or hex string
-            processed_colors.append(color if color.startswith('#') else f'#{color.lstrip("#")}')
+            hex_color = color if color.startswith('#') else f'#{color.lstrip("#")}'
         else:
             raise ValueError("Color must be a QColor, a hex string, or a valid CSS color name.")
+        
+        if label:
+            color_html += f'<div style="display:inline-block; text-align:center; margin:5px;"><div style="width:50px; height:50px; background-color:{hex_color}; margin:5px;"></div><div>{label}</div></div>'
+        else:
+            color_html += f'<div style="width:50px; height:50px; background-color:{hex_color}; margin:5px; display:inline-block;"></div>'
 
-    # Generate HTML for color preview
-    color_html = ''.join([f'<div style="width:50px; height:50px; background-color:{color}; margin:5px; display:inline-block;"></div>' for color in processed_colors])
+
+
     display(HTML(color_html))
 
 

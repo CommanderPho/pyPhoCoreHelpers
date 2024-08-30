@@ -32,8 +32,29 @@ def render_colors(color_list):
         button
         
     """
-    color_html = ''.join([f'<div style="width:50px; height:50px; background-color:{color}; margin:5px; display:inline-block;"></div>' for color in color_list])
+    from qtpy.QtGui import QColor, QBrush, QPen
+    
+    # color_html = ''.join([f'<div style="width:50px; height:50px; background-color:{color}; margin:5px; display:inline-block;"></div>' for color in color_list])
+
+        # Ensure color_list is a list, even if a single color is provided
+    if not isinstance(color_list, (list, tuple)):
+        color_list = [color_list]
+
+    # Convert colors to hex format if they are QColor objects
+    processed_colors = []
+    for color in color_list:
+        if isinstance(color, QColor):
+            processed_colors.append(color.name())
+        elif isinstance(color, str):
+            # Assume it's a valid CSS color name or hex string
+            processed_colors.append(color if color.startswith('#') else f'#{color.lstrip("#")}')
+        else:
+            raise ValueError("Color must be a QColor, a hex string, or a valid CSS color name.")
+
+    # Generate HTML for color preview
+    color_html = ''.join([f'<div style="width:50px; height:50px; background-color:{color}; margin:5px; display:inline-block;"></div>' for color in processed_colors])
     display(HTML(color_html))
+
 
 
 

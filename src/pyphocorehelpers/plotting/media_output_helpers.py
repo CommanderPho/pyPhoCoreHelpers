@@ -47,6 +47,9 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
     return (norm_array * 255).astype(np.uint8)
 
 
+
+    
+
 def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
     
@@ -299,6 +302,12 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
         print(f'done! video saved to {video_filename}')
     return Path(video_filename).resolve()
 
+    
+def colormap_and_save_as_video(array, video_filename='output.avi', fps=30.0, colormap=cv2.COLORMAP_VIRIDIS):
+    # array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(np.uint8)
+    # color_array = cv2.applyColorMap(array, colormap)
+    return save_array_as_video(array, video_filename=video_filename, fps=fps, isColor=True, colormap=colormap)
+    
 """ 
 
 # def normalize_and_save_as_video(array, output_filename='output.mp4', fps=30.0):

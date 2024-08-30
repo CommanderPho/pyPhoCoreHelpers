@@ -52,6 +52,7 @@ class ColorFormatConverter:
         Output Format (HexRGBA): '#RRGGBBAA'
         
         Usage:
+            from pyphocorehelpers.gui.Qt.color_helpers import ColorFormatConverter
             from pyphocorehelpers.gui.Qt.color_helpers import hexArgb_to_hexRGBA
             pen=pg.mkPen('#0b0049')
             hex_Argb_str:str = pen.color().name(QtGui.QColor.HexArgb) # '#ff0b0049'
@@ -76,6 +77,10 @@ class ColorFormatConverter:
         Notes on getting hex colors:
             getting the name of a QColor with .name(QtGui.QColor.HexRgb) results in a string like '#ff0000'
             getting the name of a QColor with .name(QtGui.QColor.HexArgb) results in a string like '#80ff0000'
+
+        Usage:
+            from pyphocorehelpers.gui.Qt.color_helpers import ColorFormatConverter
+            ColorFormatConverter.qColor_to_hexstring(aQColor)
         """
         if not include_alpha:
             return qcolor.name(QtGui.QColor.HexRgb)
@@ -89,6 +94,15 @@ class ColorFormatConverter:
     # ==================================================================================================================== #
     # Color NDArray Conversions                                                                                             #
     # ==================================================================================================================== #
+    @classmethod
+    def auto_detect_color_NDArray_is_255_array_format(cls, colors_ndarray: np.ndarray) -> bool:
+        """ tries to auto-detect the format of the color NDArray in terms of whether it contains 0.0-1.0 or 0.0-255.0 values. 
+        returns True if it is 255_array_format, and False otherwise
+        """
+        return (not np.all(colors_ndarray <= 1.0)) # all are less than 1.0 implies that it NOT a 255_format_array
+
+
+
     @classmethod
     def Colors_NDArray_Convert_to_255_array(cls, colors_ndarray: np.ndarray) -> np.ndarray:
         """ takes an [4, nCell] np.array of (0.0 - 255.0) values for the color and converts it to a 0.0-1.0 array of the same shape.
@@ -106,7 +120,59 @@ class ColorFormatConverter:
         converted_colors_ndarray = deepcopy(colors_ndarray)
         converted_colors_ndarray[0:2, :] /= 255
         return converted_colors_ndarray
+
+    @classmethod
+    def qColorsList_to_NDarray(cls, qcolors_list, is_255_array:bool) -> np.ndarray:
+        """ takes a list[QColor] and returns a [4, nCell] np.array with the color for each in the list 
+        
+        is_255_array: bool - if False, all RGB color values are (0.0 - 1.0), else they are (0.0 - 255.0)
+        I was having issues with this list being in the range 0.0-1.0 instead of 0-255.
+        
+        Note: Matplotlib requires zero_to_one_array format
+        
+        Extracted on 2024-08-30 from `pyphoplacecellanalysis.General.Mixins.DataSeriesColorHelpers.DataSeriesColorHelpers`
+
+        """
+
+        # allocate new neuron_colors array:
+        n_cells = len(qcolors_list)
+        neuron_colors = np.zeros((4, n_cells))
+        for i, curr_qcolor in enumerate(qcolors_list):
+            curr_color = curr_qcolor.getRgbF() # (1.0, 0.0, 0.0, 0.5019607843137255)
+            neuron_colors[:, i] = curr_color[:]
+        if is_255_array:
+            neuron_colors = cls.Colors_NDArray_Convert_to_255_array(neuron_colors) 
+        return neuron_colors
     
+
+    @classmethod
+    def colors_NDarray_to_qColorsList(cls, colors_ndarray: np.ndarray, is_255_array:Optional[bool]=None) -> list:
+        """ Takes a [4, nCell] np.array and returns a list[QColor] with the color for each cell in the array
+        
+        is_255_array: bool - if False, all RGB color values are in range (0.0 - 1.0), else they are in range (0.0 - 255.0)
+        
+        Note: Matplotlib requires zero_to_one_array format
+        
+        Extracted on 2024-08-30 from `pyphoplacecellanalysis.General.Mixins.DataSeriesColorHelpers.DataSeriesColorHelpers`
+        """
+        if is_255_array is None:
+            is_255_array = cls.auto_detect_color_NDArray_is_255_array_format(colors_ndarray)
+
+        if is_255_array:
+            colors_ndarray = cls.Colors_NDArray_Convert_to_zero_to_one_array(colors_ndarray)
+
+        n_cells = colors_ndarray.shape[1]
+        qcolors_list = []
+        for i in range(n_cells):
+            curr_color = QColor.fromRgbF(*colors_ndarray[:, i])
+            qcolors_list.append(curr_color)
+            
+        return qcolors_list
+
+
+
+
+
 
 
     @classmethod

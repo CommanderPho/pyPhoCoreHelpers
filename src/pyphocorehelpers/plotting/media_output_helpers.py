@@ -241,7 +241,7 @@ def save_array_as_image_stack(images: List[Path], offset=10, single_image_alpha_
 
 #TODO 2023-09-27 19:54: - [ ] saving
 
-def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr_curves_frames.mp4', fps=30.0, isColor=False, colormap=cv2.COLORMAP_VIRIDIS, skip_img_normalization=False, debug_print=False, progress_print=True):
+def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr_curves_frames.mp4', fps=30.0, isColor=False, colormap=None, skip_img_normalization=False, debug_print=False, progress_print=True):
     """
     Save a 3D numpy array as a grayscale video.
 
@@ -261,6 +261,8 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
         print(f'video_out_path: {video_out_path}')
         reveal_in_system_file_manager(video_out_path)
     """
+    if colormap is None:
+        colormap = cv2.COLORMAP_VIRIDIS
     if skip_img_normalization:
         array = array
     else:
@@ -303,7 +305,9 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
     return Path(video_filename).resolve()
 
     
-def colormap_and_save_as_video(array, video_filename='output.avi', fps=30.0, colormap=cv2.COLORMAP_VIRIDIS):
+def colormap_and_save_as_video(array, video_filename='output.avi', fps=30.0, colormap=None):
+    if colormap is None:
+        colormap = cv2.COLORMAP_VIRIDIS
     # array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(np.uint8)
     # color_array = cv2.applyColorMap(array, colormap)
     return save_array_as_video(array, video_filename=video_filename, fps=fps, isColor=True, colormap=colormap)

@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 import numpy as np
 import pandas as pd
 from pathlib import Path
-import cv2
+# import cv2
 from glob import glob
 
 import matplotlib.pyplot as plt # for export_array_as_image
@@ -46,9 +46,6 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
     # Scale to 0-255 and convert to uint8
     return (norm_array * 255).astype(np.uint8)
 
-
-
-    
 
 def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
@@ -240,7 +237,7 @@ def save_array_as_image_stack(images: List[Path], offset=10, single_image_alpha_
 
 
 #TODO 2023-09-27 19:54: - [ ] saving
-
+@function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=[], creation_date='2024-09-06 11:34', related_items=[])
 def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr_curves_frames.mp4', fps=30.0, isColor=False, colormap=None, skip_img_normalization=False, debug_print=False, progress_print=True):
     """
     Save a 3D numpy array as a grayscale video.
@@ -261,6 +258,7 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
         print(f'video_out_path: {video_out_path}')
         reveal_in_system_file_manager(video_out_path)
     """
+	import cv2
     if colormap is None:
         colormap = cv2.COLORMAP_VIRIDIS
     if skip_img_normalization:
@@ -304,8 +302,9 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
         print(f'done! video saved to {video_filename}')
     return Path(video_filename).resolve()
 
-    
+@function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=[], creation_date='2024-09-06 11:33', related_items=[])
 def colormap_and_save_as_video(array, video_filename='output.avi', fps=30.0, colormap=None):
+	import cv2
     if colormap is None:
         colormap = cv2.COLORMAP_VIRIDIS
     # array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(np.uint8)
@@ -339,7 +338,7 @@ def colormap_and_save_as_video(array, video_filename='output.avi', fps=30.0, col
 
 
 
-
+@function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=[], creation_date='2024-09-06 11:33', related_items=[])
 def create_video_from_images(image_folder: str, output_video_file: str, seconds_per_frame: float, frame_size: tuple = None, codec: str = 'mp4v') -> Path:
     """ 
     Loads sequence of images from a folder and joins them into a video where each frame is a fixed duration (`seconds_per_frame`)
@@ -355,6 +354,8 @@ def create_video_from_images(image_folder: str, output_video_file: str, seconds_
         create_video_from_images(image_folder=imageseries_output_directory, output_video_file=video_out_file, seconds_per_frame=0.2)
 
     """
+	import cv2
+
     if not isinstance(image_folder, Path):
         image_folder = Path(image_folder).resolve()
     if not isinstance(output_video_file, Path):

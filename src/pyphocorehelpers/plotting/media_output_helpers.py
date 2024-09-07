@@ -15,6 +15,8 @@ from plotly.graph_objects import Figure as PlotlyFigure # required for `fig_to_c
 from matplotlib.figure import FigureBase
 # from pyphoplacecellanalysis.SpecificResults.PendingNotebookCode import copy_image_to_clipboard # required for `fig_to_clipboard`
 
+from pyphocorehelpers.function_helpers import function_attributes
+
 
 def add_border(image: Image.Image, border_size: int = 5, border_color: tuple = (0, 0, 0)) -> Image.Image:
     return ImageOps.expand(image, border=border_size, fill=border_color)
@@ -258,7 +260,7 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
         print(f'video_out_path: {video_out_path}')
         reveal_in_system_file_manager(video_out_path)
     """
-	import cv2
+    import cv2
     if colormap is None:
         colormap = cv2.COLORMAP_VIRIDIS
     if skip_img_normalization:
@@ -304,7 +306,7 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
 
 @function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=[], creation_date='2024-09-06 11:33', related_items=[])
 def colormap_and_save_as_video(array, video_filename='output.avi', fps=30.0, colormap=None):
-	import cv2
+    import cv2
     if colormap is None:
         colormap = cv2.COLORMAP_VIRIDIS
     # array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(np.uint8)
@@ -354,7 +356,7 @@ def create_video_from_images(image_folder: str, output_video_file: str, seconds_
         create_video_from_images(image_folder=imageseries_output_directory, output_video_file=video_out_file, seconds_per_frame=0.2)
 
     """
-	import cv2
+    import cv2
 
     if not isinstance(image_folder, Path):
         image_folder = Path(image_folder).resolve()

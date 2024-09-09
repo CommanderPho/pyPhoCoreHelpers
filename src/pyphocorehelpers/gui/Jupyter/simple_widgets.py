@@ -288,17 +288,31 @@ def code_block_widget(contents: str, label: str="Code:"):
         layout={'width': '150px'}  # Adjust the width of the button as needed
     )
     
+    # Create the execute in terminal button
+    execute_button = widgets.Button(
+        description='Execute in Terminal',
+        button_style='primary',  # Possible styles: 'success', 'info', 'warning', 'danger' or ''
+        tooltip='Execute code in terminal',
+        layout={'width': '150px'}  # Adjust the width of the button as needed
+    )
+    
     # Function to perform the copy to clipboard action
     def on_copy_button_clicked(b):
         payload = f"navigator.clipboard.writeText(`{code_textarea.value}`)"
         js_command = f"eval({payload})"
         display(widgets.HTML(value=f'<img src onerror="{js_command}">'))
     
+        # Function to execute code in terminal
+    def on_execute_button_clicked(b):
+        # Use IPython's system command
+        display(Javascript(f'IPython.notebook.kernel.execute("!{code_textarea.value}")'))
+        
     # Attach the function to the click event of the button
     copy_button.on_click(on_copy_button_clicked)
+    execute_button.on_click(on_execute_button_clicked)
     
     # Use a horizontal box (HBox) to place the button next to the text area
-    hbox = widgets.HBox([code_textarea, copy_button])
+    hbox = widgets.HBox([code_textarea, copy_button, execute_button])
     display(hbox)
     return hbox
 

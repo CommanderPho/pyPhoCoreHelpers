@@ -1955,3 +1955,125 @@ def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizont
     else:
         raise ValueError("The input is not a NumPy array.")
 
+
+
+# # omitted_indicies_list = []
+# def _leading_trailing(a: NDArray, edgeitems: int, index=()): # , omitted_indicies_list=[]
+#     """
+#     Keep only the N-D corners (leading and trailing edges) of an array.
+
+#     Should be passed a base-class ndarray, since it makes no guarantees about
+#     preserving subclasses.
+#     """
+#     global omitted_indicies_list
+#     axis = len(index)
+#     if axis == a.ndim:
+#         return a[index]
+
+#     if a.shape[axis] > 2*edgeitems:
+#         left_edge_idxs = (index + np.index_exp[:edgeitems])
+#         right_edge_idxs = (index + np.index_exp[-edgeitems:])
+#         print(f'index: {index}, axis: {axis}, a.shape[axis]: {a.shape[axis]}')
+#         # omitted_idxs = (left_edge_idxs[-1], right_edge_idxs[0])
+#         omitted_idxs = (int(edgeitems), int((a.shape[axis]-edgeitems)))
+#         # omitted_idxs = (index + np.index_exp[edgeitems:-edgeitems])
+#         omitted_indicies_list.append(omitted_idxs)
+        
+#         return np.concatenate((
+#             _leading_trailing(a, edgeitems, left_edge_idxs),
+#             _leading_trailing(a, edgeitems, right_edge_idxs)
+#         ), axis=axis)#, omitted_idxs)
+#     else:
+#         # can include all items
+#         # return (_leading_trailing(a, edgeitems, index + np.index_exp[:]), None)
+#         return _leading_trailing(a, edgeitems, (index + np.index_exp[:]))
+
+# omitted_indicies_list = []
+# def _dropping_middle_leading_trailing(a: NDArray, edgeitems: int, index=(), n_fill_middle_items: int = 4): # , omitted_indicies_list=[]
+#     """
+#     Keep only the N-D corners (leading and trailing edges) of an array.
+
+#     Should be passed a base-class ndarray, since it makes no guarantees about
+#     preserving subclasses.
+#     """
+#     global omitted_indicies_list
+#     axis = len(index)
+#     if axis == a.ndim:
+#         return a[index]
+    
+#     n_left_fill_middle_items = int(n_fill_middle_items / 2)
+#     n_right_fill_middle_items = int(n_fill_middle_items / 2)
+#     n_total_edgeitems: int = (2*edgeitems)
+#     curr_axis_size: int = a.shape[axis]
+    
+#     if (curr_axis_size > n_total_edgeitems):
+#         left_range = (0, (edgeitems-n_left_fill_middle_items))
+#         right_range = ((-edgeitems + n_right_fill_middle_items), n_total_edgeitems)
+#         middle_fill_range = ((left_range[-1]+1), (right_range[0]-1))
+#         middle_fill_n_xbins = middle_fill_range[-1] - middle_fill_range[0]
+#         print(f'left_range: {left_range}, right_range: {right_range}, middle_fill_range: {middle_fill_range}, middle_fill_n_xbins: {middle_fill_n_xbins}')
+        
+#         left_edge_idxs = (index + np.index_exp[:(edgeitems-n_left_fill_middle_items)])
+#         right_edge_idxs = (index + np.index_exp[(-edgeitems + n_right_fill_middle_items):])
+#         print(f'axis: {axis}, a.shape[axis]: {a.shape[axis]}') # index: {index}, 
+#         # omitted_idxs = (left_edge_idxs[-1], right_edge_idxs[0])
+#         omitted_idxs = (int(edgeitems), int((a.shape[axis]-edgeitems)))
+#         # omitted_idxs = (index + np.index_exp[edgeitems:-edgeitems])
+#         omitted_indicies_list.append(omitted_idxs)
+        
+#         middle_fill_array = np.full((middle_fill_n_xbins, *np.shape(a)[1:]), fill_value=np.nan)
+        
+        
+#         return np.concatenate((
+#             _leading_trailing(a, edgeitems, left_edge_idxs),
+#             middle_fill_array,
+#             _leading_trailing(a, edgeitems, right_edge_idxs)
+#         ), axis=axis)#, omitted_idxs)
+#     else:
+#         # can include all items
+#         # return (_leading_trailing(a, edgeitems, index + np.index_exp[:]), None)
+#         return _leading_trailing(a, edgeitems, (index + np.index_exp[:]))
+    
+
+    
+
+# max_allowed_arr_elements: int = 200
+
+# arr = deepcopy(long_LR_pf1D_Decoder.p_x_given_n)
+# arr_shape = np.array(np.shape(arr))
+# arr_shape
+# arr_too_large_dim = (arr_shape > max_allowed_arr_elements)
+# arr_too_large_dim
+
+# any_dim_arr_has_too_large_dimension: bool = np.any(arr_too_large_dim)
+
+# edgeitems: int = int(max_allowed_arr_elements / 2)
+# print(f'edgeitems: {edgeitems}')
+
+# removed_items = [(a_len - (edgeitems * 2)) if is_too_large else 0 for a_len, is_too_large in zip(arr_shape, arr_too_large_dim)]
+# # removed_items = arr_shape[arr_too_large_dim] - (edgeitems * 2)
+# removed_items
+
+# omitted_indicies_list = []
+# # _corners = _leading_trailing(arr, edgeitems=edgeitems)
+# _corners = _dropping_middle_leading_trailing(arr, edgeitems=edgeitems)
+
+# _left_edge = _corners[:, :edgeitems]
+# _right_edge = _corners[:, edgeitems:]
+# # [_corners[:, :edgeitems], _corners[:, edgeitems:]]
+# _corners
+
+# omitted_indicies_list = np.array(omitted_indicies_list)
+# omitted_indicies_list = np.squeeze(omitted_indicies_list.flatten()).tolist()
+# omitted_indicies_list
+
+# omission_indices = deepcopy(omitted_indicies_list)
+# omission_indices = sorted(set(omission_indices))
+# omission_indices
+
+# ylims = [(0, arr_shape[0],)]
+# ylims
+
+# xlims = [(0, omission_indices[0],), (omission_indices[-1], arr_shape[1],)]
+# xlims
+

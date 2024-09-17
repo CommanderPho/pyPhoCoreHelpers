@@ -50,7 +50,7 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
     return (norm_array * 255).astype(np.uint8)
 
 
-def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = True) -> Image.Image:
+def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = False) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
     
     # Usage:
@@ -114,16 +114,37 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
         draw = ImageDraw.Draw(image)
         font = ImageFont.load_default()
 
+        def draw_text_with_border(draw, x, y, text, font, fill):
+            # Draw shadow/border (using black color)
+            shadow_color = (0, 0, 0)
+            draw.text((x - 1, y - 1), text, font=font, fill=shadow_color)
+            draw.text((x + 1, y - 1), text, font=font, fill=shadow_color)
+            draw.text((x - 1, y + 1), text, font=font, fill=shadow_color)
+            draw.text((x + 1, y + 1), text, font=font, fill=shadow_color)
+            # Draw text itself
+            draw.text((x, y), text, font=font, fill=fill)
+
         # Iterate over pixels and annotate with their values
         for y in range(norm_array.shape[0]):
             for x in range(norm_array.shape[1]):
                 value = norm_array[y, x]
-                # Draw text at the corresponding position, adjust as needed
-                draw.text((x * desired_width // norm_array.shape[1], y * desired_height // norm_array.shape[0]), f'{value:.2f}', font=font, fill=(255, 255, 255))
+                text = f'{value:.2f}'
+                text_x = x * desired_width // norm_array.shape[1]
+                text_y = y * desired_height // norm_array.shape[0]
+
+                # Draw the text with border
+                draw_text_with_border(draw, text_x, text_y, text, font, fill=(255, 255, 255))
+
+                # Rotate the text by 45 degrees (angle)
+                text_image = Image.new('RGBA', (image.size[0], image.size[1]), (255, 255, 255, 0))
+                text_draw = ImageDraw.Draw(text_image)
+                draw_text_with_border(text_draw, text_x, text_y, text, font, fill=(255, 255, 255))
+                # text_image = text_image.rotate(45, expand=1)
+                image.paste(text_image, (0, 0), text_image)
 
     return image
 
-def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png', export_grayscale:bool=False) -> Tuple[Image.Image, Path]:
+def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png', export_grayscale:bool=False, include_value_labels: bool = False) -> Tuple[Image.Image, Path]:
     """ Exports a numpy array to file as a colormapped image
     
     # Usage:
@@ -134,8 +155,7 @@ def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_h
         image
                 
     """
-    image: Image.Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, colormap=colormap, skip_img_normalization=skip_img_normalization, export_grayscale=export_grayscale)
-
+    image: Image.Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, colormap=colormap, skip_img_normalization=skip_img_normalization, export_grayscale=export_grayscale, include_value_labels=include_value_labels)
     out_path = Path(out_path).resolve()
     # Save image to file
     image.save(out_path)

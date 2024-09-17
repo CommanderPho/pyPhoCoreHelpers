@@ -93,12 +93,12 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
 
     if desired_width is not None:
         # Specify width
-        assert desired_height is None, f"please don't provide both width and height, the other will be calculated automatically."
+        assert (desired_height is None), f"please don't provide both width and height, the other will be calculated automatically."
         # Calculate height to preserve aspect ratio
         desired_height = int(desired_width * norm_array.shape[0] / norm_array.shape[1])
     elif (desired_height is not None):
         # Specify height:
-        assert desired_width is None, f"please don't provide both width and height, the other will be calculated automatically."
+        assert (desired_width is None), f"please don't provide both width and height, the other will be calculated automatically."
         # Calculate width to preserve aspect ratio
         desired_width = int(desired_height * norm_array.shape[1] / norm_array.shape[0])
     else:
@@ -173,8 +173,8 @@ def get_array_as_image_stack(imgs: List[Image.Image], offset=10, single_image_al
     width, height = imgs[0].size
 
     # Create a new image with size larger than original ones, considering offsets
-    output_width = width + offset * (len(imgs) - 1)
-    output_height = height + offset * (len(imgs) - 1)
+    output_width = width + abs(offset) * (len(imgs) - 1)
+    output_height = height + abs(offset) * (len(imgs) - 1)
 
     output_img = Image.new('RGBA', (output_width, output_height))
 
@@ -192,8 +192,8 @@ def get_array_as_image_stack(imgs: List[Image.Image], offset=10, single_image_al
         width += shadow_offset
         height += shadow_offset
 
-    output_width = width + offset * (len(imgs) - 1)
-    output_height = height + offset * (len(imgs) - 1)
+    output_width = width + abs(offset) * (len(imgs) - 1)
+    output_height = height + abs(offset) * (len(imgs) - 1)
 
     output_img = Image.new('RGBA', (output_width, output_height))
 

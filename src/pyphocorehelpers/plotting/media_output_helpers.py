@@ -104,9 +104,10 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
     else:
         raise ValueError("you must specify width or height of the output image")
 
+
     # Resize image
     # image = image.resize((new_width, new_height), Image.LANCZOS)
-    image = image.resize((desired_width, desired_height), Image.NEAREST)
+    image = image.resize((int(desired_width), int(desired_height)), Image.NEAREST)
 
     return image
 

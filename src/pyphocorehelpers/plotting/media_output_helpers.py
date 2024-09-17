@@ -207,6 +207,83 @@ def get_array_as_image_stack(imgs: List[Image.Image], offset=10, single_image_al
     return output_img
 
 
+
+def vertical_image_stack(imgs: List[Image.Image], padding=10) -> Image.Image:
+    """ Builds a stack of images into a vertically concatenated image.
+    offset = 10  # your desired offset
+
+    Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import vertical_image_stack, horizontal_image_stack
+
+        # Open the images
+        _raster_imgs = [Image.open(i) for i in _out_rasters_save_paths]
+        _out_vstack = vertical_image_stack(_raster_imgs, padding=5)
+        _out_vstack
+        
+    """
+    # Assume all images are the same size
+    width, height = imgs[0].size
+    
+    widths = np.array([img.size[0] for img in imgs])
+    heights = np.array([img.size[1] for img in imgs])
+
+    # Create a new image with size larger than original ones, considering offsets
+    # output_width = np.sum(widths) + (padding * (len(imgs) - 1))
+    output_width = np.max(widths)
+    output_height = np.sum(heights) + (padding * (len(imgs) - 1))
+    # print(f'output_width: {output_width}, output_height: {output_height}')
+    output_img = Image.new('RGBA', (output_width, output_height))
+    cum_height = 0
+    for i, img in enumerate(imgs):
+        curr_img_width, curr_img_height = img.size
+        output_img.paste(img, (0, cum_height), img)
+        cum_height += (curr_img_height+padding)
+
+    return output_img
+
+
+def horizontal_image_stack(imgs: List[Image.Image], padding=10) -> Image.Image:
+    """ Builds a stack of images into a horizontally concatenated image.
+    offset = 10  # your desired offset
+
+    Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import vertical_image_stack, horizontal_image_stack
+
+        # Open the images
+        _raster_imgs = [Image.open(i) for i in _out_rasters_save_paths]
+        # _out_vstack = vertical_image_stack(_raster_imgs, padding=5)
+        # _out_vstack
+        _out_hstack = horizontal_image_stack(_raster_imgs, padding=5)
+        _out_hstack
+
+    """
+    # Assume all images are the same size
+    width, height = imgs[0].size
+    
+    widths = np.array([img.size[0] for img in imgs])
+    heights = np.array([img.size[1] for img in imgs])
+
+    # Create a new image with size larger than original ones, considering offsets
+    output_width = np.sum(widths) + (padding * (len(imgs) - 1))
+    output_height = np.max(heights)
+    # print(f'output_width: {output_width}, output_height: {output_height}')
+    output_img = Image.new('RGBA', (output_width, output_height))
+    # cum_height = 0
+    cum_width = 0
+    for i, img in enumerate(imgs):
+        curr_img_width, curr_img_height = img.size
+        output_img.paste(img, (cum_width, 0), img)
+        # cum_height += (curr_img_height+padding)
+        cum_width += (curr_img_width+padding)
+
+    return output_img
+
+
+
+
+
+
+
 # @function_attributes(short_name=None, tags=['image', 'stack', 'batch', 'file', 'stack'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-01-12 00:00', related_items=[])
 def save_array_as_image_stack(images: List[Path], offset=10, single_image_alpha_level:float=0.5):
     """ 

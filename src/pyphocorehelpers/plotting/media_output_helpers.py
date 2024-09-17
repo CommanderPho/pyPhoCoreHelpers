@@ -10,6 +10,7 @@ from glob import glob
 
 import matplotlib.pyplot as plt # for export_array_as_image
 from PIL import Image, ImageOps, ImageFilter # for export_array_as_image
+from PIL import ImageDraw, ImageFont
 
 from plotly.graph_objects import Figure as PlotlyFigure # required for `fig_to_clipboard`
 from matplotlib.figure import FigureBase
@@ -49,7 +50,7 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
     return (norm_array * 255).astype(np.uint8)
 
 
-def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False) -> Image.Image:
+def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = True) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
     
     # Usage:
@@ -108,6 +109,17 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
     # Resize image
     # image = image.resize((new_width, new_height), Image.LANCZOS)
     image = image.resize((int(desired_width), int(desired_height)), Image.NEAREST)
+
+    if include_value_labels:
+        draw = ImageDraw.Draw(image)
+        font = ImageFont.load_default()
+
+        # Iterate over pixels and annotate with their values
+        for y in range(norm_array.shape[0]):
+            for x in range(norm_array.shape[1]):
+                value = norm_array[y, x]
+                # Draw text at the corresponding position, adjust as needed
+                draw.text((x * desired_width // norm_array.shape[1], y * desired_height // norm_array.shape[0]), f'{value:.2f}', font=font, fill=(255, 255, 255))
 
     return image
 
@@ -279,7 +291,41 @@ def horizontal_image_stack(imgs: List[Image.Image], padding=10) -> Image.Image:
     return output_img
 
 
+def image_grid(imgs: List[List[Image.Image]], v_padding=5, h_padding=5) -> Image.Image:
+    """ Builds a stack of images into a horizontally concatenated image.
+    offset = 10  # your desired offset
 
+    Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import vertical_image_stack, horizontal_image_stack, image_grid
+
+        # Open the images
+        _raster_imgs = [Image.open(i) for i in _out_rasters_save_paths]
+        # _out_vstack = vertical_image_stack(_raster_imgs, padding=5)
+        # _out_vstack
+        _out_hstack = horizontal_image_stack(_raster_imgs, padding=5)
+        _out_hstack
+
+    """
+    # Assume all images are the same size
+    width, height = imgs[0].size
+    
+    widths = np.array([img.size[0] for img in imgs])
+    heights = np.array([img.size[1] for img in imgs])
+
+    # Create a new image with size larger than original ones, considering offsets
+    output_width = np.sum(widths) + (padding * (len(imgs) - 1))
+    output_height = np.max(heights)
+    # print(f'output_width: {output_width}, output_height: {output_height}')
+    output_img = Image.new('RGBA', (output_width, output_height))
+    # cum_height = 0
+    cum_width = 0
+    for i, img in enumerate(imgs):
+        curr_img_width, curr_img_height = img.size
+        output_img.paste(img, (cum_width, 0), img)
+        # cum_height += (curr_img_height+padding)
+        cum_width += (curr_img_width+padding)
+
+    return output_img
 
 
 

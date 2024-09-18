@@ -101,7 +101,7 @@ def fullwidth_path_widget(a_path, file_name_label: str="session path:", box_layo
     # right_label = widgets.Label(a_path, layout=widgets.Layout(width='auto', flex='1 1 auto', margin='2px'))
     # Change the style of 'right_label' to make it bolder and larger using HTML tags in the value
     right_label = widgets.HTML(
-        value=f"<b style='font-size: larger;'>{a_path}</b>",
+        value=f"<b style='font-size: smaller;'>{a_path}</b>",
         layout=widgets.Layout(width='auto', flex='1 1 auto', margin='2px')
     )
 

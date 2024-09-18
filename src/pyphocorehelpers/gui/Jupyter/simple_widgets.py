@@ -106,7 +106,7 @@ def fullwidth_path_widget(a_path, file_name_label: str="session path:", box_layo
     )
 
 
-    button_layout = widgets.Layout(flex='0 1 auto', width='auto', margin='1px') # The button_layout ensures that buttons don't grow and are only as wide as necessary.
+    button_layout = widgets.Layout(flex='0 1 auto', width='auto', min_width='80px', margin='1px') # The button_layout ensures that buttons don't grow and are only as wide as necessary.
     # right_label_layout = widgets.Layout(flex='1 1 auto', min_width='0px', width='auto') # We use the flex property in the right_label_layout to let the label grow and fill the space, but it can also shrink if needed (flex='1 1 auto'). We set a min_width so it doesn't get too small and width='auto' to let it size based on content
     
     actions_button_list = []
@@ -117,19 +117,26 @@ def fullwidth_path_widget(a_path, file_name_label: str="session path:", box_layo
     reveal_button = widgets.Button(description='Reveal', layout=button_layout, disabled=(not Path(a_path).resolve().exists()), button_style='info', tooltip='Reveal in System Explorer', icon='folder-open-o')
     reveal_button.on_click(lambda _: reveal_in_system_file_manager(a_path))
     actions_button_list.append(reveal_button)
-
+    
     if has_valid_file:
         is_dir = resolved_path.is_dir()
         if not is_dir:
+            # is_file:
             open_button = widgets.Button(description='Open', layout=button_layout, disabled=((not Path(a_path).resolve().exists()) or ((Path(a_path).resolve().is_dir()))), button_style='info', tooltip='Open with default app', icon='external-link-square')
             open_button.on_click(lambda _: open_file_with_system_default(a_path))
             actions_button_list.append(open_button)
+        else:
+            # is directory
+            open_button = widgets.Button(description='Open', layout=button_layout, disabled=((not Path(a_path).resolve().exists()) or ((not Path(a_path).resolve().is_dir()))), button_style='info', tooltip='Open Contents in System Explorer', icon='external-link-square')
+            open_button.on_click(lambda _: open_file_with_system_default(a_path))
+            actions_button_list.append(open_button)                                            
+    
 
     box_layout_kwargs = (box_layout_kwargs | dict(display='flex', flex_flow='row nowrap',
                                                 #    align_items='stretch', width='70%',
                                                     align_items='center', # Vertically align items in the middle
                                                     justify_content='flex-start', # Align items to the start of the container
-                                                    width='70%'                                                 
+                                                    width='90%'                                                 
                                                    ))
     box_layout = widgets.Layout(**box_layout_kwargs)
     hbox = widgets.Box(children=[left_label, right_label, *actions_button_list], layout=box_layout)

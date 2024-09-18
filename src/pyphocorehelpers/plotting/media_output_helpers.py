@@ -64,6 +64,8 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
     # Assuming `your_array` is your numpy array
     if export_grayscale:
         # Convert to grayscale (normalize if needed)
+        assert (colormap is None) or (colormap == 'viridis'), f"colormap should not be specified when export_grayscale=True" # (default 'viridis' is safely ignored)
+        
         if skip_img_normalization:
             print(f'WARN: when `export_grayscale == True`, `skip_img_normalization == True` makes no sense and will be ignored.')
             
@@ -72,7 +74,7 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
         image = Image.fromarray(norm_array, mode='L')
     else:
         ## Color export mode!
-        assert (colormap is None) or (colormap == 'viridis'), f"colormap should not be specified is export_grayscale=True"
+        assert (colormap is not None)
         # Get the specified colormap
         colormap = plt.get_cmap(colormap)
 

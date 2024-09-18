@@ -50,7 +50,7 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
     return (norm_array * 255).astype(np.uint8)
 
 
-def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False) -> Image.Image:
+def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
     
     # Usage:
@@ -89,8 +89,12 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
 
         # Convert to PIL image and remove alpha channel
         image = Image.fromarray((image_array[:, :, :3] * 255).astype(np.uint8))
+
+
+    # Optionally flip the image vertically
+    if flip_vertical_axis:
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
         
-    
     if ((desired_width is None) and (desired_height is None)):
         desired_width = 1024 # set a default arbitrarily
 
@@ -148,7 +152,7 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
 
     return image
 
-def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png', export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False) -> Tuple[Image.Image, Path]:
+def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png', export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False) -> Tuple[Image.Image, Path]:
     """ Exports a numpy array to file as a colormapped image
     
     # Usage:
@@ -159,7 +163,7 @@ def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_h
         image
                 
     """
-    image: Image.Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, colormap=colormap, skip_img_normalization=skip_img_normalization, export_grayscale=export_grayscale, include_value_labels=include_value_labels, allow_override_aspect_ratio=allow_override_aspect_ratio)
+    image: Image.Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, colormap=colormap, skip_img_normalization=skip_img_normalization, export_grayscale=export_grayscale, include_value_labels=include_value_labels, allow_override_aspect_ratio=allow_override_aspect_ratio, flip_vertical_axis=flip_vertical_axis)
     out_path = Path(out_path).resolve()
     # Save image to file
     image.save(out_path)

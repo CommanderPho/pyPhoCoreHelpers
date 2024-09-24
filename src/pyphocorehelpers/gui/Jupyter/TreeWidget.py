@@ -74,9 +74,11 @@ class JupyterTreeWidget:
         jupyter_tree_widget = JupyterTreeWidget(included_session_contexts=included_session_contexts)
 
     """
-    included_session_contexts = field(default=Factory(list))
-    tree = field(default=Factory(ipyt.Tree))
-    max_depth = field(default=20)
+    included_session_contexts: List = field(default=Factory(list)) # IdentifyingContext
+    tree: ipyt.Tree = field(default=None, init=False) #field(default=Factory(ipyt.Tree))
+    max_depth: int = field(default=20)
+    on_selection_changed_callbacks: List[Callable] = field(default=Factory(list))
+    display_on_init: bool = field(default=True)
     
     def __attrs_post_init__(self):
         self.construct_and_display_tree()
@@ -87,8 +89,11 @@ class JupyterTreeWidget:
             selected_node = change['owner']
             # print(f"Selected node: {selected_node.name}")
             if hasattr(selected_node, 'context'):
-                print(f"Selected context: {selected_node.context}")
-
+                selected_context = selected_node.context
+                print(f"Selected context: {selected_context}")
+                for a_callback in self.on_selection_changed_callback:
+                    ## perform the callbacks
+                    a_callback(selected_node, selected_context)
 
     def build_tree(self, node, value, depth=0):
         """ constructs the ipytree nodes (GUI objects)"""
@@ -112,15 +117,25 @@ class JupyterTreeWidget:
     def construct_and_display_tree(self):
         """ uses `self.included_session_contexts` to build the tree to display. """
         included_session_context_dict_tree = [ctxt.to_dict() for ctxt in self.included_session_contexts]
+        included_session_context_dict_tree: List[Dict] = [ctxt.to_dict() for ctxt in self.included_session_contexts]
         assert len(included_session_context_dict_tree) > 0, f"tree cannot be empty but self.included_session_contexts: {self.included_session_contexts} "
         keys = list(included_session_context_dict_tree[0].keys())
+        keys: List[str] = list(included_session_context_dict_tree[0].keys()) ## get keys from the first item
+        
         ## TODO: assert that they're equal for all entries?
         # keys = ['format_name', 'animal', 'exper_name', 'session_name']
         tree_data = _construct_hierarchical_dict_data(included_session_context_dict_tree, keys) # calls `_construct_hierarchical_dict_data`
+        tree_data: Dict = _construct_hierarchical_dict_data(included_session_context_dict_tree, keys) # calls `_construct_hierarchical_dict_data`
         root_node = ipyt.Node('root')
         self.build_tree(root_node, tree_data)
         self.tree.add_node(root_node)
         display(self.tree)
+        
+        self.tree = ipyt.Tree(nodes=[root_node], multiple_selection=False, animation=0)
+        # self.tree.add_node(root_node)
+        
+        if self.display_on_init:
+            display(self.tree)
 
 
 # ==================================================================================================================== #

@@ -85,6 +85,7 @@ class JupyterTreeWidget:
 
 
     def on_node_selected(self, change):
+        print(f'.on_node_selected(change: {change})') # change: {'name': 'selected', 'old': False, 'new': True, 'owner': Node(name='fet11-01_12-58-54', selected=True), 'type': 'change'}
         if change['new']:
             selected_node = change['owner']
             # print(f"Selected node: {selected_node.name}")

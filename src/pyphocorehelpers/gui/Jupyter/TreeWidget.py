@@ -1,11 +1,49 @@
+from typing import Callable, Dict, List
 from attrs import define, field, Factory
 from collections import defaultdict
 
+import ipywidgets as widgets
 import ipytree as ipyt
 from IPython.display import display
 
 
-def _construct_hierarchical_dict_data(lst, keys):
+# @function_attributes(short_name=None, tags=[''], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-09-24 02:46', related_items=[])
+def create_log_viewer(logs: dict[str, str]) -> widgets.Tab:
+    """ 
+    Usage:
+        from pyphocorehelpers.gui.Jupyter.TreeWidget import create_log_viewer
+        
+        # Example usage:
+        logs = {
+            'log1.txt': 'This is the content of log 1.\nLine 2.\nLine 3.',
+            'log2.txt': 'This is the content of log 2.\nLine 2.\nLine 3.',
+            'log3.txt': 'This is the content of log 3.\nLine 2.\nLine 3.'
+        }
+
+        log_viewer = create_log_viewer(logs=run_logs)
+        display(log_viewer)
+
+    """
+    tab = widgets.Tab()
+
+    children = []
+    for key, value in logs.items():
+        text_area = widgets.Textarea(
+            value=value,
+            disabled=True,  # Make it read-only
+            layout=widgets.Layout(width='100%', height='400px')  # Scrollable area
+        )
+        children.append(text_area)
+
+    tab.children = children
+    for i, key in enumerate(logs.keys()):
+        tab.set_title(i, key)
+
+    return tab
+
+
+
+def _construct_hierarchical_dict_data(lst, keys) -> Dict:
     """ builds the hierarchical tree from the contexts:
     Usage:
         included_session_context_dict_tree = [ctxt.to_dict() for ctxt in included_session_contexts]

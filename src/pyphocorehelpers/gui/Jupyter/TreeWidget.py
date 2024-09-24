@@ -106,30 +106,35 @@ class JupyterTreeWidget:
                 child_node.selectable = False  # Make non-leaf nodes non-selectable
                 node.add_node(child_node)
                 self.build_tree(child_node, child_value, depth=depth+1)
-        else:
+        elif isinstance(value, (list, tuple)):
             for context in value:
-                leaf_node = ipyt.Node(str(context['session_name']))
+                a_session_name: str = str(context['session_name'])
+                is_parent_node_leaf: bool = False
+                if (node.name == a_session_name):
+                    is_parent_node_leaf = True
+                    leaf_node = node # the parent node is the leaf because they have the same name
+                else:                        
+                    leaf_node = ipyt.Node(a_session_name)
+                
                 leaf_node.context = context  # Storing the original context as an attribute
                 leaf_node.observe(self.on_node_selected, 'selected')
-                node.add_node(leaf_node)
+                if (not is_parent_node_leaf):
+                    node.add_node(leaf_node)
 
+        else:
+            raise NotImplementedError(f'Unknown type for value: type(value): {type(value)} (expected (dict, list, or tuple), value: {value}')
 
     def construct_and_display_tree(self):
         """ uses `self.included_session_contexts` to build the tree to display. """
-        included_session_context_dict_tree = [ctxt.to_dict() for ctxt in self.included_session_contexts]
         included_session_context_dict_tree: List[Dict] = [ctxt.to_dict() for ctxt in self.included_session_contexts]
         assert len(included_session_context_dict_tree) > 0, f"tree cannot be empty but self.included_session_contexts: {self.included_session_contexts} "
-        keys = list(included_session_context_dict_tree[0].keys())
         keys: List[str] = list(included_session_context_dict_tree[0].keys()) ## get keys from the first item
         
         ## TODO: assert that they're equal for all entries?
         # keys = ['format_name', 'animal', 'exper_name', 'session_name']
-        tree_data = _construct_hierarchical_dict_data(included_session_context_dict_tree, keys) # calls `_construct_hierarchical_dict_data`
         tree_data: Dict = _construct_hierarchical_dict_data(included_session_context_dict_tree, keys) # calls `_construct_hierarchical_dict_data`
         root_node = ipyt.Node('root')
         self.build_tree(root_node, tree_data)
-        self.tree.add_node(root_node)
-        display(self.tree)
         
         self.tree = ipyt.Tree(nodes=[root_node], multiple_selection=False, animation=0)
         # self.tree.add_node(root_node)

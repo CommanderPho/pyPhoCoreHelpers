@@ -4,44 +4,7 @@ from collections import defaultdict
 
 import ipywidgets as widgets
 import ipytree as ipyt
-from IPython.display import display
-
-
-# @function_attributes(short_name=None, tags=[''], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-09-24 02:46', related_items=[])
-def create_log_viewer(logs: dict[str, str]) -> widgets.Tab:
-    """ 
-    Usage:
-        from pyphocorehelpers.gui.Jupyter.TreeWidget import create_log_viewer
-        
-        # Example usage:
-        logs = {
-            'log1.txt': 'This is the content of log 1.\nLine 2.\nLine 3.',
-            'log2.txt': 'This is the content of log 2.\nLine 2.\nLine 3.',
-            'log3.txt': 'This is the content of log 3.\nLine 2.\nLine 3.'
-        }
-
-        log_viewer = create_log_viewer(logs=run_logs)
-        display(log_viewer)
-
-    """
-    tab = widgets.Tab()
-
-    children = []
-    for key, value in logs.items():
-        text_area = widgets.Textarea(
-            value=value,
-            disabled=True,  # Make it read-only
-            layout=widgets.Layout(width='100%', height='400px')  # Scrollable area
-        )
-        children.append(text_area)
-
-    tab.children = children
-    for i, key in enumerate(logs.keys()):
-        tab.set_title(i, key)
-
-    return tab
-
-
+from IPython.display import display, clear_output
 
 def _construct_hierarchical_dict_data(lst, keys) -> Dict:
     """ builds the hierarchical tree from the contexts:
@@ -62,8 +25,6 @@ def _construct_hierarchical_dict_data(lst, keys) -> Dict:
     for k, v in tree.items():
         tree[k] = _construct_hierarchical_dict_data(v, keys[1:])
     return dict(tree)
-
-
 
 @define(slots=False)
 class JupyterTreeWidget:
@@ -87,15 +48,24 @@ class JupyterTreeWidget:
     def on_node_selected(self, change):
         print(f'.on_node_selected(change: {change})') # change: {'name': 'selected', 'old': False, 'new': True, 'owner': Node(name='fet11-01_12-58-54', selected=True), 'type': 'change'}
         if change['new']:
+            clear_output(wait=True)  # Prevent scrolling
+            display(self.tree)  # Redisplay the tree to maintain focus
+            
             selected_node = change['owner']
             # print(f"Selected node: {selected_node.name}")
             if hasattr(selected_node, 'context'):
                 selected_context = selected_node.context
                 print(f"Selected context: {selected_context}")
-                for a_callback in self.on_selection_changed_callback:
+                for a_callback in self.on_selection_changed_callbacks:
                     ## perform the callbacks
                     a_callback(selected_node, selected_context)
+        
+            self.tree.layout.display = 'none'  # Hide temporarily
+            self.tree.layout.display = 'block'  # Show it again to refresh
+        
 
+        
+        
     def build_tree(self, node, value, depth=0):
         """ constructs the ipytree nodes (GUI objects)"""
         if depth > self.max_depth:
@@ -142,6 +112,43 @@ class JupyterTreeWidget:
         
         if self.display_on_init:
             display(self.tree)
+
+
+                
+# @function_attributes(short_name=None, tags=[''], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-09-24 02:46', related_items=[])
+def create_log_viewer(logs: dict[str, str]) -> widgets.Tab:
+    """ 
+    Usage:
+        from pyphocorehelpers.gui.Jupyter.TreeWidget import create_log_viewer
+        
+        # Example usage:
+        logs = {
+            'log1.txt': 'This is the content of log 1.\nLine 2.\nLine 3.',
+            'log2.txt': 'This is the content of log 2.\nLine 2.\nLine 3.',
+            'log3.txt': 'This is the content of log 3.\nLine 2.\nLine 3.'
+        }
+
+        log_viewer = create_log_viewer(logs=run_logs)
+        display(log_viewer)
+
+    """
+    tab = widgets.Tab()
+
+    children = []
+    for key, value in logs.items():
+        text_area = widgets.Textarea(
+            value=value,
+            disabled=True,  # Make it read-only
+            layout=widgets.Layout(width='100%', height='400px')  # Scrollable area
+        )
+        children.append(text_area)
+
+    tab.children = children
+    for i, key in enumerate(logs.keys()):
+        tab.set_title(i, key)
+
+    return tab
+
 
 
 # ==================================================================================================================== #

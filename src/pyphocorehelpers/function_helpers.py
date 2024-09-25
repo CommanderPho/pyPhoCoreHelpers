@@ -3,7 +3,7 @@ import traceback
 from functools import reduce
 from itertools import accumulate
 from functools import wraps # This convenience func preserves name and docstring
-from typing import Dict, List, Callable, Optional # for function composition
+from typing import Dict, List, Callable, Optional, Any # for function composition
 
 from pyphocorehelpers.exception_helpers import CapturedException
 
@@ -212,3 +212,46 @@ def invocation_log(func):
     return inner_func
 
 
+
+
+def get_fn_kwargs_with_defaults(func: Callable, ignore_kwarg_names: Optional[List[str]]=None) -> Dict[str, Any]:
+    """
+    Extracts keyword arguments with default values from a function, optionally ignoring specified arguments.
+
+    :param func: The function object to inspect.
+    :param ignore_kwarg_names: Optional list of keyword argument names to ignore.
+    :return: Dictionary mapping keyword argument names to their default values.
+    
+    Usage:
+    
+        from pyphocorehelpers.function_helpers import get_fn_kwargs_with_defaults
+
+        ignore_kwarg_names = ['include_includelist', 'debug_print']
+        registered_merged_computation_function_default_kwargs_dict = {k:get_fn_kwargs_with_defaults(v, ignore_kwarg_names=ignore_kwarg_names) for k, v in curr_active_pipeline.registered_merged_computation_function_dict.items()}
+        registered_merged_computation_function_default_kwargs_dict
+    """
+    import inspect
+    from inspect import Parameter
+    # Get the signature of the function
+    sig = inspect.signature(func)
+    # Initialize the dictionary to hold keyword arguments with defaults
+    kwargs_with_defaults = {}
+    
+    # Convert ignore list to a set for efficiency
+    if ignore_kwarg_names is not None:
+        ignore_kwarg_names = set(ignore_kwarg_names)
+    else:
+        ignore_kwarg_names = set()
+    
+    for param in sig.parameters.values():
+        # Determine if parameter has a default value
+        has_default = param.default is not Parameter.empty
+        # Determine if parameter is a keyword argument
+        is_kwarg = (param.kind == Parameter.KEYWORD_ONLY or
+                    param.kind == Parameter.POSITIONAL_OR_KEYWORD)
+        # Determine if parameter should be ignored
+        is_ignored = param.name in ignore_kwarg_names
+        # Add to dictionary if conditions are met
+        if has_default and is_kwarg and not is_ignored:
+            kwargs_with_defaults[param.name] = param.default
+    return kwargs_with_defaults

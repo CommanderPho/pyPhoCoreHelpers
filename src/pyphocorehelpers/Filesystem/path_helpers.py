@@ -347,6 +347,14 @@ def try_parse_chain(basename: str, debug_print:bool=False):
         if a_session_str is not None:
             ## try to parse for custom replay types:
             _tmp_splits = final_parsed_output_dict['session_str'].split('__', maxsplit=1)
+            if (len(_tmp_splits) < 2):
+                # full replay with double underscore wasn't found. Try for "_None" suffix
+                if final_parsed_output_dict['session_str'].endswith('_None'):
+                    # Handles non-custom replay sessions with names like: 'kdiba_gor01_one_2006-6-09_1-22-43_None'
+                    _tmp_splits = final_parsed_output_dict['session_str'].split('_None', maxsplit=1) # ['kdiba_gor01_one_2006-6-09_1-22-43', '']
+                    assert len(_tmp_splits) == 2, f"len(_tmp_splits): {len(_tmp_splits)} but was expected to be exactly 2 (corresponding to [session_name, '']"
+                # end if .endswith(...)
+            # end (len(_tmp_splits) < 2)
             if len(_tmp_splits) > 1:
                 final_parsed_output_dict['session_str'] = _tmp_splits[0]
                 final_parsed_output_dict['custom_replay_name'] = _tmp_splits[1] # remainder of the list

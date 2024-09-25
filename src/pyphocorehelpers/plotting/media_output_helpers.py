@@ -248,7 +248,7 @@ def get_array_as_image_stack(imgs: List[Image.Image], offset=10, single_image_al
 
 
 
-def vertical_image_stack(imgs: List[Image.Image], padding=10) -> Image.Image:
+def vertical_image_stack(imgs: List[Image.Image], padding=10, v_overlap: int=0) -> Image.Image:
     """ Builds a stack of images into a vertically concatenated image.
     offset = 10  # your desired offset
 
@@ -261,6 +261,8 @@ def vertical_image_stack(imgs: List[Image.Image], padding=10) -> Image.Image:
         _out_vstack
         
     """
+    # Ensure all images are in RGBA mode
+    imgs = [img.convert('RGBA') if img.mode != 'RGBA' else img for img in imgs]
     # Assume all images are the same size
     width, height = imgs[0].size
     
@@ -270,14 +272,14 @@ def vertical_image_stack(imgs: List[Image.Image], padding=10) -> Image.Image:
     # Create a new image with size larger than original ones, considering offsets
     # output_width = np.sum(widths) + (padding * (len(imgs) - 1))
     output_width = np.max(widths)
-    output_height = np.sum(heights) + (padding * (len(imgs) - 1))
+    output_height = (np.sum(heights) + (padding * (len(imgs) - 1))) - v_overlap
     # print(f'output_width: {output_width}, output_height: {output_height}')
     output_img = Image.new('RGBA', (output_width, output_height))
     cum_height = 0
     for i, img in enumerate(imgs):
         curr_img_width, curr_img_height = img.size
         output_img.paste(img, (0, cum_height), img)
-        cum_height += (curr_img_height+padding)
+        cum_height += (curr_img_height+padding) - v_overlap
 
     return output_img
 
@@ -297,6 +299,9 @@ def horizontal_image_stack(imgs: List[Image.Image], padding=10) -> Image.Image:
         _out_hstack
 
     """
+    # Ensure all images are in RGBA mode
+    imgs = [img.convert('RGBA') if img.mode != 'RGBA' else img for img in imgs]
+    
     # Assume all images are the same size
     width, height = imgs[0].size
     
@@ -334,6 +339,9 @@ def image_grid(imgs: List[List[Image.Image]], v_padding=5, h_padding=5) -> Image
         _out_hstack
 
     """
+    # Ensure all images are in RGBA mode
+    imgs = [img.convert('RGBA') if img.mode != 'RGBA' else img for img in imgs]
+    
     # Assume all images are the same size
     width, height = imgs[0].size
     

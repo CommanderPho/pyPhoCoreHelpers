@@ -184,6 +184,15 @@ def is_decorated_with_function_attributes(obj) -> bool:
     # return hasattr(obj, 'short_name') or hasattr(obj, 'tags') or hasattr(obj, 'creation_date') or hasattr(obj, 'input_requires') or hasattr(obj, 'output_provides')
 
     
+def fn_best_name(a_fn) -> str:
+    """ returns the .short_name if the function is decorated with one, otherwise returns the functions name
+    from pyphocorehelpers.function_helpers import fn_best_name
+    {k:fn_best_name(v) for k, v in curr_active_pipeline.registered_merged_computation_function_dict.items()}
+    
+    """
+    # _comp_specifier.short_name
+    return get_decorated_function_attributes(a_fn).get('short_name', a_fn.__name__)
+
 
 def invocation_log(func):
     """Logs before and after calling a function

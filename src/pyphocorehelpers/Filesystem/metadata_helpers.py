@@ -46,6 +46,32 @@ class FilesystemMetadata:
         return (os.path.getsize(file_path) / (1024 ** 3))  # Convert to GB
 
 
+    @classmethod
+    def set_modification_time(cls, file_path: str, new_time: datetime):
+        """
+        Set the access and modification times of a file.
+
+        :param file_path: Path to the file
+        :param new_time: datetime.datetime object representing the new time
+        """
+        if not isinstance(new_time, datetime):
+            raise TypeError(f"new_time must be a datetime.datetime instance, but type(new_time): {type(new_time)}, value: {new_time})")
+
+        timestamp = new_time.timestamp()
+
+        try:
+            os.utime(file_path, (timestamp, timestamp))
+            print(f"Successfully updated times for {file_path}")
+        except FileNotFoundError:
+            print(f"Error: The file {file_path} does not exist.")
+        except PermissionError:
+            print(f"Error: Permission denied for {file_path}.")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+
+            
+
+
 def get_file_metadata(path, round_size_decimals:int=2) -> Optional[Dict]:
     if not path.is_file():
         return None
@@ -85,3 +111,5 @@ def get_files_metadata(paths) -> pd.DataFrame:
     df['file_size'] = df['file_size'].round(decimals=2)
     
     return df
+
+

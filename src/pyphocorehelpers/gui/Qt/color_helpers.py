@@ -78,6 +78,20 @@ class ColormapHelpers:
     # Create a function to modify the colormap's alpha channel
     @classmethod
     def create_transparent_colormap(cls, cmap_name: Optional[str]=None, color_literal_name: Optional[str]=None, lower_bound_alpha=0.1):
+        """ 
+        Usage:
+            additional_cmap_names = dict(zip(TrackTemplates.get_decoder_names(), ['red', 'purple', 'green', 'orange'])) # {'long_LR': 'red', 'long_RL': 'purple', 'short_LR': 'green', 'short_RL': 'orange'}
+
+            long_epoch_config = long_short_display_config_manager.long_epoch_config.as_pyqtgraph_kwargs()
+            short_epoch_config = long_short_display_config_manager.short_epoch_config.as_pyqtgraph_kwargs()
+
+            color_dict = {'long_LR': long_epoch_config['brush'].color(), 'long_RL': apply_LR_to_RL_adjustment(long_epoch_config['brush'].color()),
+                            'short_LR': short_epoch_config['brush'].color(), 'short_RL': apply_LR_to_RL_adjustment(short_epoch_config['brush'].color())}
+            additional_cmap_names = {k: ColorFormatConverter.qColor_to_hexstring(v) for k, v in color_dict.items()}
+
+            additional_cmaps = {k: ColormapHelpers.create_transparent_colormap(color_literal_name=v, lower_bound_alpha=0.1) for k, v in additional_cmap_names.items()}        
+        
+        """
         # Get the base colormap
         assert (cmap_name is not None) or (color_literal_name is not None)
         if color_literal_name is not None:
@@ -148,50 +162,50 @@ class ColormapHelpers:
 
     @classmethod
     def make_saturating_red_cmap(cls, time: float, N_colors:int=256, min_alpha: float=0.0, max_alpha: float=0.82, debug_print:bool=False):
-            """ time is between 0.0 and 1.0 
+        """ time is between 0.0 and 1.0 
 
-            Usage: Test Example:
-                from pyphocorehelpers.gui.Qt.color_helpers import ColormapHelpers
+        Usage: Test Example:
+            from pyphocorehelpers.gui.Qt.color_helpers import ColormapHelpers
 
-                n_time_bins = 5
-                cmaps = [ColormapHelpers.make_saturating_red_cmap(float(i) / float(n_time_bins - 1)) for i in np.arange(n_time_bins)]
-                for cmap in cmaps:
-                    cmap
-                    
-            Usage:
-                # Example usage
-                # You would replace this with your actual data and timesteps
-                data = np.random.rand(10, 10)  # Sample data
-                n_timesteps = 5  # Number of timesteps
+            n_time_bins = 5
+            cmaps = [ColormapHelpers.make_saturating_red_cmap(float(i) / float(n_time_bins - 1)) for i in np.arange(n_time_bins)]
+            for cmap in cmaps:
+                cmap
+                
+        Usage:
+            # Example usage
+            # You would replace this with your actual data and timesteps
+            data = np.random.rand(10, 10)  # Sample data
+            n_timesteps = 5  # Number of timesteps
 
-                # Plot data with increasing red for each timestep
-                fig, axs = plt.subplots(1, n_timesteps, figsize=(15, 3))
-                for i in range(n_timesteps):
-                    time = i / (n_timesteps - 1)  # Normalize time to be between 0 and 1
-                    # cmap = make_timestep_cmap(time)
-                    cmap = make_red_cmap(time)
-                    axs[i].imshow(data, cmap=cmap)
-                    axs[i].set_title(f'Timestep {i+1}')
-                plt.show()
+            # Plot data with increasing red for each timestep
+            fig, axs = plt.subplots(1, n_timesteps, figsize=(15, 3))
+            for i in range(n_timesteps):
+                time = i / (n_timesteps - 1)  # Normalize time to be between 0 and 1
+                # cmap = make_timestep_cmap(time)
+                cmap = make_red_cmap(time)
+                axs[i].imshow(data, cmap=cmap)
+                axs[i].set_title(f'Timestep {i+1}')
+            plt.show()
 
-            """
-            from matplotlib.colors import LinearSegmentedColormap
+        """
+        from matplotlib.colors import LinearSegmentedColormap
 
-            colors = np.array([(0, 0, 0), (1, 0, 0)]) # np.shape(colors): (2, 3)
-            if debug_print:
-                print(f'np.shape(colors): {np.shape(colors)}')
-            # Apply a saturation change
-            saturation_factor = float(time) # 0.5  # Increase saturation by 1.5 times
-            adjusted_colors = adjust_saturation(colors, saturation_factor)
-            if debug_print:
-                print(f'np.shape(adjusted_colors): {np.shape(adjusted_colors)}')
-            adjusted_colors = adjusted_colors.tolist()
-            ## Set the alpha of the first color to 0.0 and of the final color to 0.82
-            adjusted_colors = [[*v, max_alpha] for v in adjusted_colors]
-            adjusted_colors[0][-1] = min_alpha
+        colors = np.array([(0, 0, 0), (1, 0, 0)]) # np.shape(colors): (2, 3)
+        if debug_print:
+            print(f'np.shape(colors): {np.shape(colors)}')
+        # Apply a saturation change
+        saturation_factor = float(time) # 0.5  # Increase saturation by 1.5 times
+        adjusted_colors = adjust_saturation(colors, saturation_factor)
+        if debug_print:
+            print(f'np.shape(adjusted_colors): {np.shape(adjusted_colors)}')
+        adjusted_colors = adjusted_colors.tolist()
+        ## Set the alpha of the first color to 0.0 and of the final color to 0.82
+        adjusted_colors = [[*v, max_alpha] for v in adjusted_colors]
+        adjusted_colors[0][-1] = min_alpha
 
-            # n_bins = [2]  # Discretizes the interpolation into bins
-            return LinearSegmentedColormap.from_list('CustomMap', adjusted_colors, N=N_colors)
+        # n_bins = [2]  # Discretizes the interpolation into bins
+        return LinearSegmentedColormap.from_list('CustomMap', adjusted_colors, N=N_colors)
 
               
 

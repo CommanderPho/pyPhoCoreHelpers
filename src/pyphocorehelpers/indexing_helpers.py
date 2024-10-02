@@ -14,6 +14,33 @@ from pyphocorehelpers.function_helpers import function_attributes
 # List-Like and Iterators                                                                                              #
 # ==================================================================================================================== #
 
+def safe_get_if_not_None(a_list: Optional[List], index: int, fallback_value: Any):
+    """Similar to dict's .get(key, fallback) function but for lists, and the lists don't even have to be non-None!. Returns a fallback/default value if the index is not valid for the list, otherwise returns the value at that index.
+    Args:
+        list (_type_): a list-like object
+        index (_type_): an index into the list
+        fallback_value (_type_): any value to be returned when the indexing fails
+
+    Returns:
+        _type_: the value in the list, or the fallback_value is the index is not valid for the list.
+        
+    Usage:
+        from pyphocorehelpers.indexing_helpers import safe_get_if_not_None
+    
+    """
+    try:
+        if a_list is None:
+            return fallback_value # not a list or indexable, return the fallback
+        ## otherwise try to de-reference it        
+        return a_list[index]
+    except TypeError:
+        # TypeError: 'NoneType' object is not subscriptable
+        return fallback_value
+    except IndexError:
+        return fallback_value
+    
+
+    
 def safe_get(list, index, fallback_value):
     """Similar to dict's .get(key, fallback) function but for lists. Returns a fallback/default value if the index is not valid for the list, otherwise returns the value at that index.
     Args:

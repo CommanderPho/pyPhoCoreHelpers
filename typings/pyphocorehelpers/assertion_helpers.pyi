@@ -17,5 +17,10 @@ class Assert:
 		"""
 		...
 	
+	def len_equals(arr_or_list, required_length: int): # -> None:
+		""" Ensures the length is equal to the required_length, if it fails, it prints the actual length
+		"""
+		...
+	
 
 

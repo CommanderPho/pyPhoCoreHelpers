@@ -43,6 +43,16 @@ class FilesystemMetadata:
         """
         ...
     
+    @classmethod
+    def set_modification_time(cls, file_path: str, new_time: datetime): # -> None:
+        """
+        Set the access and modification times of a file.
+
+        :param file_path: Path to the file
+        :param new_time: datetime.datetime object representing the new time
+        """
+        ...
+    
 
 
 def get_file_metadata(path, round_size_decimals: int = ...) -> Optional[Dict]:

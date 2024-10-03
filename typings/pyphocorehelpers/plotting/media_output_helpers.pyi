@@ -9,6 +9,7 @@ from pathlib import Path
 from PIL import Image
 from plotly.graph_objects import Figure as PlotlyFigure
 from matplotlib.figure import FigureBase
+from pyphocorehelpers.function_helpers import function_attributes
 
 def add_border(image: Image.Image, border_size: int = ..., border_color: tuple = ...) -> Image.Image:
     ...
@@ -26,7 +27,7 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
     """
     ...
 
-def get_array_as_image(img_data, desired_width: Optional[int] = ..., desired_height: Optional[int] = ..., colormap=..., skip_img_normalization: bool = ..., export_grayscale: bool = ...) -> Image.Image:
+def get_array_as_image(img_data, desired_width: Optional[int] = ..., desired_height: Optional[int] = ..., colormap=..., skip_img_normalization: bool = ..., export_grayscale: bool = ..., include_value_labels: bool = ..., allow_override_aspect_ratio: bool = ..., flip_vertical_axis: bool = ...) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
     
     # Usage:
@@ -39,7 +40,7 @@ def get_array_as_image(img_data, desired_width: Optional[int] = ..., desired_hei
     """
     ...
 
-def save_array_as_image(img_data, desired_width: Optional[int] = ..., desired_height: Optional[int] = ..., colormap=..., skip_img_normalization: bool = ..., out_path=..., export_grayscale: bool = ...) -> Tuple[Image.Image, Path]:
+def save_array_as_image(img_data, desired_width: Optional[int] = ..., desired_height: Optional[int] = ..., colormap: str = ..., skip_img_normalization: bool = ..., out_path=..., export_grayscale: bool = ..., include_value_labels: bool = ..., allow_override_aspect_ratio: bool = ..., flip_vertical_axis: bool = ...) -> Tuple[Image.Image, Path]:
     """ Exports a numpy array to file as a colormapped image
     
     # Usage:
@@ -48,6 +49,8 @@ def save_array_as_image(img_data, desired_width: Optional[int] = ..., desired_he
     
         image, out_path = save_array_as_image(img_data, desired_height=100, desired_width=None, skip_img_normalization=True)
         image
+        
+        
                 
     """
     ...
@@ -68,6 +71,55 @@ def get_array_as_image_stack(imgs: List[Image.Image], offset=..., single_image_a
         # Let's assume you have a list of images
         images = ['image1.png', 'image2.png', 'image3.png']  # replace this with actual paths to your images
         output_img, output_path = render_image_stack(out_figs_paths, offset=55, single_image_alpha_level=0.85)
+
+    """
+    ...
+
+def vertical_image_stack(imgs: List[Image.Image], padding=..., v_overlap: int = ...) -> Image.Image:
+    """ Builds a stack of images into a vertically concatenated image.
+    offset = 10  # your desired offset
+
+    Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import vertical_image_stack, horizontal_image_stack
+
+        # Open the images
+        _raster_imgs = [Image.open(i) for i in _out_rasters_save_paths]
+        _out_vstack = vertical_image_stack(_raster_imgs, padding=5)
+        _out_vstack
+        
+    """
+    ...
+
+def horizontal_image_stack(imgs: List[Image.Image], padding=...) -> Image.Image:
+    """ Builds a stack of images into a horizontally concatenated image.
+    offset = 10  # your desired offset
+
+    Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import vertical_image_stack, horizontal_image_stack
+
+        # Open the images
+        _raster_imgs = [Image.open(i) for i in _out_rasters_save_paths]
+        # _out_vstack = vertical_image_stack(_raster_imgs, padding=5)
+        # _out_vstack
+        _out_hstack = horizontal_image_stack(_raster_imgs, padding=5)
+        _out_hstack
+
+    """
+    ...
+
+def image_grid(imgs: List[List[Image.Image]], v_padding=..., h_padding=...) -> Image.Image:
+    """ Builds a stack of images into a horizontally concatenated image.
+    offset = 10  # your desired offset
+
+    Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import vertical_image_stack, horizontal_image_stack, image_grid
+
+        # Open the images
+        _raster_imgs = [Image.open(i) for i in _out_rasters_save_paths]
+        # _out_vstack = vertical_image_stack(_raster_imgs, padding=5)
+        # _out_vstack
+        _out_hstack = horizontal_image_stack(_raster_imgs, padding=5)
+        _out_hstack
 
     """
     ...
@@ -93,6 +145,7 @@ def save_array_as_image_stack(images: List[Path], offset=..., single_image_alpha
     """
     ...
 
+@function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=[], creation_date='2024-09-06 11:34', related_items=[])
 def save_array_as_video(array, video_filename=..., fps=..., isColor=..., colormap=..., skip_img_normalization=..., debug_print=..., progress_print=...): # -> Path:
     """
     Save a 3D numpy array as a grayscale video.
@@ -115,9 +168,11 @@ def save_array_as_video(array, video_filename=..., fps=..., isColor=..., colorma
     """
     ...
 
+@function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=[], creation_date='2024-09-06 11:33', related_items=[])
 def colormap_and_save_as_video(array, video_filename=..., fps=..., colormap=...): # -> Path:
     ...
 
+@function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=[], creation_date='2024-09-06 11:33', related_items=[])
 def create_video_from_images(image_folder: str, output_video_file: str, seconds_per_frame: float, frame_size: tuple = ..., codec: str = ...) -> Path:
     """ 
     Loads sequence of images from a folder and joins them into a video where each frame is a fixed duration (`seconds_per_frame`)

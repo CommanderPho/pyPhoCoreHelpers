@@ -1093,7 +1093,14 @@ class TypePrintMode(ExtendedEnum):
         """
         if isinstance(curr_str, type):
             curr_str = str(curr_str) # convert to a string
-        return re.search(r"<class '([^']+)'>", curr_str).group(1)
+
+        _search_results = re.search(r"<class '([^']+)'>", curr_str)
+        if _search_results is not None:        
+            return _search_results.group(1)
+
+        _search_results = re.search(r"typing\.Optional\[\s*([\w\.\[\],\s]+)\s*\]", curr_str) # 'typing.Optional[float]'
+        return f"Optional[{_search_results.group(1)}]"
+
 
     @classmethod
     def _convert_FQDN_to_NAME_ONLY(cls, curr_str: str) -> str:

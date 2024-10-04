@@ -29,6 +29,10 @@ from nptyping import NDArray
 
 PythonPathStr = NewType('PythonPathStr', str) # a python path to a specific object type: f"{obj.__module__}.{obj.__name__}"
 
+import inspect
+import re
+import ast # SourceCodeParsing
+
 # from pyphocorehelpers.function_helpers import function_attributes, _custom_function_metadata_attribute_names
 
 # ==================================================================================================================== #
@@ -1095,9 +1099,15 @@ class GeneratedClassDefinitionType(ExtendedEnum):
         return cls.build_member_value_dict([False, True, True])
     
 
-import inspect
-import re
-import ast # SourceCodeParsing
+
+
+
+@unique
+class SourceCodeInputFormat(Enum):
+    """Specifies which format the source code is in/should be converted tp."""
+    DEFN_LINES = "DEFN_LINES"
+    DICTIONARY = "DICTIONARY"
+    PARAMETERS_LIST = "PARAMETERS_LIST"
 
 
 @metadata_attributes(short_name=None, tags=['source-code-parsing', 'source-code'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-03-07 08:37', related_items=[])
@@ -2273,3 +2283,31 @@ class AccessLogger:
     # def __repr__(self):
     #     return f"<AccessLogger wrapping {repr(self._obj)}>"
     
+
+
+
+class VSCodeSnippets:
+    
+    @function_attributes(short_name=None, tags=['vscode', 'template', 'snippet'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-10-04 05:42', related_items=[])
+    @classmethod
+    def build_multiline_snippet(cls, python_snippet_example: str) -> str:
+        """ Takes a block quote of python text representing the lines to be inserted in the VSCode Snippet, and wraps the in quotes (as is required) and copies them to the clipboard.
+        Usage:
+        
+        
+            from pyphocorehelpers.programming_helpers import VSCodeSnippets
+            
+            VSCodeSnippets.build_multiline_snippet(python_snippet_example=python_snippet_example)
+
+        History: factored out of the 'SCRATCH\vscode-template-generation.ipynb' notebook on 2024-10-04
+        
+        """
+        from pyphocorehelpers.Filesystem.path_helpers import quote_wrapped_string, unwrap_quote_wrapped_string
+        
+        snippet_lines = [quote_wrapped_string(line) for line in python_snippet_example.splitlines()]
+        snippet_flat_string: str = ',\n'.join(snippet_lines)
+        copy_to_clipboard(snippet_flat_string)
+
+        for line in snippet_lines:
+            print(f"{line},")
+        return snippet_flat_string

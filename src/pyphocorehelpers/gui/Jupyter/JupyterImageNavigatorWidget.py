@@ -8,7 +8,7 @@ from datetime import datetime
 from PIL import Image, ImageDraw, UnidentifiedImageError
 import ipywidgets as widgets
 from datetime import datetime
-from pdf2image import convert_from_path
+
 
 
 # Load PDF and convert each page to a PIL Image
@@ -16,6 +16,7 @@ from pdf2image import convert_from_path
 
 def load_pdf_as_images(pdf_path: str, poppler_path: Path=None, last_page: int=None):
     # Convert PDF to list of images (one per page)
+    from pdf2image import convert_from_path
     if poppler_path is None:
         poppler_path = Path(r"C:\Users\pho\lib\poppler-24.07.0\Library\bin").resolve()
     images = convert_from_path(pdf_path, poppler_path=poppler_path, last_page=last_page)

@@ -9,11 +9,13 @@ from PIL import Image, ImageDraw, UnidentifiedImageError
 import ipywidgets as widgets
 from datetime import datetime
 
+from ipywidgets import VBox, HBox, Dropdown, Button, Output
+from PIL import Image as PILImage
+from io import BytesIO
 
+from pyphocorehelpers.programming_helpers import copy_to_clipboard
 
 # Load PDF and convert each page to a PIL Image
-
-
 def load_pdf_as_images(pdf_path: str, poppler_path: Path=None, last_page: int=None):
     # Convert PDF to list of images (one per page)
     from pdf2image import convert_from_path
@@ -28,6 +30,7 @@ def create_placeholder_image(text, width, height):
     d.text((10, height // 2 - 10), text, fill=(255, 255, 255))
     return img
 
+# @metadata_attributes(short_name=None, tags=['jupyter-widget', 'interactive', 'gui'], input_requires=[], output_provides=[], uses=['ContextSidebar'], used_by=[], creation_date='2024-10-04 17:48', related_items=[])
 class ImageNavigator:
     """ 
     from pyphocorehelpers.gui.Jupyter.JupyterImageNavigatorWidget import ImageNavigator
@@ -178,7 +181,7 @@ class ImageNavigator:
 class ContextSidebar:
     """ 
     Usage:
-        from pyphocorehelpers.gui.Jupyter.JupyterImageNavigatorWidget import ContextSidebar
+        from pyphocorehelpers.gui.Jupyter.JupyterImageNavigatorWidget import ContextSidebar, ImageNavigator
     
         # Example usage with some example contexts
         context_dict = {
@@ -217,12 +220,101 @@ class ContextSidebar:
         display(self.sidebar)
         
 
+# @metadata_attributes(short_name=None, tags=['jupyter', 'widget', 'gui', 'images'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-10-04 17:50', related_items=['ImageNavigator'])
+class ImageContextViewer:
+    """ Displays a drop-down box to select from a list of contexts. For each contexts, enables thumbing through a list of images.
+    A bit simpler *but redundant* with `ImageNavigator`
+    Usage:
+        from pyphoplacecellanalysis.SpecificResults.PendingNotebookCode import ImageContextViewer
+        
+        # Example usage
+        _flattened_context_path_dict = {
+            'Context 1': 'path_to_image_1.png',
+            'Context 2': 'path_to_image_2.png',
+            'Context 3': 'path_to_image_3.png',
+            # Add more context-image pairs as needed
+        }
+
+        viewer = ImageContextViewer(_flattened_context_path_dict)
+        viewer.display()
+
+    
+    
+    """
+    def __init__(self, context_image_dict: dict):
+        self.context_image_dict = {k:v for k, v in context_image_dict.items() if len(v)>0} ## only include contexts that have non-empty lists of values
+        self.contexts = list(self.context_image_dict.keys())
+        self.current_context_index = 0
+
+        # Widgets
+        self.context_dropdown = Dropdown(options=self.contexts, description='Context:', layout=widgets.Layout(width='600px'))
+        self.image_display = Output()
+        self.next_button = Button(description="Next")
+        self.previous_button = Button(description="Previous")
+        
+        button_layout = widgets.Layout(flex='0 1 auto', width='auto', min_width='80px', margin='1px') # The button_layout ensures that buttons don't grow and are only as wide as necessary.
+        # right_label_layout = widgets.Layout(flex='1 1 auto', min_width='0px', width='auto') # We use the flex property in the right_label_layout to let the label grow and fill the space, but it can also shrink if needed (flex='1 1 auto'). We set a min_width so it doesn't get too small and width='auto' to let it size based on content
+        self.copy_to_clipboard_button = widgets.Button(description='Copy', layout=button_layout, button_style='info', tooltip='Copy to Clipboard', icon='clipboard') # , icon='folder-tree'
+        self.copy_to_clipboard_button.on_click(lambda _: copy_to_clipboard(str(self.context_dropdown.value)))
+    
+        # Set up event listeners
+        self.context_dropdown.observe(self.on_context_change, names='value')
+        self.next_button.on_click(self.next_context)
+        self.previous_button.on_click(self.previous_context)
+
+        # Display the initial image
+        self.update_image_display(self.contexts[self.current_context_index])
+
+    # Function to load the image from path
+    def load_image(self, path: str) -> bytes:
+        with open(path, 'rb') as f:
+            return f.read()
+
+    # Function to update the displayed image
+    def update_image_display(self, context: str):
+        images = self.context_image_dict[context]
+        try:
+            image_path = images[self.current_context_index]
+        except IndexError as e:
+            print(f'index error encountered: {e}\n\tcontext: {context}\n\timages: {images}\n\tself.current_context_index:{self.current_context_index}')
+            return
+        except Exception as e:
+            raise e
+        
+        with self.image_display:
+            self.image_display.clear_output(wait=True)
+            img_data = self.load_image(image_path)
+            image = PILImage.open(BytesIO(img_data))
+            display(image)
+
+    # Function to handle dropdown context change
+    def on_context_change(self, change):
+        self.update_image_display(change['new'])
+
+    # Function to handle the next button click
+    def next_context(self, _):
+        self.current_context_index = (self.current_context_index + 1) % len(self.contexts)
+        self.context_dropdown.value = self.contexts[self.current_context_index]
+
+    # Function to handle the previous button click
+    def previous_context(self, _):
+        self.current_context_index = (self.current_context_index - 1) % len(self.contexts)
+        self.context_dropdown.value = self.contexts[self.current_context_index]
+
+    # Function to display the viewer
+    def display(self):
+        # display(VBox([self.context_dropdown, self.image_display, HBox([self.previous_button, self.next_button])]))
+        display(VBox([HBox([self.context_dropdown, self.copy_to_clipboard_button]), self.image_display, HBox([self.previous_button, self.next_button])]))
+
+
+    
+    
 def build_context_images_navigator_widget(curr_context_images_dict, curr_context_desc_str: str, max_num_widget_debug: int = 5):
     """ Builds a single tab's contents (a widget consisting of a title and a `GridBox` of images
 
     Usage:
     
-        from pyphocorehelpers.gui.Jupyter.JupyterImageNavigatorWidget import build_context_images_navigator_widget
+        from pyphocorehelpers.gui.Jupyter.JupyterImageNavigatorWidget import build_context_images_navigator_widget, ContextSidebar, ImageNavigator
         
         ## INPUTS: _final_out_dict_dict: Dict[ContextDescStr, Dict[ImageNameStr, Dict[datetime, Path]]]
         context_tabs_dict = {curr_context_desc_str:build_context_images_navigator_widget(curr_context_images_dict, curr_context_desc_str=curr_context_desc_str, max_num_widget_debug=2) for curr_context_desc_str, curr_context_images_dict in list(_final_out_dict_dict.items())}

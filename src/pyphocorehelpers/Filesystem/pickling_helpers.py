@@ -8,6 +8,8 @@ from typing import List, Dict
 # import dill
 import dill as pickle
 import pandas as pd
+from pyphocorehelpers.assertion_helpers import Assert
+from pathlib import Path
 
 move_modules_list = {'pyphoplacecellanalysis.SpecificResults.PhoDiba2023Paper.SingleBarResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.SingleBarResult',
     'pyphoplacecellanalysis.SpecificResults.PhoDiba2023Paper.InstantaneousSpikeRateGroupsComputation':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.InstantaneousSpikeRateGroupsComputation',
@@ -241,3 +243,71 @@ def diagnose_pickling_issues(object_to_pickle):
 
 
 
+def save_split_pickled_obj(obj_to_split, save_root_path: Path, include_includelist=None, debug_print = True):
+    """ 
+    param_typed_parameters: object to be pickled
+    
+    Usage:
+        from pyphocorehelpers.Filesystem.pickling_helpers import save_split_pickled_obj
+        
+        save_root_path = Path(r"C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/output").resolve()
+        Assert.path_exists(save_root_path)
+        split_save_folder, (split_save_paths, split_save_output_types), (succeeded_keys, failed_keys, skipped_keys) = save_split_pickled_obj(param_typed_parameters, save_root_path=save_root_path)
+            
+    """
+    if include_includelist is None:
+        ## include all keys if none are specified
+        include_includelist = list(obj_to_split.__dict__.keys())
+        
+    if debug_print:
+        print(f'include_includelist: {include_includelist}')
+
+    ## In split save, we save each result separately in a folder
+    split_save_folder: Path = save_root_path.joinpath(f'split').resolve()
+    if debug_print:
+        print(f'split_save_folder: {split_save_folder}')
+    # make if doesn't exist
+    split_save_folder.mkdir(exist_ok=True)
+
+    ## only saves out the `global_computation_results` data:
+    computed_data = obj_to_split.__dict__ # param_typed_parameters.to_dict()
+    split_save_paths = {}
+    split_save_output_types = {}
+    failed_keys = []
+    skipped_keys = []
+    for k, v in computed_data.items():
+        if k in include_includelist:
+            curr_split_result_pickle_path = split_save_folder.joinpath(f'Split_{k}.pkl').resolve()
+            if debug_print:
+                print(f'curr_split_result_pickle_path: {curr_split_result_pickle_path}')
+            was_save_success = False
+            curr_item_type = type(v)
+            try:
+                ## try get as dict                
+                v_dict = v.__dict__ #__getstate__()
+                db = (v_dict, str(curr_item_type.__module__), str(curr_item_type.__name__))                
+                with open(curr_split_result_pickle_path, 'w+b') as dbfile: 
+                    # source, destination
+                    # pickle.dump(db, dbfile)
+                    custom_dump(db, dbfile) # ModuleExcludesPickler
+
+                    dbfile.close()
+                    
+                was_save_success = True
+            except KeyError as e:
+                print(f'{k} encountered {e} while trying to save {k}. Skipping')
+                pass
+            if was_save_success:
+                split_save_paths[k] = curr_split_result_pickle_path
+                split_save_output_types[k] = curr_item_type
+            else:
+                failed_keys.append(k)
+        else:
+            if debug_print:
+                print(f'skipping key "{k}" because it is not included in include_includelist: {include_includelist}')
+            skipped_keys.append(k)
+            
+    if len(failed_keys) > 0:
+        print(f'WARNING: failed_keys: {failed_keys} did not save for global results! They HAVE NOT BEEN SAVED!')
+    succeeded_keys = list(split_save_paths.keys())
+    return split_save_folder, (split_save_paths, split_save_output_types), (succeeded_keys, failed_keys, skipped_keys)

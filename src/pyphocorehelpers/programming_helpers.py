@@ -1258,7 +1258,7 @@ class CodeConversion(object):
             
 
     _general_find_replace_dict = {'pd.core.frame.DataFrame':'pd.DataFrame'}
-
+    _type_imports_skip_list = ['type', 'bool', 'float', 'int', 'str', 'tuple', 'list', 'dict'] # do not generate imports for these basic types
 
     @classmethod
     def apply_find_replace(cls, find_replace_dict: dict, target_str: str):
@@ -1637,7 +1637,7 @@ class CodeConversion(object):
                     relative_types_dict = {k:cls.convert_type_to_typehint_string(type(v), use_relative_types=use_relative_types)[0] for k,v in target_dict.items()}
                     import_statements_list = [cls.convert_type_to_typehint_string(type(v), use_relative_types=use_relative_types)[1] for v in target_dict.values()]
                     for import_statement in import_statements_list:
-                        if (import_statement is not None) and (import_statement not in needed_import_statements):
+                        if (import_statement is not None) and (import_statement not in needed_import_statements) and (import_statement not in cls._type_imports_skip_list):
                             needed_import_statements.append(import_statement)
                     
                     member_properties_code_str = '\n'.join([f"{indent_character}{output_variable_prefix}{k}: {v}" for k,v in relative_types_dict.items()])

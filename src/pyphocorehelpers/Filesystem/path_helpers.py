@@ -771,7 +771,10 @@ def set_posix_windows():
             yield
         finally:
             pathlib.PosixPath = posix_backup
-            
+    else:
+        # On Unix systems, do nothing
+        yield
+
 # ==================================================================================================================== #
 # 2023-09-21 - Generating Copydicts to Move files and preserve hierarchies                                             #
 # ==================================================================================================================== #

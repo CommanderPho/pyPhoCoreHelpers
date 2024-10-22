@@ -271,6 +271,9 @@ class WidgetPositioningHelpers:
     def qt_win_to_foreground(cls, win):
         """ Brings the window to the foreground. Works where others fail.
         
+        from pyphocorehelpers.gui.Qt.widget_positioning_helpers import WidgetPositioningHelpers
+        WidgetPositioningHelpers.qt_win_to_foreground(win)
+        
         """
         from qtpy import QtCore
         

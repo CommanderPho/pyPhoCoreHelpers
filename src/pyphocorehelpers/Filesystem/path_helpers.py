@@ -971,10 +971,10 @@ def open_file_with_system_default(filename: Union[Path, str]):
 
 
 def open_vscode_link(a_vscode_link_str: str, debug_print:bool=False, open_in_background:bool=True):
-    """ opens the vscode link in vscode
+    """ opens the vscode link in vscode, optionally in the background to keep the calling widget focused
     
     from pyphocorehelpers.Filesystem.path_helpers import open_vscode_link
-    
+
     a_vscode_link_str: str = "vscode://file/c:/Users/pho/repos/Spike3DWorkEnv/pyPhoPlaceCellAnalysis/src/pyphoplacecellanalysis/General/Pipeline/Stages/ComputationFunctions/MultiContextComputationFunctions/DirectionalPlacefieldGlobalComputationFunctions.py:593"
     open_vscode_link(a_vscode_link_str=a_vscode_link_str)
     
@@ -982,10 +982,15 @@ def open_vscode_link(a_vscode_link_str: str, debug_print:bool=False, open_in_bac
     if debug_print:
         print(a_vscode_link_str)
     if sys.platform.startswith('linux'):
-        subprocess.run(['xdg-open', a_vscode_link_str], check=True)
+        if open_in_background:
+            subprocess.Popen(['xdg-open', a_vscode_link_str], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            subprocess.run(['xdg-open', a_vscode_link_str], check=True)
     elif sys.platform.startswith('win'):
-        # subprocess.run(['cmd', '/c', 'start', a_vscode_link_str], shell=True) # I think this would work if it was powershell
-        subprocess.run(['explorer', a_vscode_link_str], check=False) ## this works
+        if open_in_background:
+            subprocess.Popen(['explorer', a_vscode_link_str], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            subprocess.run(['explorer', a_vscode_link_str], check=False)
     else:
         raise NotImplementedError(f'Unknown platform: {sys.platform}')
 

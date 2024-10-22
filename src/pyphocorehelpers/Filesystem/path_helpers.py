@@ -970,6 +970,35 @@ def open_file_with_system_default(filename: Union[Path, str]):
         raise ValueError(f"Unsupported platform: {platform_str}")
 
 
+def open_vscode_link(a_vscode_link_str: str, debug_print:bool=False, open_in_background:bool=True):
+    """ opens the vscode link in vscode
+    
+    from pyphocorehelpers.Filesystem.path_helpers import open_vscode_link
+    
+    a_vscode_link_str: str = "vscode://file/c:/Users/pho/repos/Spike3DWorkEnv/pyPhoPlaceCellAnalysis/src/pyphoplacecellanalysis/General/Pipeline/Stages/ComputationFunctions/MultiContextComputationFunctions/DirectionalPlacefieldGlobalComputationFunctions.py:593"
+    open_vscode_link(a_vscode_link_str=a_vscode_link_str)
+    
+    """
+    if debug_print:
+        print(a_vscode_link_str)
+    if sys.platform.startswith('linux'):
+        subprocess.run(['xdg-open', a_vscode_link_str], check=True)
+    elif sys.platform.startswith('win'):
+        # subprocess.run(['cmd', '/c', 'start', a_vscode_link_str], shell=True) # I think this would work if it was powershell
+        subprocess.run(['explorer', a_vscode_link_str], check=False) ## this works
+    else:
+        raise NotImplementedError(f'Unknown platform: {sys.platform}')
+
+
+# def handle_link_clicked(url):
+#     """Open the URL using the default system handler"""
+#     from PyQt5.QtGui import QDesktopServices
+#     from PyQt5.QtCore import QUrl
+    
+#     if not isinstance(url, QUrl):
+#         url = QUrl(url)
+#     QDesktopServices.openUrl(url)
+
 
 
 def sanitize_filename_for_Windows(original_proposed_filename: str) -> str:

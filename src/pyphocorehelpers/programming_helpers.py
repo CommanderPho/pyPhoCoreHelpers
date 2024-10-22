@@ -1119,8 +1119,8 @@ class SourceCodeParsing:
 
     
     """
-    @classmethod
     @function_attributes(short_name=None, tags=['return', 'source-code-parsing', 'pho'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-03-07 08:38', related_items=[])
+    @classmethod
     def get_return_line_numbers(cls, func):
         """ Get the line numbers in the source code of a function where a 'return' statement appears. 
         
@@ -1152,8 +1152,9 @@ class SourceCodeParsing:
 
         return line_numbers
 
-    @classmethod
+    
     @function_attributes(short_name=None, tags=['ALT','source-code-parsing', 'pho', 'efficiency'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-03-07 08:36', related_items=[])
+    @classmethod
     def get_last_return_lines(cls, func):
         """ Get the line and code of the last return statement of each block in a function. """
         if not inspect.isfunction(func):
@@ -1200,7 +1201,43 @@ class SourceCodeParsing:
 
         return return_lines_info
 
+    @function_attributes(short_name=None, tags=['vscode', 'link'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-10-21 22:47', related_items=[])
+    @classmethod
+    def build_vscode_jump_link(cls, a_fcn_handle: Callable, enable_print:bool=False, replace_backslashes:bool=False) -> str:
+        """ Builds a VSCode Jump Link to the code of the provided function or Callable
+        
+        Usage:
+            from pyphocorehelpers.programming_helpers import SourceCodeParsing
 
+            a_fcn_handle = curr_active_pipeline.registered_display_function_dict['_display_decoder_result']
+            type(a_fcn_handle) # function
+            SourceCodeParsing.build_vscode_jump_link(a_fcn_handle=a_fcn_handle)
+
+        """
+        import urllib.parse
+        import pathlib
+
+        # Retrieve the file name and line number where the function is defined
+        filename = a_fcn_handle.__code__.co_filename
+        line_number = a_fcn_handle.__code__.co_firstlineno
+
+        # Convert the file path to an absolute path
+        filepath = pathlib.Path(filename).resolve()
+        # For cross-platform compatibility, replace backslashes with forward slashes
+        # and URL-encode the file path
+        if replace_backslashes:
+            encoded_path = urllib.parse.quote(str(filepath.as_posix()).replace("\\", "/"))
+        else:
+            encoded_path = str(filepath.as_posix())
+        
+        # Construct the VSCode jump link
+        vscode_jump_link = f"vscode://file/{encoded_path}:{line_number}"
+        if enable_print:
+            print(f"VSCode Jump Link: {vscode_jump_link}")
+        return vscode_jump_link
+
+    
+    
 class CodeConversion(object):
     """ Converts code (usually passed as text) to various alternative formats to ease development workflows.
     from pyphocorehelpers.programming_helpers import CodeConversion

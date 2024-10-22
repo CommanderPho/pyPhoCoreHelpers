@@ -9,7 +9,7 @@ from matplotlib.axes import Axes
 from pyphocorehelpers.DataStructure.general_parameter_containers import RenderPlots
 from pyphocorehelpers.programming_helpers import metadata_attributes
 from pyphocorehelpers.function_helpers import function_attributes
-
+from neuropy.utils.indexing_helpers import flatten_dict
 
 class MatplotlibRenderPlots(RenderPlots):
     """Container for holding and accessing Matplotlib-based figures for MatplotlibRenderPlots.
@@ -192,7 +192,18 @@ class FigureCollector:
 
         return fig
                 
-    
+    def create_subfigures(self, fig, nrows=1, ncols=1, squeeze=True, **kwargs): # -> (NDArray | SubFigure):
+        """ replaces fig.subfigures(nrows=1, ncols=4) 
+        """
+        _subfigures = fig.subfigures(nrows=nrows, ncols=ncols, squeeze=squeeze, **kwargs)
+        # for i in range(ncols):
+            # for j in range(nrows):
+        for a_subfigure in _subfigures:
+            self.figures.append(a_subfigure)
+        
+        return _subfigures
+        
+            
     def subplots(self, *args, **kwargs):
         """ 
         (function) def subplots(
@@ -333,8 +344,23 @@ class FigureCollector:
         if isinstance(axes, Axes):
             self.axes.append(axes) # single scalar axis
         else:
-            for ax in axes:
-                self.axes.append(ax)
+            if isinstance(axes, dict):
+                ## axes dict
+                axes_dict = axes
+                ## recursively expand self.axes_dict to get flat axes list
+                flattened_axes_list = list(flatten_dict(axes_dict).values())
+                for ax in flattened_axes_list:
+                    self.axes.append(ax)
+                if self.axes_dict is None:
+                    self.axes_dict = axes_dict
+                else:
+                    self.axes_dict = self.axes_dict | axes_dict
+                    ## TODO: warn about replacing
+                    
+            else:
+                ## list/tuple/etc
+                for ax in axes:
+                    self.axes.append(ax)
                 
         if (contexts is not None) and (not isinstance(contexts, (list, tuple, dict))):
             self.contexts.append(contexts) # single scalar Figure

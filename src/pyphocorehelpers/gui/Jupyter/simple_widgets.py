@@ -353,7 +353,7 @@ def filesystem_path_folder_contents_widget(a_path: Union[Path, str], on_file_ope
 
 
 
-def create_tab_widget(display_dict: Dict[str, Any]) -> widgets.Tab:
+def create_tab_widget(display_dict: Dict[str, Any], **tab_kwargs) -> widgets.Tab:
     """
     Creates an ipywidgets Tab widget that allows tabbing between multiple display items.
 
@@ -372,7 +372,24 @@ def create_tab_widget(display_dict: Dict[str, Any]) -> widgets.Tab:
         display(tab_widget)
 
     """
-    tab = widgets.Tab()
+    # Inject custom CSS to adjust tab label widths
+    display(HTML('''
+    <style>
+        /* Adjust the tab labels to accommodate longer titles */
+        .widget-tab .p-TabBar-tab {
+            max-width: none !important;
+            min-width: auto !important;
+        }
+        .widget-tab .p-TabBar-tab .p-TabBar-tabLabel {
+            white-space: normal !important;
+        }
+    </style>
+    '''))
+        
+    # layout =   # Automatically adjust the width to fit titles
+    # layout = tab_kwargs.pop('layout', widgets.Layout(width='max-content'))
+    layout = tab_kwargs.pop('layout', widgets.Layout(width='auto'))
+    tab = widgets.Tab(layout=layout, **tab_kwargs)
     children = []
     titles = list(display_dict.keys())
     items = list(display_dict.values())

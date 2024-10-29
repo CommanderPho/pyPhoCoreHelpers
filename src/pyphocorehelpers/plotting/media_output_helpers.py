@@ -17,7 +17,7 @@ from matplotlib.figure import FigureBase
 # from pyphoplacecellanalysis.SpecificResults.PendingNotebookCode import copy_image_to_clipboard # required for `fig_to_clipboard`
 
 from pyphocorehelpers.function_helpers import function_attributes
-
+from pyphocorehelpers.programming_helpers import copy_image_to_clipboard
 
 def add_border(image: Image.Image, border_size: int = 5, border_color: tuple = (0, 0, 0)) -> Image.Image:
     return ImageOps.expand(image, border=border_size, fill=border_color)
@@ -620,4 +620,45 @@ def fig_to_clipboard(a_fig: Union[PlotlyFigure, FigureBase], format="png", **kwa
         buf.close()
             
 
+
+def figure_to_pil_image(a_fig: Union[PlotlyFigure, FigureBase], format="png", **kwargs) -> Optional[Image.Image]:
+    """ Convert a Matplotlib Figure to a PIL Image.
+
+    Parameters:
+        fig (matplotlib.figure.Figure): The Matplotlib figure to convert.
+
+    Returns:
+        PIL.Image.Image: The resulting PIL Image.
+        
+    Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import figure_to_pil_image
+    
+        fig_img = figure_to_pil_image(a_fig=fig)
+    """
+    _fig_save_fn = None
+    img = None
+    if isinstance(a_fig, FigureBase):
+        # Matplotlib Figure:
+        _fig_save_fn = a_fig.savefig
+        if format == 'png':
+            kwargs.setdefault('bbox_inches', 'tight') # crops off the empty white margins
+
+    elif isinstance(a_fig, PlotlyFigure):
+        # Plotly Figure:
+        _fig_save_fn = a_fig.write_image
+    else:
+        raise NotImplementedError(f"type(a_fig): {type(a_fig)}, a_fig: {a_fig}")
+    
+    ## Perform the image generation to clipboard:
+    with io.BytesIO() as buf:
+        _fig_save_fn(buf, format=format, **kwargs)
+        buf.seek(0)
+        img = Image.open(buf)
+        # Optionally, convert the image to RGB (if not already in that mode)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')    
+        # Close the buffer and figure to free resources
+        buf.close()
+    
+    return img
 

@@ -9,7 +9,7 @@ from pyphocorehelpers.DataStructure.enum_helpers import ExtendedEnum # required 
 import re # for CodeConversion
 import numpy as np # for CodeConversion
 import pandas as pd
-from neuropy.utils.dynamic_container import overriding_dict_with # required for safely_accepts_kwargs
+from neuropy.utils.mixins.dict_representable import overriding_dict_with # required for safely_accepts_kwargs
 from pyphocorehelpers.programming_helpers import inspect_callable_arguments
 
 

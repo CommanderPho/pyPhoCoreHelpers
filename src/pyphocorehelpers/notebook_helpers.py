@@ -17,6 +17,95 @@ from nbconvert.preprocessors import ExecutePreprocessor
 import requests # used by NotebookProcessor.get_running_notebook_path(...)
 from IPython.display import display, Javascript
 
+import nbformat as nbf # convert_script_to_notebook
+
+
+# @function_attributes(short_name=None, tags=['notebook', 'conversion', 'batch'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-10-30 07:45', related_items=[])
+def convert_script_to_notebook(script_path: str, notebook_path: str, custom_delimiter: Optional[str]="# ~ # NBSplit") -> None:
+	""" Converts a python script to a jupyter notebook (.ipynb) based on either its markdown headers or a custom_delimiter. 
+	WORKING!
+	# Split script based on custom delimiter
+	custom_delimiter = "# ~ # NBSplit"
+	
+	NOTE: unless custom_delimiter=None, no markdown cells will be created.
+	
+	Useful for building interactive notebooks for testing batch computations
+    
+	# Usage:
+     
+        from pyphocorehelpers.notebook_helpers import convert_script_to_notebook
+        
+		script_path = Path(r"K:\scratch\gen_scripts\run_kdiba_gor01_one_2006-6-12_15-55-31\run_kdiba_gor01_one_2006-6-12_15-55-31.py").resolve()
+		script_dir = script_path.parent.resolve()
+		notebook_path = script_path.with_suffix('.ipynb')
+		convert_script_to_notebook(script_path, notebook_path)
+		# convert_script_to_notebook(script_path, notebook_path, custom_delimiter=None)
+
+	
+	"""
+	with open(script_path, 'r') as script_file:
+		lines = script_file.readlines()
+
+	nb = nbf.v4.new_notebook()
+	cells = []
+	
+	if not isinstance(notebook_path, Path):
+		notebook_path = Path(notebook_path).resolve()
+
+	# Create the constant first cell with the specific content
+	constant_first_cell_content = """%config IPCompleter.use_jedi = False
+# %xmode Verbose
+# %xmode context
+%pdb off
+%load_ext viztracer
+from viztracer import VizTracer
+%load_ext autoreload
+%autoreload 3
+import sys
+from pathlib import Path
+
+# required to enable non-blocking interaction:
+%gui qt5"""
+	first_cell = nbf.v4.new_code_cell(constant_first_cell_content)
+	first_cell.metadata.tags = ["run-main"]
+	cells.append(first_cell)
+	
+
+	code_buffer = []
+
+	def flush_code_buffer():
+		if code_buffer:
+			code_cell = nbf.v4.new_code_cell(''.join(code_buffer))
+			code_cell.metadata.tags = ["run-main"]
+			cells.append(code_cell)
+			code_buffer.clear()
+
+	for line in lines:
+		if custom_delimiter is not None:
+			if line.strip().startswith(custom_delimiter):
+				flush_code_buffer()  # Create a new cell when custom delimiter is found
+			else:
+				line = line.replace('__file__', f"r'{notebook_path.as_posix()}'") ## replace any __File__ instances because they won't work in the notebook
+				code_buffer.append(line) 
+		else:
+			  # no custom delimiter
+			if line.startswith('# '):  # Treat lines starting with '# ' as section titles
+				flush_code_buffer()
+				markdown_cell = nbf.v4.new_markdown_cell(line[2:].strip())
+				markdown_cell.metadata.tags = ["run-main"]
+				cells.append(markdown_cell)
+			else:
+				line = line.replace('__file__', f"r'{notebook_path.as_posix()}'") ## replace any __File__ instances because they won't work in the notebook
+				code_buffer.append(line)
+
+	# Flush any remaining code
+	flush_code_buffer()
+
+	nb.cells = cells
+
+	with open(notebook_path, 'w') as notebook_file:
+		nbf.write(nb, notebook_file)
+          
 
 def _safely_remove_all_module_registered_callbacks():
     """ safely remove all callbacks registered by my custom module even if we lost references to them

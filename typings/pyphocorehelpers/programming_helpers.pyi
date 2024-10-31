@@ -561,8 +561,8 @@ class SourceCodeParsing:
 
     
     """
-    @classmethod
     @function_attributes(short_name=None, tags=['return', 'source-code-parsing', 'pho'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-03-07 08:38', related_items=[])
+    @classmethod
     def get_return_line_numbers(cls, func): # -> list[int]:
         """ Get the line numbers in the source code of a function where a 'return' statement appears. 
         
@@ -575,14 +575,29 @@ class SourceCodeParsing:
         """
         ...
     
-    @classmethod
     @function_attributes(short_name=None, tags=['ALT', 'source-code-parsing', 'pho', 'efficiency'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-03-07 08:36', related_items=[])
+    @classmethod
     def get_last_return_lines(cls, func): # -> list[tuple[Any, Any]]:
         """ Get the line and code of the last return statement of each block in a function. """
         class ReturnVisitor(ast.NodeVisitor):
             ...
         
         
+    
+    @function_attributes(short_name=None, tags=['vscode', 'link'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-10-21 22:47', related_items=[])
+    @classmethod
+    def build_vscode_jump_link(cls, a_fcn_handle: Callable, enable_print: bool = ..., replace_backslashes: bool = ...) -> str:
+        """ Builds a VSCode Jump Link to the code of the provided function or Callable
+        
+        Usage:
+            from pyphocorehelpers.programming_helpers import SourceCodeParsing
+
+            a_fcn_handle = curr_active_pipeline.registered_display_function_dict['_display_decoder_result']
+            type(a_fcn_handle) # function
+            SourceCodeParsing.build_vscode_jump_link(a_fcn_handle=a_fcn_handle)
+
+        """
+        ...
     
 
 

@@ -217,3 +217,19 @@ def fig_to_clipboard(a_fig: Union[PlotlyFigure, FigureBase], format=..., **kwarg
     """
     ...
 
+def figure_to_pil_image(a_fig: Union[PlotlyFigure, FigureBase], format=..., **kwargs) -> Optional[Image.Image]:
+    """ Convert a Matplotlib Figure to a PIL Image.
+
+    Parameters:
+        fig (matplotlib.figure.Figure): The Matplotlib figure to convert.
+
+    Returns:
+        PIL.Image.Image: The resulting PIL Image.
+        
+    Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import figure_to_pil_image
+    
+        fig_img = figure_to_pil_image(a_fig=fig)
+    """
+    ...
+

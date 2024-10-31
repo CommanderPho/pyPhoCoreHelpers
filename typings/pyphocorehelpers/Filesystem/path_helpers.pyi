@@ -406,6 +406,17 @@ def open_file_with_system_default(filename: Union[Path, str]): # -> None:
     """
     ...
 
+def open_vscode_link(a_vscode_link_str: str, debug_print: bool = ..., open_in_background: bool = ...): # -> None:
+    """ opens the vscode link in vscode, optionally in the background to keep the calling widget focused
+    
+    from pyphocorehelpers.Filesystem.path_helpers import open_vscode_link
+
+    a_vscode_link_str: str = "vscode://file/c:/Users/pho/repos/Spike3DWorkEnv/pyPhoPlaceCellAnalysis/src/pyphoplacecellanalysis/General/Pipeline/Stages/ComputationFunctions/MultiContextComputationFunctions/DirectionalPlacefieldGlobalComputationFunctions.py:593"
+    open_vscode_link(a_vscode_link_str=a_vscode_link_str)
+    
+    """
+    ...
+
 def sanitize_filename_for_Windows(original_proposed_filename: str) -> str:
     """ 2024-04-28 - sanitizes a proposed filename such that it is valid for saving (in Windows). 
 

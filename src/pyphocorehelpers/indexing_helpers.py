@@ -237,7 +237,7 @@ def are_all_equal(arr) -> bool:
 # Dictionary and Maps                                                                                                  #
 # ==================================================================================================================== #
 
-def get_dict_subset(a_dict, included_keys=None, require_all_keys=False):
+def get_dict_subset(a_dict, included_keys=None, subset_excludelist=None, require_all_keys=False):
     """Gets a subset of a dictionary from a list of keys (included_keys)
 
     Args:
@@ -248,6 +248,10 @@ def get_dict_subset(a_dict, included_keys=None, require_all_keys=False):
     Returns:
         [type]: [description]
     """
+    if subset_excludelist is not None:
+        assert included_keys is None, "included_keys must be None when a subset_excludelist is provided!"
+        included_keys = [key for key in a_dict.keys() if key not in subset_excludelist]
+        
     if included_keys is not None:
         if require_all_keys:
             return {included_key:a_dict[included_key] for included_key in included_keys} # filter the dictionary for only the keys specified

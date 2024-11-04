@@ -197,7 +197,7 @@ def custom_dumps(obj, protocol=None, byref=None, fmode=None, recurse=None, **kwd
         
 
 # @function_attributes(short_name=None, tags=['pickle', 'dill', 'debug', 'tool'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-01-01 00:00', related_items=[])
-def diagnose_pickling_issues(object_to_pickle):
+def diagnose_pickling_issues(object_to_pickle, stop_after_first_problemmatic_attribute: bool=False):
    """Intellegently diagnoses which property on an object is causing pickling via Dill to fail.
    
    Usage:
@@ -205,6 +205,7 @@ def diagnose_pickling_issues(object_to_pickle):
         from pyphocorehelpers.Filesystem.pickling_helpers import diagnose_pickling_issues
 
         diagnose_pickling_issues(curr_active_pipeline.global_computation_results.computed_data['RankOrder'])
+        diagnose_pickling_issues(v_dict)
    """
 
    try:
@@ -218,17 +219,21 @@ def diagnose_pickling_issues(object_to_pickle):
        object_attributes = [attr for attr in dir(object_to_pickle) if not attr.startswith("__")]
 
        # Isolate problematic attributes through iterative testing
-       problematic_attribute = None
+       #    problematic_attribute = None
+       problematic_attributes = {}
+    
        for attribute in object_attributes:
            try:
                pickle.dumps(getattr(object_to_pickle, attribute))
            except pickle.PicklingError:
-               problematic_attribute = attribute
-               break
+            #    problematic_attribute = attribute
+               problematic_attributes[attribute] = True
+               if stop_after_first_problemmatic_attribute:
+                   break
 
        # Provide informative output
-       if problematic_attribute:
-           print(f"Identified problematic attribute: {problematic_attribute}")
+       if problematic_attributes:
+           print(f"Identified problematic attribute: {problematic_attributes}")
            print("Potential causes:")
            print("- Attribute contains unpicklable data types (e.g., lambda functions, file objects).")
            print("- Attribute refers to external resources (e.g., database connections).")

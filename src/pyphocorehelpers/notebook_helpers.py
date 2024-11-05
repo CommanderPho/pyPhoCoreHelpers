@@ -57,8 +57,6 @@ def convert_script_to_notebook(script_path: str, notebook_path: str, custom_deli
 # %xmode Verbose
 # %xmode context
 %pdb off
-%load_ext viztracer
-from viztracer import VizTracer
 %load_ext autoreload
 %autoreload 3
 import sys

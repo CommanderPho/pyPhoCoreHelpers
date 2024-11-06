@@ -127,7 +127,7 @@ def are_all_equal(arr) -> bool:
     """ returns True if arr is empty, or if all elements of arr are equal to each other """
     ...
 
-def get_dict_subset(a_dict, included_keys=..., require_all_keys=...): # -> dict[Any, Any]:
+def get_dict_subset(a_dict, included_keys=..., subset_excludelist=..., require_all_keys=...): # -> dict[Any, Any]:
     """Gets a subset of a dictionary from a list of keys (included_keys)
 
     Args:

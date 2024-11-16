@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 import re
 from datetime import datetime, timedelta
+import numpy as np
 from pyphocorehelpers.Filesystem.metadata_helpers import FilesystemMetadata
 from pyphocorehelpers.function_helpers import function_attributes
 from pyphocorehelpers.programming_helpers import metadata_attributes
@@ -27,6 +28,24 @@ class BaseMatchParser:
     def try_parse(self, filename: str) -> Optional[Dict]:
         raise NotImplementedError
 
+    def try_iterative_parse(self, parsed_output_dict: Dict) -> Dict:
+        """ attempts to parse the parsed_output_dict 
+        returns an updated version
+        """
+        assert 'remaining_string' in parsed_output_dict
+        remaining_string: str = parsed_output_dict['remaining_string']
+        if len(remaining_string) == 0:
+            ## pass
+            return parsed_output_dict
+        ## otherwise continue trying to parse
+        updated_parsed_output_dict = self.try_parse(filename=remaining_string)
+        if updated_parsed_output_dict is None:
+            ## parsing failed
+            return parsed_output_dict
+        ## otherwise update the `parsed_output_dict` with the values
+        parsed_output_dict.update(**updated_parsed_output_dict) ## update all members and return the updated version
+        return parsed_output_dict
+        
 
 @define(slots=False)
 class DayDateTimeParser(BaseMatchParser):
@@ -112,7 +131,8 @@ class DayDateWithVariantSuffixParser(BaseMatchParser):
 class RoundedTimeParser(BaseMatchParser):
     def try_parse(self, filename: str) -> Optional[Dict]:
         # Define the regex pattern for matching the filename
-        pattern = r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})_(?P<hour>0[1-9]|1[0-2])(?P<time_separator>.+)(?P<minute>00|05|10|15|20|25|30|35|40|45|50|55)(?P<meridian>AM|PM)"
+        # pattern = r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})_(?P<hour>0[1-9]|1[0-2])(?P<time_separator>.+)(?P<minute>00|05|10|15|20|25|30|35|40|45|50|55)(?P<meridian>AM|PM)(?P<remaining_string>.*)"
+        pattern = r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})(?:_(?P<hour>0[1-9]|1[0-2])(?P<time_separator>.+?)(?P<minute>00|05|10|15|20|25|30|35|40|45|50|55)(?P<meridian>AM|PM))?[_]?(?P<variant_suffix>[^-_]*)[-](?P<remaining_string>.*)" ## optional time components
         match = re.match(pattern, filename)
         if match is None:
             return None  # pattern did not match
@@ -121,22 +141,38 @@ class RoundedTimeParser(BaseMatchParser):
 
         # Construct the 'export_datetime' key based on the matched datetime components
         try:
-            export_datetime_str = f"{parsed_output_dict['year']}-{parsed_output_dict['month']}-{parsed_output_dict['day']}_{parsed_output_dict['hour']}{parsed_output_dict['minute']}{parsed_output_dict['meridian']}"
-            export_datetime = datetime.strptime(export_datetime_str, "%Y-%m-%d_%I%M%p")
+            if parsed_output_dict['hour'] is not None:
+                # Time components are present
+                export_datetime_str = (
+                    f"{parsed_output_dict['year']}-"
+                    f"{parsed_output_dict['month']}-"
+                    f"{parsed_output_dict['day']}_"
+                    f"{parsed_output_dict['hour']}"
+                    f"{parsed_output_dict['minute']}"
+                    f"{parsed_output_dict['meridian']}"
+                )
+                export_datetime = datetime.strptime(export_datetime_str, "%Y-%m-%d_%I%M%p")
+            else:
+                # Only date components are present
+                export_datetime_str = (
+                    f"{parsed_output_dict['year']}-"
+                    f"{parsed_output_dict['month']}-"
+                    f"{parsed_output_dict['day']}"
+                )
+                export_datetime = datetime.strptime(export_datetime_str, "%Y-%m-%d")
+
             parsed_output_dict['export_datetime'] = export_datetime
         except ValueError as e:
             print(f'ERR: Could not parse date-time string: "{export_datetime_str}"')
             return None  # datetime parsing failed
 
         # Optionally, remove individual components if not needed in the final output
-        del parsed_output_dict['year']
-        del parsed_output_dict['month']
-        del parsed_output_dict['day']
-        del parsed_output_dict['hour']
-        del parsed_output_dict['minute']
-        del parsed_output_dict['meridian']
+        for key in ['year', 'month', 'day', 'hour', 'minute', 'meridian', 'time_separator']:
+            parsed_output_dict.pop(key, None)
+            
         # Note: Depending on use case, keep or remove 'time_separator'
-
+        parsed_output_dict['remaining_string'] = parsed_output_dict.get('remaining_string', '') ## or None
+        
         return parsed_output_dict
             
         
@@ -231,6 +267,35 @@ class AutoVersionedExtantFileBackupFilenameParser(BaseMatchParser):
         }
         return parsed_output_dict
 
+
+@define(slots=False)
+class ParenWrappedDataNameParser(BaseMatchParser):
+    def try_parse(self, filename: str) -> Optional[Dict]:
+        # Define the regex pattern for matching the filename
+        paren_wrapped_data_name_suffix_pattern = r"(?P<remaining_string>.+?)-\((?P<export_file_type>[A-Za-z_]+)\)"
+        match = re.match(paren_wrapped_data_name_suffix_pattern, filename)
+        if match is None:
+            # pattern did not match
+            parsed_output_dict = {'remaining_string': filename}
+            return parsed_output_dict  
+            # return None 
+        parsed_output_dict = match.groupdict()
+        return parsed_output_dict
+    
+
+@define(slots=False)
+class DoubleUnderscoreSplitSessionPlusAdditionalContextParser(BaseMatchParser):
+    def try_parse(self, filename: str) -> Optional[Dict]:
+        # Define the regex pattern for matching the filename
+        double_underscore_split_name_suffix_pattern = r"(?P<session_str>.+)__(?P<remaining_string>.+)"
+        match = re.match(double_underscore_split_name_suffix_pattern, filename)
+        if match is None:
+            # pattern did not match
+            parsed_output_dict = {'remaining_string': filename}
+            return parsed_output_dict  
+            # return None 
+        parsed_output_dict = match.groupdict()
+        return parsed_output_dict
 
 
 def try_datetime_detect_by_split(a_filename: str, split_parts_delimiter: str = '_'):
@@ -333,7 +398,7 @@ def try_parse_chain(basename: str, debug_print:bool=False):
     _filename_parsers_list = (AutoVersionedExtantFileBackupFilenameParser(), AutoVersionedUniqueFilenameParser(), DayDateTimeParser(), DayDateOnlyParser(), DayDateWithVariantSuffixParser())
     final_parsed_output_dict = None
     for a_test_parser in _filename_parsers_list:
-        if final_parsed_output_dict is None:
+        if final_parsed_output_dict is None: ## make sure it wasn't previously parsed
             a_parsed_output_dict = a_test_parser.try_parse(basename)
             if a_parsed_output_dict is not None:
                 ## best parser, stop here
@@ -360,6 +425,49 @@ def try_parse_chain(basename: str, debug_print:bool=False):
                 final_parsed_output_dict['custom_replay_name'] = _tmp_splits[1] # remainder of the list
 
     return final_parsed_output_dict
+
+
+@function_attributes(short_name=None, tags=['parse', 'filename', 'iterative'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-11-15 18:41', related_items=[])
+def try_iterative_parse_chain(basename: str, debug_print:bool=False):
+    """ tries to parse the basename with the list of parsers THAT CONSUME THE INPUT STRING AS THEY PARSE IT. 
+    
+    Usage:
+    
+        from pyphocorehelpers.Filesystem.path_helpers import try_iterative_parse_chain
+    
+        basename: str = _test_h5_filename.stem
+        final_parsed_output_dict = try_parse_chain(basename=basename)
+        final_parsed_output_dict
+
+        
+    final_parsed_output_dict: {'variant_suffix': 'GL',
+        'export_datetime': datetime.datetime(2024, 11, 15, 0, 0),
+        'export_file_type': 'merged_complete_epoch_stats_df',
+        'session_str': 'kdiba-gor01-one-2006-6-08_14-26-15',
+        'custom_replay_name': 'withNormalComputedReplays-frateThresh_5.0-qclu_[1, 2, 4, 6, 7, 9]'}
+        
+    """
+    # _filename_parsers_list = (DayDateTimeParser(), DayDateWithVariantSuffixParser(), DayDateOnlyParser())
+    _filename_parsers_list = (RoundedTimeParser(), ParenWrappedDataNameParser(), DoubleUnderscoreSplitSessionPlusAdditionalContextParser()) 
+    final_parsed_output_dict = {'remaining_string': basename}
+    for a_test_parser in _filename_parsers_list:
+        remaining_string = final_parsed_output_dict['remaining_string']
+        if debug_print:
+            print(f'remaining_string: "{remaining_string}"')
+        if len(remaining_string) > 0:
+            ## continue parsing:
+            final_parsed_output_dict = a_test_parser.try_iterative_parse(final_parsed_output_dict)
+    if debug_print:
+        print(f'remaining_string: "{remaining_string}"')
+    if np.all([(k in final_parsed_output_dict) for k in ['remaining_string', 'export_datetime', 'export_file_type', 'session_str']]):
+        ## has all required columns
+        remaining_string = final_parsed_output_dict.pop('remaining_string', '') # 'withNormalComputedReplays-frateThresh_5.0-qclu_[1, 2, 4, 6, 7, 9]'
+        final_parsed_output_dict['custom_replay_name'] = remaining_string
+    
+    variant_suffix = final_parsed_output_dict.pop('variant_suffix', None) # do not need
+    
+    return final_parsed_output_dict
+
 
 # ==================================================================================================================== #
 # End Parsers                                                                                                          #

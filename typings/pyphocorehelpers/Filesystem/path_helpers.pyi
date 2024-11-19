@@ -20,6 +20,12 @@ class BaseMatchParser:
     def try_parse(self, filename: str) -> Optional[Dict]:
         ...
     
+    def try_iterative_parse(self, parsed_output_dict: Dict) -> Dict:
+        """ attempts to parse the parsed_output_dict 
+        returns an updated version
+        """
+        ...
+    
 
 
 @define(slots=False)
@@ -76,6 +82,20 @@ class AutoVersionedExtantFileBackupFilenameParser(BaseMatchParser):
     
 
 
+@define(slots=False)
+class ParenWrappedDataNameParser(BaseMatchParser):
+    def try_parse(self, filename: str) -> Optional[Dict]:
+        ...
+    
+
+
+@define(slots=False)
+class DoubleUnderscoreSplitSessionPlusAdditionalContextParser(BaseMatchParser):
+    def try_parse(self, filename: str) -> Optional[Dict]:
+        ...
+    
+
+
 def try_datetime_detect_by_split(a_filename: str, split_parts_delimiter: str = ...): # -> tuple[dict[Any, Any], tuple[list[Any], list[Any]]]:
     """ tries to find a datetime-parsable component anywhere in the string after splitting by `split_parts_delimiter` 
 
@@ -116,6 +136,28 @@ def try_parse_chain(basename: str, debug_print: bool = ...): # -> Dict[Any, Any]
         final_parsed_output_dict = try_parse_chain(basename=basename)
         final_parsed_output_dict
 
+    """
+    ...
+
+@function_attributes(short_name=None, tags=['parse', 'filename', 'iterative'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-11-15 18:41', related_items=[])
+def try_iterative_parse_chain(basename: str, debug_print: bool = ...): # -> dict[str, str] | Dict[Any, Any]:
+    """ tries to parse the basename with the list of parsers THAT CONSUME THE INPUT STRING AS THEY PARSE IT. 
+    
+    Usage:
+    
+        from pyphocorehelpers.Filesystem.path_helpers import try_iterative_parse_chain
+    
+        basename: str = _test_h5_filename.stem
+        final_parsed_output_dict = try_parse_chain(basename=basename)
+        final_parsed_output_dict
+
+        
+    final_parsed_output_dict: {'variant_suffix': 'GL',
+        'export_datetime': datetime.datetime(2024, 11, 15, 0, 0),
+        'export_file_type': 'merged_complete_epoch_stats_df',
+        'session_str': 'kdiba-gor01-one-2006-6-08_14-26-15',
+        'custom_replay_name': 'withNormalComputedReplays-frateThresh_5.0-qclu_[1, 2, 4, 6, 7, 9]'}
+        
     """
     ...
 

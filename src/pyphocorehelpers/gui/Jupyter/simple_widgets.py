@@ -420,15 +420,9 @@ def create_tab_widget(display_dict: Dict[str, Any], **tab_kwargs) -> widgets.Tab
 
 import ipywidgets as widgets
 from IPython.display import display
-from typing import Dict, List, Tuple, Optional, Callable, Union, Any
-from typing_extensions import TypeAlias
-from nptyping import NDArray
-import neuropy.utils.type_aliases as types
-from attrs import define, field, Factory
 
 # @function_attributes(short_name=None, tags=['widget', 'jupyter', 'ipywidgets'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-11-22 09:14', related_items=[])
-@define(slots=False)
-class NewMultiCheckboxWidget(widgets.VBox):
+class MultiCheckboxWidget(widgets.VBox):
     """Widget with a search field and lots of checkboxes.
     
         import ipywidgets as widgets
@@ -451,117 +445,80 @@ class NewMultiCheckboxWidget(widgets.VBox):
         display(widgets.HBox([ui, out]))        
         
     """
-    options = field()
     
-    options_widget_dict: Dict = field(init=False, default=None)
-    options_layout = field(init=False, default=None)
-    children = field(init=False, default=None)
-    
-    @property
-    def options_widget_list(self):
-        """The options_widget_list property."""
-        return list(self.options_widget_dict.values())
-    
-    @property
-    def sorted_options(self):
-        """The options_widget_list property."""
-        return sorted(self.options)
+    def __init__(self, options_dict):
+        super().__init__()
+        self.options_dict = options_dict
         
-    
+        # Create the search widget and output widget
+        self.search_widget = widgets.Text()
+        self.output_widget = widgets.Output()
         
-    # ==================================================================================================================== #
-    # Initializers                                                                                                         #
-    # ==================================================================================================================== #
-    def __attrs_post_init__(self):
-        # This method runs after the generated __init__
-        self._setup_widgets()
-
-
-    def _setup_widgets(self):
-        self.options_widget_dict = {
-            x: widgets.Checkbox(
-                description=x, 
-                value=False,
-                style={"description_width":"0px"}
-            ) for x in self.options
-        }
+        # Extract the checkboxes from the options_dict
+        self.options = list(options_dict.values())
         
         # Define the layout for the options
-        if self.options_layout is None:
-            self.options_layout = widgets.Layout(
-                overflow='auto',
-                border='1px solid black',
-                width='300px',
-                height='300px',
-                flex_flow='column',
-                display='flex'
-            )
+        options_layout = widgets.Layout(
+            overflow='auto',
+            border='1px solid black',
+            width='300px',
+            height='300px',
+            flex_flow='column',
+            display='flex'
+        )
         
         # Create a VBox to hold the checkboxes with the specified layout
-        # self.options_widget = widgets.VBox(self.options_widget_list, layout=options_layout)
-        # self.options_widget = widgets.VBox(self.options_widget_list, layout=options_layout)
-                
-        # Initialize the VBox with the search widget and the options widget
-        self.children = self.options_widget_list
+        self.options_widget = widgets.VBox(self.options, layout=options_layout)
         
-            
+        # Initialize the VBox with the search widget and the options widget
+        self.children = [self.search_widget, self.options_widget]
+        
         # Set up observers for each checkbox
-        for checkbox in self.options_widget_list:
+        for checkbox in self.options:
             checkbox.observe(self.on_checkbox_change, names='value')
         
+        # Set up an observer for the search widget
+        self.search_widget.observe(self.on_text_change, names='value')
         
-
-    def display(self):
-        """Displays the widgets."""
-        # Arrange your widgets as needed
-        display(widgets.VBox(self.options_widget_list, layout=self.options_layout))
-
-    # Function to get the list of selected options
-    def get_selected_options():
-        return [cb.description for cb in self.options_widget_list if cb.value]
-            
+        # Display the output widget
+        display(self.output_widget)
+        
     
     def on_checkbox_change(self, change):
-        
-        print(self)
-        print(change)
+        with self.output_widget:
+            # Clear previous output
+            self.output_widget.clear_output()
             
-        # with self.output_widget:
-        #     # Clear previous output
-        #     self.output_widget.clear_output()
+            # Re-sort the checkboxes based on their checked status
+            self.options_widget.children = sorted(
+                self.options_widget.children,
+                key=lambda x: x.value,
+                reverse=True
+            )
+    
+    def on_text_change(self, change):
+        with self.output_widget:
+            # Clear previous output
+            self.output_widget.clear_output()
+            search_input = change['new'].lower().strip()
             
-        #     # Re-sort the checkboxes based on their checked status
-        #     self.options_widget.children = sorted(
-        #         self.options_widget.children,
-        #         key=lambda x: x.value,
-        #         reverse=True
-        #     )
-
-
-            
-    # def on_text_change(self, change):
-    #     with self.output_widget:
-    #         # Clear previous output
-    #         self.output_widget.clear_output()
-    #         search_input = change['new'].lower().strip()
-            
-    #         # Filter the checkboxes based on the search input
-    #         if search_input == '':
-    #             # Reset to all options if search input is empty
-    #             new_options = sorted(
-    #                 self.options,
-    #                 key=lambda x: x.value,
-    #                 reverse=True
-    #             )
-    #         else:
-    #             # Filter options that contain the search input
-    #             filtered_keys = [
-    #                 key for key in self.options_dict.keys()
-    #                 if search_input in key.lower()
-    #             ]
-    #             new_options = sorted(
-    #                 [self.options_dict[key] for key in filtered_keys],
-    #                 key=lambda x: x.value,
-    #                 reverse=True
-    #             )
-    #         self.options_widget.children = new_options
+            # Filter the checkboxes based on the search input
+            if search_input == '':
+                # Reset to all options if search input is empty
+                new_options = sorted(
+                    self.options,
+                    key=lambda x: x.value,
+                    reverse=True
+                )
+            else:
+                # Filter options that contain the search input
+                filtered_keys = [
+                    key for key in self.options_dict.keys()
+                    if search_input in key.lower()
+                ]
+                new_options = sorted(
+                    [self.options_dict[key] for key in filtered_keys],
+                    key=lambda x: x.value,
+                    reverse=True
+                )
+            self.options_widget.children = new_options

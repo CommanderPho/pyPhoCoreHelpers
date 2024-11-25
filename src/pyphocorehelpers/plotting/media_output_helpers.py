@@ -250,7 +250,7 @@ def get_array_as_image_stack(imgs: List[Image.Image], offset=10, single_image_al
 
 
 
-def vertical_image_stack(imgs: List[Image.Image], padding=10, v_overlap: int=0) -> Image.Image:
+def vertical_image_stack(imgs: List[Image.Image], padding=10, v_overlap: int=0, separator_color=None) -> Image.Image:
     """ Builds a stack of images into a vertically concatenated image.
     offset = 10  # your desired offset
 
@@ -265,23 +265,37 @@ def vertical_image_stack(imgs: List[Image.Image], padding=10, v_overlap: int=0) 
     """
     # Ensure all images are in RGBA mode
     imgs = [img.convert('RGBA') if img.mode != 'RGBA' else img for img in imgs]
-    # Assume all images are the same size
-    width, height = imgs[0].size
     
     widths = np.array([img.size[0] for img in imgs])
     heights = np.array([img.size[1] for img in imgs])
 
     # Create a new image with size larger than original ones, considering offsets
-    # output_width = np.sum(widths) + (padding * (len(imgs) - 1))
+    # output_height = (np.sum(heights) + (padding * (len(imgs) - 1))) - v_overlap
+    output_height = np.sum(heights) - v_overlap
+    if isinstance(padding, str) and padding.endswith('%'):
+        # if it's a string like '1%', it specifies the desired width in terms of the total image height
+        padding_percent = padding.strip('%')
+        padding_percent = float(padding_percent)
+        assert (padding <= 100.0) and (padding >= 0.0), f"padding: {padding} is invalid! Should be a percentage of the total image height like '1%'."
+        padding = (padding_percent * output_height) / float(len(imgs) - 1) # padding in px
+
+    output_total_padding_height: float = (padding * (len(imgs) - 1))
+    output_height = output_height + output_total_padding_height
     output_width = np.max(widths)
-    output_height = (np.sum(heights) + (padding * (len(imgs) - 1))) - v_overlap
     # print(f'output_width: {output_width}, output_height: {output_height}')
     output_img = Image.new('RGBA', (output_width, output_height))
     cum_height = 0
     for i, img in enumerate(imgs):
         curr_img_width, curr_img_height = img.size
         output_img.paste(img, (0, cum_height), img)
-        cum_height += (curr_img_height+padding) - v_overlap
+        # cum_height += (curr_img_height+padding) - v_overlap
+        cum_height += curr_img_height - v_overlap ## add the current image height
+        if (separator_color is not None) and (padding > 0):
+            ## fill the between-image area with a separator_color
+            _tmp_separator_img = Image.new('RGBA', (output_width, padding), separator_color)
+            output_img.paste(_tmp_separator_img, (0, cum_height))
+                    
+        cum_height += padding
 
     return output_img
 

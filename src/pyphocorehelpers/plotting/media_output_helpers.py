@@ -305,13 +305,23 @@ def horizontal_image_stack(imgs: List[Image.Image], padding=10) -> Image.Image:
     imgs = [img.convert('RGBA') if img.mode != 'RGBA' else img for img in imgs]
     
     # Assume all images are the same size
-    width, height = imgs[0].size
+    # width, height = imgs[0].size
     
     widths = np.array([img.size[0] for img in imgs])
     heights = np.array([img.size[1] for img in imgs])
 
     # Create a new image with size larger than original ones, considering offsets
-    output_width = np.sum(widths) + (padding * (len(imgs) - 1))
+    output_width = np.sum(widths)
+    if isinstance(padding, str) and padding.endswith('%'):
+        # if it's a string like '1%', it specifies the desired width in terms of the total image width
+        padding_percent = padding.strip('%')
+        padding_percent = float(padding_percent)
+        assert (padding <= 100.0) and (padding >= 0.0), f"padding: {padding} is invalid! Should be a percentage of the total image width like '1%'."
+        padding = (padding_percent * output_width) / float(len(imgs) - 1) # padding in px
+
+    output_total_padding_width: float = (padding * (len(imgs) - 1))
+    output_width = output_width + output_total_padding_width
+    
     output_height = np.max(heights)
     # print(f'output_width: {output_width}, output_height: {output_height}')
     output_img = Image.new('RGBA', (output_width, output_height))

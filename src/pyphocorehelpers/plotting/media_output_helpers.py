@@ -286,7 +286,7 @@ def vertical_image_stack(imgs: List[Image.Image], padding=10, v_overlap: int=0) 
     return output_img
 
 
-def horizontal_image_stack(imgs: List[Image.Image], padding=10) -> Image.Image:
+def horizontal_image_stack(imgs: List[Image.Image], padding=10, separator_color=None) -> Image.Image:
     """ Builds a stack of images into a horizontally concatenated image.
     offset = 10  # your desired offset
 
@@ -304,9 +304,7 @@ def horizontal_image_stack(imgs: List[Image.Image], padding=10) -> Image.Image:
     # Ensure all images are in RGBA mode
     imgs = [img.convert('RGBA') if img.mode != 'RGBA' else img for img in imgs]
     
-    # Assume all images are the same size
-    # width, height = imgs[0].size
-    
+    ## get the sizes of each image
     widths = np.array([img.size[0] for img in imgs])
     heights = np.array([img.size[1] for img in imgs])
 
@@ -321,17 +319,22 @@ def horizontal_image_stack(imgs: List[Image.Image], padding=10) -> Image.Image:
 
     output_total_padding_width: float = (padding * (len(imgs) - 1))
     output_width = output_width + output_total_padding_width
-    
     output_height = np.max(heights)
+    
     # print(f'output_width: {output_width}, output_height: {output_height}')
     output_img = Image.new('RGBA', (output_width, output_height))
-    # cum_height = 0
     cum_width = 0
     for i, img in enumerate(imgs):
         curr_img_width, curr_img_height = img.size
         output_img.paste(img, (cum_width, 0), img)
-        # cum_height += (curr_img_height+padding)
-        cum_width += (curr_img_width+padding)
+        # cum_height += curr_img_height
+        cum_width += curr_img_width ## add the current image width
+        if (separator_color is not None) and (padding > 0):
+            ## fill the between-image area with a separator_color
+            _tmp_separator_img = Image.new('RGBA', (padding, output_height), separator_color)
+            output_img.paste(_tmp_separator_img, (cum_width, 0))
+    
+        cum_width += padding
 
     return output_img
 

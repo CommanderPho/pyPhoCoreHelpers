@@ -419,7 +419,64 @@ def create_tab_widget(display_dict: Dict[str, Any], **tab_kwargs) -> widgets.Tab
 
 
 import ipywidgets as widgets
+import traitlets
 from IPython.display import display
+
+class CheckBoxListWidget(widgets.VBox):
+    """ 
+    from pyphocorehelpers.gui.Jupyter.simple_widgets import CheckBoxListWidget
+    
+    options_list = ['high_wcorr', 'user_selected', 'high_pearsonr_corr', 'high_shuffle_percentile_score', 'high_shuffle_wcorr_z_score', 'good_jump', 'long_duration']
+    chk_box_list_widget = CheckBoxListWidget(options_list=options_list)
+    chk_box_list_widget
+    """
+    # Define a trait for the value attribute
+    value = traitlets.Any()
+    
+    def __init__(self, options_list, **kwargs):
+        # Set the layout for the VBox to have a black border
+        layout = kwargs.pop('layout', widgets.Layout(
+            border='1px solid black',
+            padding='0px',
+            margin='0px'
+        ))
+
+        super().__init__(**kwargs)
+        self._widgets = {}
+        # Define a layout for the checkboxes with zero margins and padding
+        checkbox_layout = widgets.Layout(
+            margin='0px',
+            padding='0px',
+            height='auto',
+            line_height='0.5em'  # Adjust this value as needed
+            # line_height='normal'
+        )
+
+        # Initialize child widgets
+        for k in options_list:
+            self._widgets[k] = widgets.Checkbox(description=k, layout=checkbox_layout)
+            
+        # Set the initial value
+        self.value = tuple([v.value for k, v in self._widgets.items()])
+        
+        # Set the children of the HBox
+        self.children = list(self._widgets.values())
+        
+        # Observe changes in child widgets
+        for child_widget in self.children:
+            child_widget.observe(self._on_widget_change, names='value')
+    
+    def _on_widget_change(self, change):
+        # Update the value trait
+        self.value = tuple([v.value for k, v in self._widgets.items()])
+        
+    @traitlets.observe('value')
+    def _value_changed(self, change):
+        # Callback when value changes
+        print(f'Value changed to: {self.value}')
+
+            
+            
 
 # @function_attributes(short_name=None, tags=['widget', 'jupyter', 'ipywidgets'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-11-22 09:14', related_items=[])
 class MultiCheckboxWidget(widgets.VBox):

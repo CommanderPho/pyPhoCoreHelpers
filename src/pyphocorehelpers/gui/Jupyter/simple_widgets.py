@@ -421,6 +421,7 @@ def create_tab_widget(display_dict: Dict[str, Any], **tab_kwargs) -> widgets.Tab
 import ipywidgets as widgets
 import traitlets
 from IPython.display import display
+# from Spike3D..venv.Lib.site-packages.ipywidgets.widgets.widget_selection import _MultipleSelection
 
 class CheckBoxListWidget(widgets.VBox):
     """ 
@@ -433,6 +434,8 @@ class CheckBoxListWidget(widgets.VBox):
     # Define a trait for the value attribute
     value = traitlets.Any()
     
+    _widgets = None
+    
     def __init__(self, options_list, **kwargs):
         # Set the layout for the VBox to have a black border
         layout = kwargs.pop('layout', widgets.Layout(
@@ -441,7 +444,7 @@ class CheckBoxListWidget(widgets.VBox):
             margin='0px'
         ))
 
-        super().__init__(**kwargs)
+        super().__init__(layout=layout, **kwargs)
         self._widgets = {}
         # Define a layout for the checkboxes with zero margins and padding
         checkbox_layout = widgets.Layout(
@@ -457,7 +460,8 @@ class CheckBoxListWidget(widgets.VBox):
             self._widgets[k] = widgets.Checkbox(description=k, layout=checkbox_layout)
             
         # Set the initial value
-        self.value = tuple([v.value for k, v in self._widgets.items()])
+        # self.value = tuple([v.value for k, v in self._widgets.items()])
+        self.value = tuple([k for k, v in self._widgets.items() if v.value]) # return the key for each checkbox that is checked.
         
         # Set the children of the HBox
         self.children = list(self._widgets.values())
@@ -468,7 +472,10 @@ class CheckBoxListWidget(widgets.VBox):
     
     def _on_widget_change(self, change):
         # Update the value trait
-        self.value = tuple([v.value for k, v in self._widgets.items()])
+        # self.value = tuple([v.value for k, v in self._widgets.items()])
+        ## value is the selected value labels
+        self.value = tuple([k for k, v in self._widgets.items() if v.value]) # return the key for each checkbox that is checked.
+         
         
     @traitlets.observe('value')
     def _value_changed(self, change):

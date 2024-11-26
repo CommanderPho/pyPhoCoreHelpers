@@ -7,56 +7,56 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional
 from datetime import datetime
 
-def convert_script_to_notebook(script_path: str, notebook_path: str, custom_delimiter: Optional[str] = ...) -> None:
-     """ Converts a python script to a jupyter notebook (.ipynb) based on either its markdown headers or a custom_delimiter. 
-	WORKING!
-	# Split script based on custom delimiter
-	custom_delimiter = "# ~ # NBSplit"
-	
-	NOTE: unless custom_delimiter=None, no markdown cells will be created.
-	
-	Useful for building interactive notebooks for testing batch computations
+def convert_script_to_notebook(script_path: str, notebook_path: str, custom_delimiter: Optional[str] = ..., enable_auto_reload: bool = ..., enable_qt_interactive: bool = ...) -> None:
+    """ Converts a python script to a jupyter notebook (.ipynb) based on either its markdown headers or a custom_delimiter. 
+    WORKING!
+    # Split script based on custom delimiter
+    custom_delimiter = "# ~ # NBSplit"
     
-	# Usage:
+    NOTE: unless custom_delimiter=None, no markdown cells will be created.
+    
+    Useful for building interactive notebooks for testing batch computations
+    
+    # Usage:
      
         from pyphocorehelpers.notebook_helpers import convert_script_to_notebook
         
-		script_path = Path(r"K:\scratch\gen_scripts\run_kdiba_gor01_one_2006-6-12_15-55-31\run_kdiba_gor01_one_2006-6-12_15-55-31.py").resolve()
-		script_dir = script_path.parent.resolve()
-		notebook_path = script_path.with_suffix('.ipynb')
-		convert_script_to_notebook(script_path, notebook_path)
-		# convert_script_to_notebook(script_path, notebook_path, custom_delimiter=None)
+        script_path = Path(r"K:\scratch\gen_scripts\run_kdiba_gor01_one_2006-6-12_15-55-31\run_kdiba_gor01_one_2006-6-12_15-55-31.py").resolve()
+        script_dir = script_path.parent.resolve()
+        notebook_path = script_path.with_suffix('.ipynb')
+        convert_script_to_notebook(script_path, notebook_path)
+        # convert_script_to_notebook(script_path, notebook_path, custom_delimiter=None)
 
-	
-	"""
-     ...
+    
+    """
+    ...
 
 @define(slots=False, eq=False)
 class CellExecution:
-     start_time: datetime = ...
-     end_time: datetime = ...
-     duration: float = ...
-     status: str = ...
-     output: str = ...
-     def to_dict(self): # -> Dict[str, Any]:
-          ...
-     
+    start_time: datetime = ...
+    end_time: datetime = ...
+    duration: float = ...
+    status: str = ...
+    output: str = ...
+    def to_dict(self): # -> Dict[str, Any]:
+        ...
+    
 
 
 @define(slots=False, eq=False)
 class CellInfo:
-     created_at: datetime = ...
-     modified_at: datetime = ...
-     code: str = ...
-     executions: List[CellExecution] = ...
-     def to_dict(self): # -> Dict[str, Any]:
-          ...
-     
+    created_at: datetime = ...
+    modified_at: datetime = ...
+    code: str = ...
+    executions: List[CellExecution] = ...
+    def to_dict(self): # -> Dict[str, Any]:
+        ...
+    
 
 
 @define(slots=False, eq=False)
 class NotebookCellExecutionLogger:
-     """ Logs jupyter notebook execution activity and history
+    """ Logs jupyter notebook execution activity and history
     
     Usage:
         import IPython
@@ -67,45 +67,45 @@ class NotebookCellExecutionLogger:
         _notebook_execution_logger: NotebookCellExecutionLogger = NotebookCellExecutionLogger(notebook_path=_notebook_path, enable_logging_to_file=True) # Builds a logger that records info about this notebook
 
     """
-     notebook_path: Path = ...
-     enable_logging_to_file: bool = ...
-     debug_print: bool = ...
-     log_file: Path = ...
-     cell_info: Dict[str, CellInfo] = ...
-     use_logging_subdirectory: bool = ...
-     _callback_references: Dict[str, List[Callable]] = ...
-     def __attrs_post_init__(self): # -> None:
-          ...
-     
-     def __del__(self): # -> None:
-          ...
-     
-     def rebuild_logging_file_info(self) -> bool:
-          """ called when options change to recompute the logging output variables:
+    notebook_path: Path = ...
+    enable_logging_to_file: bool = ...
+    debug_print: bool = ...
+    log_file: Path = ...
+    cell_info: Dict[str, CellInfo] = ...
+    use_logging_subdirectory: bool = ...
+    _callback_references: Dict[str, List[Callable]] = ...
+    def __attrs_post_init__(self): # -> None:
+        ...
+    
+    def __del__(self): # -> None:
+        ...
+    
+    def rebuild_logging_file_info(self) -> bool:
+        """ called when options change to recompute the logging output variables:
 
         Updates:
             self.log_file
 
         """
-          ...
-     
-     def update_log_file(self): # -> None:
-          ...
-     
-     def register_callbacks(self): # -> None:
-          """ main start function """
-          ...
-     
-     def unregister_callbacks(self): # -> None:
-          """ unregister all ipynb callbacks 
+        ...
+    
+    def update_log_file(self): # -> None:
+        ...
+    
+    def register_callbacks(self): # -> None:
+        """ main start function """
+        ...
+    
+    def unregister_callbacks(self): # -> None:
+        """ unregister all ipynb callbacks 
         """
-          ...
-     
+        ...
+    
 
 
 @define(slots=False)
 class NotebookProcessor:
-     """ processes Jupyter Notebooks
+    """ processes Jupyter Notebooks
 
     from pyphocorehelpers.notebook_helpers import NotebookProcessor
 
@@ -116,29 +116,29 @@ class NotebookProcessor:
         `pyphocorehelpers.programming_helpers.NotebookProcessor` -> `pyphocorehelpers.notebook_helpers.NotebookProcessor`
         
     """
-     path: Path = ...
-     cells: List = ...
-     def __attrs_post_init__(self): # -> None:
-          ...
-     
-     def load_cells(self): # -> None:
-          ...
-     
-     def get_cells_with_tags(self) -> Dict[str, List]:
-          """ returns a dictionary with keys equal to all tags, and values containing the list of cells containing those tags.
+    path: Path = ...
+    cells: List = ...
+    def __attrs_post_init__(self): # -> None:
+        ...
+    
+    def load_cells(self): # -> None:
+        ...
+    
+    def get_cells_with_tags(self) -> Dict[str, List]:
+        """ returns a dictionary with keys equal to all tags, and values containing the list of cells containing those tags.
         """
-          ...
-     
-     def get_cells_with_any_tags(self) -> List:
-          """ returns all cells containing any tags.
+        ...
+    
+    def get_cells_with_any_tags(self) -> List:
+        """ returns all cells containing any tags.
         """
-          ...
-     
-     def get_cells_with_tag(self, tag: str) -> List:
-          ...
-     
-     def get_cells_with_run_groups(self) -> Dict[str, List]:
-          """
+        ...
+    
+    def get_cells_with_tag(self, tag: str) -> List:
+        ...
+    
+    def get_cells_with_run_groups(self) -> Dict[str, List]:
+        """
         
         "metadata": {
             "notebookRunGroups": {
@@ -147,32 +147,32 @@ class NotebookProcessor:
         },
         
         """
-          ...
-     
-     def get_cells_with_images(self): # -> list[Any]:
-          ...
-     
-     def get_empty_cells(self): # -> list[Any]:
-          ...
-     
-     def remove_empty_cells_and_save(self, new_path): # -> None:
-          """
+        ...
+    
+    def get_cells_with_images(self): # -> list[Any]:
+        ...
+    
+    def get_empty_cells(self): # -> list[Any]:
+        ...
+    
+    def remove_empty_cells_and_save(self, new_path): # -> None:
+        """
         ## Remove all empty cells, and save the resultant notebook as the current notebook with the '_cleaned' filename suffix (but same extention)
         new_path = processor.path.with_stem(f'{processor.path.stem}_cleaned').resolve()
         processor.remove_empty_cells_and_save(new_path=new_path)
 
 
         """
-          ...
-     
-     @classmethod
-     def get_running_notebook_path(cls, debug_print=...): # -> None:
-          """ 
+        ...
+    
+    @classmethod
+    def get_running_notebook_path(cls, debug_print=...): # -> None:
+        """ 
         
         NotebookProcessor.get_running_notebook_path()
         
         """
-          ...
-     
+        ...
+    
 
 

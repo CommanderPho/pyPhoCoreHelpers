@@ -54,6 +54,9 @@ class DayDateTimeParser(BaseMatchParser):
     anything
     _  || literal _
     \d{2}\d{2}[APMF]{2} || a time
+    
+    (?P<export_time_str>_\d{2}\d{2}[APMF]{2})? || optional time suffix like "_1220PM"
+    
     [_]?(?P<variant_suffix>[^-_]*)  || optional suffix like "_GL" or "_APOGEE"
     [-]  || literal -
     
@@ -116,8 +119,9 @@ class DayDateOnlyParser(BaseMatchParser):
 
         return parsed_output_dict
 
+## DEPRICATED 2024-11-27 16:44 
 @define(slots=False)
-class DayDateWithVariantSuffixParser(BaseMatchParser):
+class _DEPRICATED_DayDateWithVariantSuffixParser(BaseMatchParser):
     def try_parse(self, filename: str) -> Optional[Dict]:
         # matches '2024-01-04-kdiba_gor01_one_2006-6-08_14-26'
         day_date_with_variant_suffix_pattern = r"(?P<export_datetime_str>\d{4}-\d{2}-\d{2})[-_]?(?P<variant_suffix>[^-_]*)[-_](?P<session_str>.+?)_(?P<export_file_type>[A-Za-z_]+)"
@@ -411,7 +415,7 @@ def try_parse_chain(basename: str, debug_print:bool=False):
 
     """
     # _filename_parsers_list = (DayDateTimeParser(), DayDateWithVariantSuffixParser(), DayDateOnlyParser())
-    _filename_parsers_list = (AutoVersionedExtantFileBackupFilenameParser(), AutoVersionedUniqueFilenameParser(), DayDateTimeParser(), DayDateOnlyParser(), DayDateWithVariantSuffixParser())
+    _filename_parsers_list = (AutoVersionedExtantFileBackupFilenameParser(), AutoVersionedUniqueFilenameParser(), DayDateTimeParser(), DayDateOnlyParser(), _DEPRICATED_DayDateWithVariantSuffixParser())
     final_parsed_output_dict = None
     for a_test_parser in _filename_parsers_list:
         if final_parsed_output_dict is None: ## make sure it wasn't previously parsed

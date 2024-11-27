@@ -91,7 +91,7 @@ class DayDateTimeParser(BaseMatchParser):
         # pattern = r"(?P<export_datetime_str>.+(?:_\d{2}\d{2}[APMF]{2})?)[_](?P<variant_suffix>[^-_]*)-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))"
         # pattern = r"(?P<export_datetime_str>\d{4}-\d{2}-\d{2}(?:_\d{2}\d{2}[APMF]{2})?)[_](?P<variant_suffix>[^-_]*)-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))" # chatGPT explicit
         # pattern = r"(?P<date_day_str>\d{4}-\d{2}-\d{2})(?:_(?P<date_time_str>\d{4}[APMF]{2}))?[_](?P<variant_suffix>[^-_]*)-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))" ## separate date and time components
-        pattern = r"(?P<date_day_str>\d{4}-\d{2}-\d{2})(?:_(?P<date_time_str>\d{4}[APMF]{2}))?(?:_(?P<variant_suffix>[^-_]+))?-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))" ## separate date and time components
+        pattern = r"(?P<date_day_str>\d{4}-\d{2}-\d{2})(?:_(?P<date_time_str>\d{4}[APMF]{2}))?(?:_(?P<variant_suffix>[^-_]+))?-(?P<session_str>.*)-(?P<export_file_type>\(.+\))(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))?" ## separate date and time components
 
         match = re.match(pattern, filename)
         if match is None:

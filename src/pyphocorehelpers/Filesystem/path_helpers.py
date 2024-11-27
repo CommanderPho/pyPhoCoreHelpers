@@ -18,6 +18,28 @@ from pyphocorehelpers.programming_helpers import metadata_attributes
 from attrs import define, field, Factory
     
 
+def parse_export_datetime(date_str: str, time_str: Optional[str]=None):
+    """ gracefully parses date_str into a datetime with optional time components
+    """
+    # Remove the leading characters that are not part of the datetime format
+    date_str: str = date_str.lstrip('._')
+    
+    if time_str:
+        # Remove the leading characters that are not part of the datetime format
+        time_str: str = time_str.lstrip('._')
+        datetime_str = f"{date_str}_{time_str}"
+        try:
+            return datetime.strptime(datetime_str, '%Y-%m-%d_%I%M%p')
+        except ValueError:
+            raise ValueError(f"Time data '{datetime_str}' does not match format '%Y-%m-%d_%I%M%p'")
+    else:
+        try:
+            return datetime.strptime(date_str, '%Y-%m-%d')
+        except ValueError:
+            raise ValueError(f"Time data '{date_str}' does not match format '%Y-%m-%d'")
+
+
+
 @define(slots=False)
 class BaseMatchParser:
     """ 
@@ -65,8 +87,12 @@ class DayDateTimeParser(BaseMatchParser):
     
     """  
     def try_parse(self, filename: str) -> Optional[Dict]:
-        pattern = r"(?P<export_datetime_str>.*_\d{2}\d{2}[APMF]{2})[_]?(?P<variant_suffix>[^-_]*)-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))"
-        
+        # pattern = r"(?P<export_datetime_str>.*_\d{2}\d{2}[APMF]{2})[_]?(?P<variant_suffix>[^-_]*)-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))"
+        # pattern = r"(?P<export_datetime_str>.+(?:_\d{2}\d{2}[APMF]{2})?)[_](?P<variant_suffix>[^-_]*)-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))"
+        # pattern = r"(?P<export_datetime_str>\d{4}-\d{2}-\d{2}(?:_\d{2}\d{2}[APMF]{2})?)[_](?P<variant_suffix>[^-_]*)-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))" # chatGPT explicit
+        # pattern = r"(?P<date_day_str>\d{4}-\d{2}-\d{2})(?:_(?P<date_time_str>\d{4}[APMF]{2}))?[_](?P<variant_suffix>[^-_]*)-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))" ## separate date and time components
+        pattern = r"(?P<date_day_str>\d{4}-\d{2}-\d{2})(?:_(?P<date_time_str>\d{4}[APMF]{2}))?(?:_(?P<variant_suffix>[^-_]+))?-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))" ## separate date and time components
+
         match = re.match(pattern, filename)
         if match is None:
             return None # failed
@@ -76,8 +102,13 @@ class DayDateTimeParser(BaseMatchParser):
         output_dict_keys = ['session_str', 'export_file_type', 'decoding_time_bin_size_str']
 
         # export_datetime_str, session_str, export_file_type = match.groups()
-        export_datetime_str, session_str, export_file_type, decoding_time_bin_size_str = match.group('export_datetime_str'), match.group('session_str'), match.group('export_file_type'), match.group('decoding_time_bin_size_str')
-        
+        # session_str, export_file_type, decoding_time_bin_size_str = match.group('session_str'), match.group('export_file_type'), match.group('decoding_time_bin_size_str')
+
+        # export_datetime_str = match.group('export_datetime_str') # pre 2024-11-27 17:07 
+        # Extract date and time components
+        date_day_str = match.group('date_day_str')
+        date_time_str = match.group('date_time_str') # This can be None
+
         # ## if we want the variant_suffix:
         # output_dict_keys.append('variant_suffix')
         # variant_suffix = match.group('variant_suffix')
@@ -85,17 +116,20 @@ class DayDateTimeParser(BaseMatchParser):
         parsed_output_dict.update({k:match.group(k) for k in output_dict_keys})
 
         # Remove the leading characters that are not part of the datetime format
-        cleaned_datetime_str: str = export_datetime_str.lstrip('._')
+        # cleaned_datetime_str: str = export_datetime_str.lstrip('._')
 
         # parse the datetime from the export_datetime_str and convert it to datetime object
-        export_datetime = datetime.strptime(cleaned_datetime_str, "%Y-%m-%d_%I%M%p") # ValueError: time data '._2024-02-08_0535PM' does not match format '%Y-%m-%d_%I%M%p'
+        # export_datetime = datetime.strptime(cleaned_datetime_str, "%Y-%m-%d_%I%M%p") # ValueError: time data '._2024-02-08_0535PM' does not match format '%Y-%m-%d_%I%M%p'
+        # Parse the datetime
+        export_datetime = parse_export_datetime(date_day_str, date_time_str)
+
         parsed_output_dict['export_datetime'] = export_datetime
 
         return parsed_output_dict
     
 
 @define(slots=False)
-class DayDateOnlyParser(BaseMatchParser):
+class _DEPRICATED_DayDateOnlyParser(BaseMatchParser):
     def try_parse(self, filename: str) -> Optional[Dict]:
         # day_date_only_pattern = r"(.*(?:_\d{2}\d{2}[APMF]{2})?)-(.*)-(\(.+\))"
         day_date_only_pattern = r"(\d{4}-\d{2}-\d{2})-(.*)-(\(?.+\)?)" # 
@@ -415,7 +449,7 @@ def try_parse_chain(basename: str, debug_print:bool=False):
 
     """
     # _filename_parsers_list = (DayDateTimeParser(), DayDateWithVariantSuffixParser(), DayDateOnlyParser())
-    _filename_parsers_list = (AutoVersionedExtantFileBackupFilenameParser(), AutoVersionedUniqueFilenameParser(), DayDateTimeParser(), DayDateOnlyParser(), _DEPRICATED_DayDateWithVariantSuffixParser())
+    _filename_parsers_list = (AutoVersionedExtantFileBackupFilenameParser(), AutoVersionedUniqueFilenameParser(), DayDateTimeParser()) # , _DEPRICATED_DayDateOnlyParser(), _DEPRICATED_DayDateWithVariantSuffixParser()
     final_parsed_output_dict = None
     for a_test_parser in _filename_parsers_list:
         if final_parsed_output_dict is None: ## make sure it wasn't previously parsed

@@ -75,7 +75,7 @@ def get_array_as_image_stack(imgs: List[Image.Image], offset=..., single_image_a
     """
     ...
 
-def vertical_image_stack(imgs: List[Image.Image], padding=..., v_overlap: int = ...) -> Image.Image:
+def vertical_image_stack(imgs: List[Image.Image], padding=..., v_overlap: int = ..., separator_color=...) -> Image.Image:
     """ Builds a stack of images into a vertically concatenated image.
     offset = 10  # your desired offset
 
@@ -90,7 +90,7 @@ def vertical_image_stack(imgs: List[Image.Image], padding=..., v_overlap: int = 
     """
     ...
 
-def horizontal_image_stack(imgs: List[Image.Image], padding=...) -> Image.Image:
+def horizontal_image_stack(imgs: List[Image.Image], padding=..., separator_color=...) -> Image.Image:
     """ Builds a stack of images into a horizontally concatenated image.
     offset = 10  # your desired offset
 

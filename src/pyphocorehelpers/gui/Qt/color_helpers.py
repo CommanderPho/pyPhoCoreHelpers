@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional,  OrderedDict, Union
+from typing import Any, Dict, List, Optional,  OrderedDict, Union
 from copy import deepcopy
 import numpy as np
 import pandas as pd
@@ -92,6 +92,8 @@ class ColormapHelpers:
             additional_cmaps = {k: ColormapHelpers.create_transparent_colormap(color_literal_name=v, lower_bound_alpha=0.1) for k, v in additional_cmap_names.items()}
         
         """
+        from pyphoplacecellanalysis.External.pyqtgraph.colormap import ColorMap
+        
         # Get the base colormap
         assert (cmap_name is not None) or (color_literal_name is not None)
         if color_literal_name is not None:
@@ -102,7 +104,9 @@ class ColormapHelpers:
             cmap = pg.colormap.get(cmap_name, source='matplotlib')
 
         # Create a lookup table with the desired number of points (default 256)
-        lut = cmap.getLookupTable(alpha=True)
+        lut = cmap.getLookupTable(alpha=True, mode=ColorMap.BYTE)
+        
+        # `ColorMap.BYTE` (0 to 255), `ColorMap.FLOAT` (0.0 to 1.0) or `ColorMap.QColor`.
         
         # Modify the alpha values
         alpha_channel = lut[:, 3]  # Extract the alpha channel (4th column)
@@ -207,7 +211,93 @@ class ColormapHelpers:
         # n_bins = [2]  # Discretizes the interpolation into bins
         return LinearSegmentedColormap.from_list('CustomMap', adjusted_colors, N=N_colors)
 
-              
+
+    # Convert to LinearSegmentedColormap
+    @classmethod
+    def colormap_to_linear_segmented(cls, cmap, n_samples=256):
+        """
+        Converts a Colormap to a LinearSegmentedColormap.
+
+        Args:
+            cmap (Colormap): The original colormap to convert.
+            n_samples (int): Number of samples to take from the original colormap.
+
+        Returns:
+            LinearSegmentedColormap: The converted colormap.
+        """
+        from matplotlib.colors import LinearSegmentedColormap
+        from pyphoplacecellanalysis.External.pyqtgraph.colormap import ColorMap
+        if isinstance(cmap, (LinearSegmentedColormap,)):
+            return deepcopy(cmap) # already the correct type
+        else:
+            ## needs convert                          
+            colors = cmap(np.linspace(0, 1, n_samples))  # Sample the original colormap
+            return LinearSegmentedColormap.from_list(f"{cmap.name}_linear", colors)
+
+
+
+    @classmethod
+    def create_colormap_transparent_below_value(cls, mycmap: Union[str, Any], low_value_cuttoff:float=0.2, below_low_value_cuttoff_alpha_value: float=0.0, resampled_num_colors:int=7):
+        """ 
+        Usage:
+            additional_cmap_names = dict(zip(TrackTemplates.get_decoder_names(), ['red', 'purple', 'green', 'orange'])) # {'long_LR': 'red', 'long_RL': 'purple', 'short_LR': 'green', 'short_RL': 'orange'}
+
+            long_epoch_config = long_short_display_config_manager.long_epoch_config.as_pyqtgraph_kwargs()
+            short_epoch_config = long_short_display_config_manager.short_epoch_config.as_pyqtgraph_kwargs()
+
+            color_dict = {'long_LR': long_epoch_config['brush'].color(), 'long_RL': apply_LR_to_RL_adjustment(long_epoch_config['brush'].color()),
+                            'short_LR': short_epoch_config['brush'].color(), 'short_RL': apply_LR_to_RL_adjustment(short_epoch_config['brush'].color())}
+            additional_cmap_names = {k: ColorFormatConverter.qColor_to_hexstring(v) for k, v in color_dict.items()}
+
+            additional_cmaps = {k: ColormapHelpers.create_transparent_colormap(color_literal_name=v, lower_bound_alpha=0.1) for k, v in additional_cmap_names.items()}
+        
+        """
+        from matplotlib.colors import LinearSegmentedColormap
+        from pyphoplacecellanalysis.External.pyqtgraph.colormap import ColorMap
+        
+        if isinstance(mycmap, str):
+            mycmap = pg.colormap.get(mycmap, source='matplotlib')
+
+        # original_n_colors: int = mycmap.N
+        # print(f'original_n_colors: {original_n_colors}')
+
+        # Get colors by sampling the colormap
+        # resampled_num_colors: int = 7  # Number of colors to extract
+        if resampled_num_colors is None:
+            resampled_num_colors: int = original_n_colors  # Number of colors to extract
+
+        ## convert to LinearSegmented if needed:
+        mycmap = cls.colormap_to_linear_segmented(cmap=mycmap, n_samples=resampled_num_colors)        
+        assert isinstance(mycmap, (LinearSegmentedColormap, )), f"type(mycmap): {type(mycmap)}" 
+        _resampled_cmap = mycmap.resampled(resampled_num_colors)
+
+
+        sampled_color_reference_arr = np.array([(float(i) / float(resampled_num_colors - 1)) for i in range(resampled_num_colors)]) ## array ranging between 0.0 and 1.0
+        sampled_color_reference_idxs = np.arange(len(sampled_color_reference_arr))
+        
+        sampled_colors = np.array([list(_resampled_cmap(i / (resampled_num_colors - 1))) for i in range(resampled_num_colors)])
+        # sampled_colors.shape # (num_colors, 4)
+        
+        is_value_below_cutoff = (sampled_color_reference_arr < low_value_cuttoff)
+        
+        # sampled_color_reference_arr[is_value_below_cutoff] ## values
+        below_cuttoff_indicies = sampled_color_reference_idxs[is_value_below_cutoff]
+        
+        # sampled_colors[below_cuttoff_indicies][-1] = 0.0 # set alpha
+
+        # sampled_colors[is_value_below_cutoff][-1] = below_low_value_cuttoff_alpha_value # set alpha
+
+        for idx in below_cuttoff_indicies:
+            sampled_colors[idx][-1] = below_low_value_cuttoff_alpha_value # set alpha  
+
+        # sampled_colors[0][-1] = 0.0 # set alpha
+        # sampled_colors
+
+        # Rebuild the colormap
+        reconstructed_cmap = LinearSegmentedColormap.from_list(f"reconstructed_{_resampled_cmap.name}", sampled_colors)
+
+        return reconstructed_cmap
+                
 
 @metadata_attributes(short_name=None, tags=['color', 'dataseries', 'series', 'helper'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-06-21 13:50', related_items=['UnitColoringMode'])
 class ColorFormatConverter:
@@ -287,8 +377,20 @@ class ColorFormatConverter:
         """ takes an [4, nCell] np.array of 0.0-1.0 values for the color and converts it to a (0.0 - 255.0) array of the same shape.
         Reciprocal: Colors_NDArray_Convert_to_255_array
         """
-        converted_colors_ndarray = deepcopy(colors_ndarray)
-        converted_colors_ndarray[0:2, :] /= 255
+        converted_colors_ndarray = deepcopy(colors_ndarray).astype(float)
+        colors_shape = np.shape(converted_colors_ndarray)
+        n_colors: int = colors_shape[0]
+        assert n_colors in [3, 4], f"n_colors must be either 3 (RGB) or 4 (RGBA) but instead it is {n_colors}. Is the array transposed? colors_shape: {colors_shape}"
+        if n_colors == 3:
+            color_idx_range = np.arange(3) # 0:2, RGB
+        elif n_colors == 4:
+            color_idx_range = np.arange(4) # 0:3, RGBA
+        else:
+            raise NotImplementedError(f'n_colors: {n_colors}')
+        
+        print(f'color_idx_range: {color_idx_range}')
+        converted_colors_ndarray[color_idx_range, :] /= 255
+        # converted_colors_ndarray[0:2, :] /= 255 # UFuncTypeError: Cannot cast ufunc 'divide' output from dtype('float64') to dtype('uint8') with casting rule 'same_kind'
         return converted_colors_ndarray
 
     @classmethod

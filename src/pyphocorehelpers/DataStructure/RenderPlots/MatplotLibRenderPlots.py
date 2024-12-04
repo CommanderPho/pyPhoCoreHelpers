@@ -1,4 +1,5 @@
 from typing import Optional
+from collections.abc import Iterable
 import numpy as np
 
 import matplotlib as mpl
@@ -36,6 +37,7 @@ class MatplotlibRenderPlots(RenderPlots):
         axes = [] # would make way more sense if we had a list of axes for each figure, and a list of Artists for each axes, etc. But this is a start.
         
         for obj in args:
+            #TODO 2024-12-04 11:59: - [ ] Requires a flat object hierarchy
             if isinstance(obj, FigureBase): # .Figure or .SubFigure
                 figures.append(obj)
             elif isinstance(obj, Axes):
@@ -53,6 +55,32 @@ class MatplotlibRenderPlots(RenderPlots):
         fig, axes = plt.subplots(*args, **kwargs)
         # check for scalar axes and wrap it in a tuple if needed before setting self.
         return cls(figures=[fig], axes=axes)
+
+
+    def __add__(self, other):
+        
+        # Combine figures and axes from self and other MatplotlibRenderPlots instances
+        # combined_figures = self.figures + other.figures
+        # combined_axes = self.axes + other.axes
+
+        for k, v in other.data_items():
+            if k not in self.data_keys:
+                # unique to other, add it as a property to self
+                self[k] = v 
+            else:
+                # present in both
+                if (self[k] == v):
+                    ## v already included, don't double it up
+                    pass
+                elif isinstance(self[k], Iterable) and (v in self[k]):
+                    ## also included
+                    pass
+                else:
+                    self[k] = self[k] + v  ## append or w/e
+
+        return self ## return the updated self
+    
+    
 
 
 @function_attributes(short_name=None, tags=['collector', 'figure', 'output'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-06-05 17:27', related_items=['plotting.figure_management.PhoActiveFigureManager2D'])

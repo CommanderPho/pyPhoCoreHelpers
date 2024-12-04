@@ -51,6 +51,21 @@ class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
         return cls._display_library == 'pyqtgraph'
 
 
+    # def __add__(self, other):
+    #     # Combine figures and axes from self and other MatplotlibRenderPlots instances
+    #     # combined_figures = self.figures + other.figures
+    #     # combined_axes = self.axes + other.axes
+
+    #     for k, v in other.data_items().items():
+    #         if k not in self.data_keys:
+    #             # unique to other, add it as a property to self
+    #             self[k] = v 
+    #         else:
+    #             # present in both
+    #             self[k] = self[k] + v  ## append or w/e
+
+    #     return self ## return the updated self
+    
 
     # def __add__(self, other):
     #     if not isinstance(other, CustomDict):

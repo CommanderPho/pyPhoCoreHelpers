@@ -238,7 +238,7 @@ class ColormapHelpers:
 
     @classmethod
     def create_colormap_transparent_below_value(cls, mycmap: Union[str, Any], low_value_cuttoff:float=0.2, below_low_value_cuttoff_alpha_value: float=0.0, resampled_num_colors:int=7):
-        """ 
+        """ Modifies the provided colormap by settings the opacity/alpha of all values below `low_value_cuttoff` (where values always go [0.0, 1.0]) to the value `below_low_value_cuttoff_alpha_value`
         Usage:
             additional_cmap_names = dict(zip(TrackTemplates.get_decoder_names(), ['red', 'purple', 'green', 'orange'])) # {'long_LR': 'red', 'long_RL': 'purple', 'short_LR': 'green', 'short_RL': 'orange'}
 
@@ -274,7 +274,6 @@ class ColormapHelpers:
 
         sampled_color_reference_arr = np.array([(float(i) / float(resampled_num_colors - 1)) for i in range(resampled_num_colors)]) ## array ranging between 0.0 and 1.0
         sampled_color_reference_idxs = np.arange(len(sampled_color_reference_arr))
-        
         sampled_colors = np.array([list(_resampled_cmap(i / (resampled_num_colors - 1))) for i in range(resampled_num_colors)])
         # sampled_colors.shape # (num_colors, 4)
         

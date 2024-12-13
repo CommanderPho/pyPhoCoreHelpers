@@ -10,6 +10,11 @@ from pyphocorehelpers.function_helpers import function_attributes
 from pyphocorehelpers.programming_helpers import metadata_attributes
 from attrs import define
 
+def parse_export_datetime(date_str: str, time_str: Optional[str] = ...): # -> datetime:
+    """ gracefully parses date_str into a datetime with optional time components
+    """
+    ...
+
 @define(slots=False)
 class BaseMatchParser:
     """ 
@@ -21,7 +26,7 @@ class BaseMatchParser:
         ...
     
     def try_iterative_parse(self, parsed_output_dict: Dict) -> Dict:
-        """ attempts to parse the parsed_output_dict 
+        """ attempts to parse the `parsed_output_dict['remaining_string']` (consuming it if successful while updating the dict) 
         returns an updated version
         """
         ...
@@ -31,6 +36,19 @@ class BaseMatchParser:
 @define(slots=False)
 class DayDateTimeParser(BaseMatchParser):
     """ parses a generic datetime 
+    ## pattern allows:
+    anything
+    _  || literal _
+    \d{2}\d{2}[APMF]{2} || a time
+    
+    (?P<export_time_str>_\d{2}\d{2}[APMF]{2})? || optional time suffix like "_1220PM"
+    
+    [_]?(?P<variant_suffix>[^-_]*)  || optional suffix like "_GL" or "_APOGEE"
+    [-]  || literal -
+    
+    
+    #TODO 2024-11-27 16:40: - [ ] Should have obsolited `DayDateWithVariantSuffixParser` now that it permits variants
+    
     """
     def try_parse(self, filename: str) -> Optional[Dict]:
         ...
@@ -38,14 +56,14 @@ class DayDateTimeParser(BaseMatchParser):
 
 
 @define(slots=False)
-class DayDateOnlyParser(BaseMatchParser):
+class _DEPRICATED_DayDateOnlyParser(BaseMatchParser):
     def try_parse(self, filename: str) -> Optional[Dict]:
         ...
     
 
 
 @define(slots=False)
-class DayDateWithVariantSuffixParser(BaseMatchParser):
+class _DEPRICATED_DayDateWithVariantSuffixParser(BaseMatchParser):
     def try_parse(self, filename: str) -> Optional[Dict]:
         ...
     
@@ -142,6 +160,8 @@ def try_parse_chain(basename: str, debug_print: bool = ...): # -> Dict[Any, Any]
 @function_attributes(short_name=None, tags=['parse', 'filename', 'iterative'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-11-15 18:41', related_items=[])
 def try_iterative_parse_chain(basename: str, debug_print: bool = ...): # -> dict[str, str] | Dict[Any, Any]:
     """ tries to parse the basename with the list of parsers THAT CONSUME THE INPUT STRING AS THEY PARSE IT. 
+    
+    Calls `a_test_parser.try_iterative_parse(...)` on the remaining string
     
     Usage:
     

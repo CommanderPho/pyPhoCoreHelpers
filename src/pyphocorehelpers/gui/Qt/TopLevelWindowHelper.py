@@ -59,7 +59,8 @@ def print_widget_hierarchy(widget: QWidget, indent: str = ""):
     """ from pyphocorehelpers.gui.Qt.TopLevelWindowHelper import print_widget_hierarchy
     
     """
-    print(f"{indent}{widget.objectName()} ({widget.__class__.__name__})")
+    undefined_widget_name: str = 'Unnamed'
+    print(f"{indent}{widget.objectName() or undefined_widget_name} ({widget.__class__.__name__})")
     for child in widget.children():
         if isinstance(child, QWidget):
             print_widget_hierarchy(child, indent=indent + "  ")

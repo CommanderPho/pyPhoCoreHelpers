@@ -4,10 +4,13 @@ from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 from nptyping import NDArray
 
 import pyphoplacecellanalysis.External.pyqtgraph as pg
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTableView
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTableView, QHeaderView
 from PyQt5 import QtCore
 # from PyQt5.QtCore import QAbstractTableModel, Qt
 
+from PyQt5.QtCore import Qt, QRect, QSize
+from PyQt5.QtGui import QPainter, QPen, QStyleOptionHeader, QStyle
+import pandas as pd
 
 # class pandasModel(QAbstractTableModel):
 #     """ https://learndataanalysis.org/display-pandas-dataframe-with-pyqt5-qtableview-widget/ 
@@ -38,69 +41,145 @@ from PyQt5 import QtCore
 
 
 
-class PandasModel(QtCore.QAbstractTableModel):
-    """ https://raw.githubusercontent.com/eyllanesc/stackoverflow/master/questions/44603119/PandasModel.py
-    https://stackoverflow.com/questions/44603119/how-to-display-a-pandas-data-frame-with-pyqt5-pyside2
+# class PandasModel(QtCore.QAbstractTableModel):
+#     """ https://raw.githubusercontent.com/eyllanesc/stackoverflow/master/questions/44603119/PandasModel.py
+#     https://stackoverflow.com/questions/44603119/how-to-display-a-pandas-data-frame-with-pyqt5-pyside2
     
     
-    """
-    def __init__(self, df = pd.DataFrame(), parent=None): 
-        QtCore.QAbstractTableModel.__init__(self, parent=parent)
-        self._df = df
+#     """
+#     def __init__(self, df = pd.DataFrame(), parent=None): 
+#         QtCore.QAbstractTableModel.__init__(self, parent=parent)
+#         self._df = df
 
-    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
-        if role != QtCore.Qt.DisplayRole:
-            return QtCore.QVariant()
+#     def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+#         if role != QtCore.Qt.DisplayRole:
+#             return QtCore.QVariant()
 
-        if orientation == QtCore.Qt.Horizontal:
-            try:
-                return self._df.columns.tolist()[section]
-            except (IndexError, ):
-                return QtCore.QVariant()
-        elif orientation == QtCore.Qt.Vertical:
-            try:
-                # return self.df.index.tolist()
-                return self._df.index.tolist()[section]
-            except (IndexError, ):
-                return QtCore.QVariant()
+#         if orientation == QtCore.Qt.Horizontal:
+#             try:
+#                 return self._df.columns.tolist()[section]
+#             except (IndexError, ):
+#                 return QtCore.QVariant()
+#         elif orientation == QtCore.Qt.Vertical:
+#             try:
+#                 # return self.df.index.tolist()
+#                 return self._df.index.tolist()[section]
+#             except (IndexError, ):
+#                 return QtCore.QVariant()
 
-    def data(self, index, role=QtCore.Qt.DisplayRole):
-        if role != QtCore.Qt.DisplayRole:
-            return QtCore.QVariant()
+#     def data(self, index, role=QtCore.Qt.DisplayRole):
+#         if role != QtCore.Qt.DisplayRole:
+#             return QtCore.QVariant()
 
-        if not index.isValid():
-            return QtCore.QVariant()
+#         if not index.isValid():
+#             return QtCore.QVariant()
 
-        return QtCore.QVariant(str(self._df.iloc[index.row(), index.column()]))
+#         return QtCore.QVariant(str(self._df.iloc[index.row(), index.column()]))
 
-    def setData(self, index, value, role):
-        row = self._df.index[index.row()]
-        col = self._df.columns[index.column()]
-        if hasattr(value, 'toPyObject'):
-            # PyQt4 gets a QVariant
-            value = value.toPyObject()
-        else:
-            # PySide gets an unicode
-            dtype = self._df[col].dtype
-            if dtype != object:
-                value = None if value == '' else dtype.type(value)
-        self._df.set_value(row, col, value)
-        return True
+#     def setData(self, index, value, role):
+#         row = self._df.index[index.row()]
+#         col = self._df.columns[index.column()]
+#         if hasattr(value, 'toPyObject'):
+#             # PyQt4 gets a QVariant
+#             value = value.toPyObject()
+#         else:
+#             # PySide gets an unicode
+#             dtype = self._df[col].dtype
+#             if dtype != object:
+#                 value = None if value == '' else dtype.type(value)
+#         self._df.set_value(row, col, value)
+#         return True
 
-    def rowCount(self, parent=QtCore.QModelIndex()): 
-        return len(self._df.index)
+#     def rowCount(self, parent=QtCore.QModelIndex()): 
+#         return len(self._df.index)
 
-    def columnCount(self, parent=QtCore.QModelIndex()): 
-        return len(self._df.columns)
+#     def columnCount(self, parent=QtCore.QModelIndex()): 
+#         return len(self._df.columns)
 
-    def sort(self, column, order):
-        colname = self._df.columns.tolist()[column]
-        self.layoutAboutToBeChanged.emit()
-        self._df.sort_values(colname, ascending= order == QtCore.Qt.AscendingOrder, inplace=True)
-        self._df.reset_index(inplace=True, drop=True)
-        self.layoutChanged.emit()
+#     def sort(self, column, order):
+#         colname = self._df.columns.tolist()[column]
+#         self.layoutAboutToBeChanged.emit()
+#         self._df.sort_values(colname, ascending= order == QtCore.Qt.AscendingOrder, inplace=True)
+#         self._df.reset_index(inplace=True, drop=True)
+#         self.layoutChanged.emit()
+
         
-        
+# class GroupedHeaderView(QHeaderView):
+#     def __init__(self, parent=None):
+#         super().__init__(Qt.Horizontal, parent)
+#         self.groups = { "Group A": range(0,4), "Group B": range(4,8) }
+
+#     def paintSection(self, painter, rect, logicalIndex):
+#         super().paintSection(painter, rect, logicalIndex)
+
+#     def paintEvent(self, event):
+#         super().paintEvent(event)
+#         painter = QPainter(self.viewport())
+#         pen = QPen(Qt.black)
+#         painter.setPen(pen)
+#         for group_name, cols in self.groups.items():
+#             first_col = min(cols)
+#             last_col = max(cols)
+#             first_rect = self.sectionViewportPosition(first_col)
+#             width = sum(self.sectionSize(i) for i in cols)
+#             group_rect = QRect(first_rect, 0, width, self.height()//2)
+#             painter.fillRect(group_rect, self.palette().base())
+#             painter.drawRect(group_rect)
+#             painter.drawText(group_rect, Qt.AlignCenter, group_name)
+
+
+class GroupedHeaderView(QHeaderView):
+    def __init__(self, df, parent=None):
+        super().__init__(Qt.Horizontal, parent)
+        self.df = df
+        self.groups = self._build_groups()
+        self.setDefaultAlignment(Qt.AlignCenter)
+
+    def _build_groups(self):
+        # Non-grouped initial columns
+        non_grouped_cols = ['start', 'stop', 'label', 'duration', 'is_user_annotated_epoch', 'is_valid_epoch', 'session_name', 'time_bin_size', 'delta_aligned_start_t', 'pre_post_delta_category', 'maze_id']
+        all_cols = list(self.df.columns)
+        start_idx = len(non_grouped_cols)
+
+        # Columns after the initial set are grouped in fours. They share a prefix.
+        # Each group has suffixes like _long_LR, _long_RL, _short_LR, _short_RL
+        grouped_cols = all_cols[start_idx:]
+        group_map = {}
+        for i, c in enumerate(grouped_cols, start=start_idx):
+            prefix = c.rsplit('_', 2)[0] # remove the last two parts to get prefix
+            group_map.setdefault(prefix, []).append(i)
+
+        # Combine into one dict: non-grouped columns as their own groups, then grouped prefixes
+        groups = {}
+        # Each single initial column can be its own group or omitted if desired:
+        for i, c in enumerate(non_grouped_cols):
+            groups[c] = [i]
+
+        for prefix, indices in group_map.items():
+            # Ensure we only group if we have multiples of 4
+            if len(indices) == 4:
+                groups[prefix] = indices
+            else:
+                # If not multiples of 4, just show them individually:
+                for i_idx in indices:
+                    groups[all_cols[i_idx]] = [i_idx]
+
+        return groups
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self.viewport())
+        h = self.height()
+        # First paint a top header row for groups
+        # Each group is drawn above the column headers
+        for group_name, cols in self.groups.items():
+            first_col = min(cols)
+            width = sum(self.sectionSize(c) for c in cols)
+            left = self.sectionViewportPosition(first_col)
+            # Draw group rectangle on top half
+            group_rect = QRect(left, 0, width, h//2)
+            painter.drawText(group_rect, Qt.AlignCenter, group_name)
+
 
 # Step 1: Convert DataFrame to QAbstractTableModel
 class SimplePandasModel(QtCore.QAbstractTableModel):
@@ -117,10 +196,10 @@ class SimplePandasModel(QtCore.QAbstractTableModel):
     def columnCount(self, parent=None):
         return self._data.shape[1]
 
-    def data(self, index, role=QtCore.Qt.DisplayRole):
-        if index.isValid() and role == QtCore.Qt.DisplayRole:
-            return str(self._data.iloc[index.row(), index.column()])
-        return None
+    # def data(self, index, role=QtCore.Qt.DisplayRole):
+    #     if index.isValid() and role == QtCore.Qt.DisplayRole:
+    #         return str(self._data.iloc[index.row(), index.column()])
+    #     return None
 
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole:
@@ -131,6 +210,15 @@ class SimplePandasModel(QtCore.QAbstractTableModel):
         return None
 
 
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        """ enables formatting the precision of the outputs, etc.
+        """
+        if not index.isValid() or role != QtCore.Qt.DisplayRole:
+            return None
+        val = self._data.iat[index.row(), index.column()]
+        if isinstance(val, float):
+            return f"{val:.2f}"
+        return str(val)
 
 
 ## 
@@ -187,6 +275,11 @@ def create_tabbed_table_widget(dataframes_dict: Dict[str, pd.DataFrame]) -> Tupl
         # Create and associate view with model
         view = pg.QtWidgets.QTableView()
         view.setModel(models_dict[a_name])
+        # view.setModel(df.to_numpy().__array_interface__) # Note: For a real model, use a QAbstractTableModel subclass. This is a placeholder.
+        # header = GroupedHeaderView()
+        header = GroupedHeaderView(df) ## needs the df now to determine header layout
+        view.setHorizontalHeader(header)
+        
         views_dict[a_name] = view
 
         # Add tab with view
@@ -269,6 +362,7 @@ def build_test_app_containing_pandas_table(active_selected_spikes_df: pd.DataFra
 
 
 if __name__ == '__main__':
+    app = pg.mkQApp('vitables')
     sys.exit(app.exec_())
     # pg.exec()
 

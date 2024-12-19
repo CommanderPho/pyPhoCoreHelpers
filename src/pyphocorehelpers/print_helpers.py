@@ -1,3 +1,4 @@
+from copy import deepcopy
 from functools import partial
 import socket # for getting hostname
 from typing import Union, List, Dict, Tuple, Set, Any, Optional, OrderedDict, Callable  # for OrderedMeta
@@ -1652,6 +1653,84 @@ import pandas as pd
 from IPython.display import HTML
 import matplotlib.pyplot as plt
 
+
+def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: str = 'viridis', max_height: int = 400, width: str = '100%', is_dark_mode: bool=True, **kwargs) -> Union[HTML, str]:
+    """ Takes a numpy array of values and returns a scrollable and color-coded table rendition of it
+
+    Usage:    
+        from pyphocorehelpers.print_helpers import render_scrollable_colored_table_from_dataframe
+
+        # Example usage:
+
+        # Example 2D NumPy array
+        array = np.random.rand(100, 10)
+        # Draw it
+        render_scrollable_colored_table(array)
+        
+        # Example 2:
+            render_scrollable_colored_table(np.random.rand(100, 10), cmap_name='plasma', max_height=500, width='80%')
+            render_scrollable_colored_table_from_dataframe(df=normalized_df, cmap_name=cmap_name, max_height=max_height, width=width, **kwargs)
+            
+    """
+    # Validate input array
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a DataFrame array.")
+        
+    # Validate colormap name
+    if cmap_name is not None:
+        if cmap_name not in plt.colormaps():
+            raise ValueError(f"Invalid colormap name '{cmap_name}'. Use one of: {', '.join(plt.colormaps())}.")
+    
+    # Convert the array to a Pandas DataFrame
+
+    ## Normalize each column to the 0, 1 range or ignore formatting
+    # Normalize the data to [0, 1] range
+    # normalized_df = (df - df.min().min()) / (df.max().max() - df.min().min())
+    
+    normalized_df = deepcopy(df)
+    
+    # Function to calculate luminance and return appropriate text color
+    def text_contrast(rgba):
+        r, g, b, a = rgba[:4]
+        luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        return 'black' if luminance > 0.5 else 'white'
+
+    # Define a function to apply a colormap and text color based on luminance
+    def color_map(val):
+        use_default_formatting = True
+        cmap = None
+        if cmap_name is not None:
+            cmap = plt.get_cmap(cmap_name)  # Use the provided colormap
+        
+        try:
+            color = cmap(val)
+            text_color = text_contrast(color)
+            use_default_formatting = False
+        except TypeError as e:
+            ## Not formattable, return default text color (white)
+            use_default_formatting = True
+        except Exception as e:
+            raise e
+        
+        if use_default_formatting:
+            if is_dark_mode:
+                color = 'black'
+                text_color = 'white'
+            else:
+                color = 'white'
+                text_color = 'black'
+
+        return f'background-color: rgba({color[0]*255}, {color[1]*255}, {color[2]*255}, {color[3]}); color: {text_color}'
+
+    # Apply the color map with contrast adjustment
+    styled_df = normalized_df.style.applymap(color_map)
+    formatted_table = styled_df.set_table_attributes(f'style="display:block;overflow-x:auto;max-height:{max_height}px;width:{width};border-collapse:collapse;"').render()
+    # Render the DataFrame as a scrollable table with color-coded values
+    scrollable_table = HTML(formatted_table)
+
+    return scrollable_table
+        
+
 def render_scrollable_colored_table(array: NDArray, cmap_name: str = 'viridis', max_height: int = 400, width: str = '100%') -> Union[HTML, str]:
     """ Takes a numpy array of values and returns a scrollable and color-coded table rendition of it
 
@@ -1681,26 +1760,7 @@ def render_scrollable_colored_table(array: NDArray, cmap_name: str = 'viridis', 
     # Normalize the data to [0, 1] range
     normalized_df = (df - df.min().min()) / (df.max().max() - df.min().min())
 
-    # Function to calculate luminance and return appropriate text color
-    def text_contrast(rgba):
-        r, g, b, a = rgba[:4]
-        luminance = 0.299 * r + 0.587 * g + 0.114 * b
-        return 'black' if luminance > 0.5 else 'white'
-
-    # Define a function to apply a colormap and text color based on luminance
-    def color_map(val):
-        cmap = plt.get_cmap(cmap_name)  # Use the provided colormap
-        color = cmap(val)
-        text_color = text_contrast(color)
-        return f'background-color: rgba({color[0]*255}, {color[1]*255}, {color[2]*255}, {color[3]}); color: {text_color}'
-
-    # Apply the color map with contrast adjustment
-    styled_df = normalized_df.style.applymap(color_map)
-
-    # Render the DataFrame as a scrollable table with color-coded values
-    scrollable_table = HTML(styled_df.set_table_attributes(f'style="display:block;overflow-x:auto;max-height:{max_height}px;width:{width};border-collapse:collapse;"').render())
-
-    return scrollable_table
+    return render_scrollable_colored_table_from_dataframe(df=normalized_df, cmap_name=cmap_name, max_height=max_height, width=width, **kwargs)
 
     
 # Example usage:

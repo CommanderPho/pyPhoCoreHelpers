@@ -4,12 +4,12 @@ from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 from nptyping import NDArray
 
 import pyphoplacecellanalysis.External.pyqtgraph as pg
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTableView, QHeaderView
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTableView, QHeaderView, QStyleOptionHeader, QStyle
 from PyQt5 import QtCore
 # from PyQt5.QtCore import QAbstractTableModel, Qt
 
-from PyQt5.QtCore import Qt, QRect, QSize
-from PyQt5.QtGui import QPainter, QPen, QStyleOptionHeader, QStyle
+from PyQt5.QtCore import Qt, QRect, QSize, QModelIndex
+from PyQt5.QtGui import QPainter, QPen
 import pandas as pd
 
 class GroupedHeaderView(QHeaderView):
@@ -18,50 +18,63 @@ class GroupedHeaderView(QHeaderView):
         self.df = df
         self.groups = self._build_groups()
         self.setDefaultAlignment(Qt.AlignCenter)
+        self.setStretchLastSection(True)
 
     def _build_groups(self):
-        # Non-grouped initial columns
         non_grouped_cols = ['start', 'stop', 'label', 'duration', 'is_user_annotated_epoch', 'is_valid_epoch', 'session_name', 'time_bin_size', 'delta_aligned_start_t', 'pre_post_delta_category', 'maze_id']
         all_cols = list(self.df.columns)
         start_idx = len(non_grouped_cols)
-
-        # Columns after the initial set are grouped in fours. They share a prefix.
-        # Each group has suffixes like _long_LR, _long_RL, _short_LR, _short_RL
         grouped_cols = all_cols[start_idx:]
         group_map = {}
         for i, c in enumerate(grouped_cols, start=start_idx):
-            prefix = c.rsplit('_', 2)[0] # remove the last two parts to get prefix
+            prefix = c.rsplit('_', 2)[0]
             group_map.setdefault(prefix, []).append(i)
 
-        # Combine into one dict: non-grouped columns as their own groups, then grouped prefixes
         groups = {}
-        # Each single initial column can be its own group or omitted if desired:
         for i, c in enumerate(non_grouped_cols):
             groups[c] = [i]
 
         for prefix, indices in group_map.items():
-            # Ensure we only group if we have multiples of 4
             if len(indices) == 4:
                 groups[prefix] = indices
             else:
-                # If not multiples of 4, just show them individually:
                 for i_idx in indices:
                     groups[all_cols[i_idx]] = [i_idx]
 
         return groups
 
+    def sizeHint(self):
+        # Increase the height for two-level headers
+        base_hint = super().sizeHint()
+        return QSize(base_hint.width(), base_hint.height()*2)
+
+    def paintSection(self, painter, rect, logicalIndex):
+        if not rect.isValid():
+            return
+        painter.save()
+        # Draw background and border
+        painter.fillRect(rect, self.palette().window())
+        painter.drawRect(rect)
+
+        # Draw column label at bottom half
+        col_name = self.model().headerData(logicalIndex, Qt.Horizontal, Qt.DisplayRole) or ""
+        half_height = rect.height() // 2
+        bottom_rect = QRect(rect.x(), rect.y() + half_height, rect.width(), half_height)
+        painter.drawText(bottom_rect, Qt.AlignCenter, col_name)
+        painter.restore()
+
     def paintEvent(self, event):
         super().paintEvent(event)
+        # Paint group labels on top half
         painter = QPainter(self.viewport())
-        h = self.height()
-        # First paint a top header row for groups
-        # Each group is drawn above the column headers
+        half_height = self.height()//2
         for group_name, cols in self.groups.items():
+            if not cols:
+                continue
             first_col = min(cols)
             width = sum(self.sectionSize(c) for c in cols)
             left = self.sectionViewportPosition(first_col)
-            # Draw group rectangle on top half
-            group_rect = QRect(left, 0, width, h//2)
+            group_rect = QRect(left, 0, width, half_height)
             painter.drawText(group_rect, Qt.AlignCenter, group_name)
 
 

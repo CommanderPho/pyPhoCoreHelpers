@@ -344,6 +344,34 @@ class IPythonHelpers:
     
 
 
+class VariableNameCaseFormat(Enum):
+    """Enumeration for Python dictionary definition formats.
+    TODO 2023-05-16: UNTESTED, UNUSED
+    Goal: Transform code between Python's dictionary literal format:
+
+        dictionary literal format:  {'require_intersecting_epoch':session.ripple, 'min_epoch_included_duration': 0.06, 'max_epoch_included_duration': None, 'maximum_speed_thresh': None, 'min_inclusion_fr_active_thresh': 0.01, 'min_num_unique_aclu_inclusions': 3}
+
+        dict constructor format:    dict(require_intersecting_epoch=session.ripple, min_epoch_included_duration=0.06, max_epoch_included_duration=None, maximum_speed_thresh=None, min_inclusion_fr_active_thresh=0.01, min_num_unique_aclu_inclusions=3)
+
+
+        from pyphocorehelpers.programming_helpers import VariableNameCaseFormat
+        input_str = "{'require_intersecting_epoch':session.ripple, 'min_epoch_included_duration': 0.06, 'max_epoch_included_duration': None, 'maximum_speed_thresh': None, 'min_inclusion_fr_active_thresh': 0.01, 'min_num_unique_aclu_inclusions': 3}"
+        format_detected = PythonDictionaryDefinitionFormat.DICTIONARY_LITERAL
+
+        converted_str = VariableNameCaseFormat.convert_format(input_str, PythonDictionaryDefinitionFormat.DICT_CONSTRUCTOR)
+        print(converted_str)
+        # Output: dict(require_intersecting_epoch=session.ripple, min_epoch_included_duration=0.06, max_epoch_included_duration=None, maximum_speed_thresh=None, min_inclusion_fr_active_thresh=0.01, min_num_unique_aclu_inclusions=3)
+
+    """
+    UNDERSCORE_SEPARATED = ...
+    CAMEL_CASE = ...
+    @classmethod
+    def convert_format(cls, input_str, target_format): # -> LiteralString | str:
+        """Converts the input string to the target format."""
+        ...
+    
+
+
 class PythonDictionaryDefinitionFormat(Enum):
     """Enumeration for Python dictionary definition formats.
     TODO 2023-05-16: UNTESTED, UNUSED
@@ -366,7 +394,7 @@ class PythonDictionaryDefinitionFormat(Enum):
     DICTIONARY_LITERAL = ...
     DICT_CONSTRUCTOR = ...
     @staticmethod
-    def convert_format(input_str, target_format): # -> str:
+    def convert_format(input_str, target_format): # -> LiteralString | str:
         """Converts the input string to the target format."""
         ...
     

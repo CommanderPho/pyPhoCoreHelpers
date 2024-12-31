@@ -26,5 +26,5 @@ class PlottingBackendSpecifyingMixin:
     
     @classmethod
     def is_matplotlib_based(cls) -> bool:
-        return (cls.get_plot_backing_type() == PlottingBackendType.Matplotlib.value)
+        return (cls.get_plot_backing_type().value == PlottingBackendType.Matplotlib.value)
     

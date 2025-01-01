@@ -1650,11 +1650,46 @@ def build_logger(full_logger_string: str, file_logging_dir=None,
 # ==================================================================================================================== #
 import numpy as np
 import pandas as pd
+import math
 from IPython.display import HTML
 import matplotlib.pyplot as plt
 
-# @function_attributes(short_name=None, tags=['table', 'dataframe', 'formatter', 'display', 'render'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-01-01 13:39', related_items=[])
-def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: str = 'viridis', max_height: int = 400, width: str = '100%', is_dark_mode: bool=True, output_fn=HTML, **kwargs) -> Union[HTML, str]:
+# @function_attributes(short_name=None, tags=['elide', 'truncation', 'display'], input_requires=[], output_provides=[], uses=[], used_by=['render_scrollable_colored_table_from_dataframe'], creation_date='2025-01-01 14:44', related_items=[])
+def ellided_dataframe(df: pd.DataFrame, max_rows_to_include: int = 200, num_truncated_rows_per_ellipsis_rows: int = 1000) -> pd.DataFrame:
+    """ returns a truncated/elided dataframe if the number of rows exceeds `max_rows_to_include`. Returned unchanged if n_rows is already less than `max_rows_to_include`.
+    
+    from pyphocorehelpers.print_helpers import ellided_dataframe
+    
+    truncated_df = ellided_dataframe(df=df, max_rows_to_include=100)
+    """
+    # Truncate DataFrame if too many rows ________________________________________________________________________________ #
+    n_rows: int = len(df)
+    n_rows_truncated: int = 0
+    if n_rows <= max_rows_to_include:
+        return df
+    else:
+        n_rows_truncated: int = (n_rows - max_rows_to_include)
+        n_truncation_symbols: int = math.ceil(n_rows_truncated / num_truncated_rows_per_ellipsis_rows)
+        half = max_rows_to_include // 2
+        top_df = df.head(half)
+        bottom_df = df.tail(half)
+        
+        # Generate multiple ellipsis rows (One per 1,000 truncated rows)
+        # starts = (np.arange(n_truncation_symbols) * num_truncated_rows_per_ellipsis_rows)
+        # ends = ((np.arange(n_truncation_symbols)+1) * num_truncated_rows_per_ellipsis_rows) # [1:] could use modulo `n_rows_truncated`
+        # ellipsis_index = [f"... trunc<{starts[i]}-{ends[i]}>)" for i in range(n_truncation_symbols)]
+        ellipsis_index = [f"... trunc[{i}<{num_truncated_rows_per_ellipsis_rows} rows>)" for i in range(n_truncation_symbols)]
+        ellipsis_rows = pd.DataFrame(
+            [['…'] * df.shape[1]] * n_truncation_symbols,
+            columns=df.columns,
+            index=ellipsis_index
+        )
+        return pd.concat([top_df, ellipsis_rows, bottom_df], axis=0)
+
+        
+
+# @function_attributes(short_name=None, tags=['table', 'dataframe', 'formatter', 'display', 'render'], input_requires=[], output_provides=[], uses=['ellided_dataframe], used_by=[], creation_date='2025-01-01 13:39', related_items=[])
+def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: str = 'viridis', max_height: int = 400, width: str = '100%', is_dark_mode: bool=True, max_rows_to_display: int = 200, output_fn=HTML, **kwargs) -> Union[HTML, str]:
     """ Takes a numpy array of values and returns a scrollable and color-coded table rendition of it
 
     Usage:    
@@ -1685,13 +1720,23 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
         if cmap_name not in plt.colormaps():
             raise ValueError(f"Invalid colormap name '{cmap_name}'. Use one of: {', '.join(plt.colormaps())}.")
     
-    # Convert the array to a Pandas DataFrame
 
+    # Truncate DataFrame if too many rows ________________________________________________________________________________ #
+    num_truncated_rows_per_ellipsis_rows: int = 1000
+    n_rows: int = len(df)
+    n_rows_truncated: int = 0
+    if n_rows > max_rows_to_display:
+        n_rows_truncated: int = (n_rows - max_rows_to_display)
+        truncated_df = ellided_dataframe(df=df, max_rows_to_include=max_rows_to_display)
+
+    else:
+        truncated_df = df
+        
     ## Normalize each column to the 0, 1 range or ignore formatting
     # Normalize the data to [0, 1] range
     # normalized_df = (df - df.min().min()) / (df.max().max() - df.min().min())
     
-    normalized_df = deepcopy(df)
+    normalized_df = deepcopy(truncated_df)
     
     # Function to calculate luminance and return appropriate text color
     def text_contrast(rgba):
@@ -1733,9 +1778,16 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
     table_shape_footer = f"""
         <div style="text-align: left; margin-top: 10px; font-size: 12px; color: {white_color if is_dark_mode else black_color};">
             {df.shape[0]} rows × {df.shape[1]} columns
+    """    
+
+    if n_rows_truncated > 0:
+        # table_shape_footer += f"    <{n_rows_truncated} rows truncated>\n"
+        table_shape_footer += f"    <{n_rows - n_rows_truncated}/{n_rows} rows displayed>\n"
+
+    table_shape_footer += """
         </div>
     """
-
+    
     full_html = f"""
         <div>
             {formatted_table}

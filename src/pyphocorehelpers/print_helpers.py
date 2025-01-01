@@ -1765,8 +1765,13 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
     
     normalized_df = deepcopy(truncated_df)
     
+    will_scroll_vertically: bool = False
     estimated_table_height = estimate_rendered_df_table_height(df=normalized_df)
-    will_scroll_vertically: bool = (estimated_table_height >= max_height)
+    if max_height is None:
+        max_height_str: str = 'auto'
+    else:
+        will_scroll_vertically = (estimated_table_height >= max_height)
+        max_height_str: str = f"{max_height}px"
 
     # Function to calculate luminance and return appropriate text color
     def text_contrast(rgba):
@@ -1811,7 +1816,7 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
         ## only add the shadow if the table's estimated height exceeds the available height
         box_shadow = 'box-shadow: inset 0 -32px 15px -10px rgba(20,255,20,0.5);' ## this one is good
 
-    formatted_table = styled_df.set_table_attributes(f'style="display:block;overflow-x:auto;max-height:{max_height}px;width:{width};border-collapse:collapse;position:relative;{box_shadow};"').render()
+    formatted_table = styled_df.set_table_attributes(f'style="display:block;overflow-x:auto;max-height:{max_height_str};width:{width};border-collapse:collapse;position:relative;{box_shadow};"').render()
     
     table_shape_footer = f"""
         <div style="text-align: left; margin-top: 10px; font-size: 12px; color: {white_color if is_dark_mode else black_color};">
@@ -1828,13 +1833,13 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
     
     # Updated gradient overlay placement
     scrollable_container = f"""
-        <div style="position:relative;max-height:{max_height}px;overflow:auto;">
+        <div style="position:relative;max-height:{max_height_str};overflow:auto;">
             {formatted_table}
         </div>
     """
     
     # scrollable_container = f"""
-    #     <div style="position:relative;max-height:{max_height}px;overflow:auto;padding-bottom:20px;">
+    #     <div style="position:relative;max-height:{max_height_str};overflow:auto;padding-bottom:20px;">
     #         {formatted_table}
     #         <div style="position:sticky;bottom:0;left:0;width:100%;height:20px;
     #         background:linear-gradient(to top, rgba(255,0,0,0.5), rgba(255,0,0,0));pointer-events:none;">

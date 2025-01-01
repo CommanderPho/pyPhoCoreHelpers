@@ -1689,7 +1689,7 @@ def ellided_dataframe(df: pd.DataFrame, max_rows_to_include: int = 200, num_trun
         
 
 # @function_attributes(short_name=None, tags=['table', 'dataframe', 'formatter', 'display', 'render'], input_requires=[], output_provides=[], uses=['ellided_dataframe], used_by=[], creation_date='2025-01-01 13:39', related_items=[])
-def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: str = 'viridis', max_height: int = 400, width: str = '100%', is_dark_mode: bool=True, max_rows_to_display: int = 200, output_fn=HTML, **kwargs) -> Union[HTML, str]:
+def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: str = 'viridis', max_height: int = 400, width: str = '100%', is_dark_mode: bool=True, max_rows_to_render_for_performance: int = 100, output_fn=HTML, **kwargs) -> Union[HTML, str]:
     """ Takes a numpy array of values and returns a scrollable and color-coded table rendition of it
 
     Usage:    
@@ -1725,9 +1725,9 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
     num_truncated_rows_per_ellipsis_rows: int = 1000
     n_rows: int = len(df)
     n_rows_truncated: int = 0
-    if n_rows > max_rows_to_display:
-        n_rows_truncated: int = (n_rows - max_rows_to_display)
-        truncated_df = ellided_dataframe(df=df, max_rows_to_include=max_rows_to_display)
+    if n_rows > max_rows_to_render_for_performance:
+        n_rows_truncated: int = (n_rows - max_rows_to_render_for_performance)
+        truncated_df = ellided_dataframe(df=df, max_rows_to_include=max_rows_to_render_for_performance)
 
     else:
         truncated_df = df
@@ -1773,7 +1773,12 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
 
     # Apply the color map with contrast adjustment
     styled_df = normalized_df.style.applymap(color_map)
-    formatted_table = styled_df.set_table_attributes(f'style="display:block;overflow-x:auto;max-height:{max_height}px;width:{width};border-collapse:collapse;"').render()
+    
+
+    # Updated shadow and gradient for scroll indication
+    box_shadow = 'inset 0 -32px 15px -10px rgba(20,255,20,0.5);' ## this one is good
+
+    formatted_table = styled_df.set_table_attributes(f'style="display:block;overflow-x:auto;max-height:{max_height}px;width:{width};border-collapse:collapse;position:relative;box-shadow: {box_shadow};"').render()
     
     table_shape_footer = f"""
         <div style="text-align: left; margin-top: 10px; font-size: 12px; color: {white_color if is_dark_mode else black_color};">
@@ -1788,12 +1793,38 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
         </div>
     """
     
-    full_html = f"""
-        <div>
+    # Updated gradient overlay placement
+    scrollable_container = f"""
+        <div style="position:relative;max-height:{max_height}px;overflow:auto;">
             {formatted_table}
+        </div>
+    """
+    
+    # scrollable_container = f"""
+    #     <div style="position:relative;max-height:{max_height}px;overflow:auto;padding-bottom:20px;">
+    #         {formatted_table}
+    #         <div style="position:sticky;bottom:0;left:0;width:100%;height:20px;
+    #         background:linear-gradient(to top, rgba(255,0,0,0.5), rgba(255,0,0,0));pointer-events:none;">
+    #         </div>
+    #     </div>
+    # """
+
+
+    # # Gradient overlay now positioned outside the scrollable container
+    # gradient_overlay = f"""
+    #     <div style="position:absolute;bottom:0;left:0;width:100%;height:40px;
+    #     background:linear-gradient(to top, rgba(255,0,0,0.5), rgba(255,0,0,0));z-index:1;pointer-events:none;">
+    #     </div>
+    # """
+
+    # Updated full HTML structure
+    full_html = f"""
+        <div style="position:relative;">
+            {scrollable_container}
             {table_shape_footer}
         </div>
     """
+    # {gradient_overlay}  <!-- Ensures gradient is outside the scrollable area -->
 
     # Render the DataFrame as a scrollable table with color-coded values
     scrollable_table = output_fn(full_html)

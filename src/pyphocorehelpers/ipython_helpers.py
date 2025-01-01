@@ -41,7 +41,7 @@ class CustomFormatterMagics(Magics):
         _bak_formatter = ip.display_formatter.formatters['text/html'].type_printers.pop(pd.DataFrame, None)
             
         # Register the custom display function for pd.DataFrames for the duration of the cell:
-        ip.display_formatter.formatters['text/html'].for_type(pd.DataFrame, lambda df: render_scrollable_colored_table_from_dataframe(df, output_fn=str)) # , height=height, width=width
+        ip.display_formatter.formatters['text/html'].for_type(pd.DataFrame, lambda df: render_scrollable_colored_table_from_dataframe(df, output_fn=str, max_rows_to_render_for_performance=90)) # , height=height, width=width
     
         # Split the cell into individual lines
         cell_lines = cell.splitlines()

@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 
 class IMShowHelpers:
-	""" 
+	""" Helpers related to matplotlib's `imshow(...)` command which have tons of ideosyncracies, especially related to the origin
 	
 	from pyphocorehelpers.plotting.image_plotting_helpers import IMShowHelpers
 	

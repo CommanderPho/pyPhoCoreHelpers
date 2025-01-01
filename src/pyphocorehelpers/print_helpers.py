@@ -1717,7 +1717,7 @@ def estimate_rendered_df_table_height(df: pd.DataFrame, debug_print=False) -> fl
 
 
 # @function_attributes(short_name=None, tags=['table', 'dataframe', 'formatter', 'display', 'render'], input_requires=[], output_provides=[], uses=['ellided_dataframe], used_by=[], creation_date='2025-01-01 13:39', related_items=[])
-def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: str = 'viridis', max_height: int = 400, width: str = '100%', is_dark_mode: bool=True, max_rows_to_render_for_performance: int = 100, output_fn=HTML, **kwargs) -> Union[HTML, str]:
+def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: str = 'viridis', max_height: Optional[int] = 400, width: str = '100%', is_dark_mode: bool=True, max_rows_to_render_for_performance: int = 100, output_fn=HTML, **kwargs) -> Union[HTML, str]:
     """ Takes a numpy array of values and returns a scrollable and color-coded table rendition of it
 
     Usage:    
@@ -1870,7 +1870,7 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
     return scrollable_table
         
 
-def render_scrollable_colored_table(array: NDArray, cmap_name: str = 'viridis', max_height: int = 400, width: str = '100%') -> Union[HTML, str]:
+def render_scrollable_colored_table(array: NDArray, cmap_name: str = 'viridis', max_height: Optional[int] = 400, width: str = '100%', **kwargs) -> Union[HTML, str]:
     """ Takes a numpy array of values and returns a scrollable and color-coded table rendition of it
 
     Usage:    

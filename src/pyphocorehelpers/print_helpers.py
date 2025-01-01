@@ -1686,7 +1686,35 @@ def ellided_dataframe(df: pd.DataFrame, max_rows_to_include: int = 200, num_trun
         )
         return pd.concat([top_df, ellipsis_rows, bottom_df], axis=0)
 
-        
+
+# @function_attributes(short_name=None, tags=['HTML', 'render', 'formatting', 'layout'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-01-01 15:30', related_items=[])  
+def estimate_rendered_df_table_height(df: pd.DataFrame, debug_print=False) -> float:
+    """ estimates the required height in px for rendered df
+    
+    Usage:
+        estimated_table_height = estimate_rendered_df_table_height(df=normalized_df)
+        will_scroll_vertically: bool = (estimated_table_height >= max_height)
+    
+    """
+    table_row_height: int = 24
+    const_table_parts_height = 72
+
+    # Get the number of levels in the MultiIndex
+    # Get the number of levels in the index and columns
+    index_levels = df.index.nlevels
+    column_levels = df.columns.nlevels
+
+    # Determine the maximum number of levels
+    max_header_levels = max(index_levels, column_levels) + 1
+    if debug_print:
+        print(f"Index levels: {index_levels}, Column levels: {column_levels}")
+        print(f"Maximum number of levels: {max_header_levels}")
+
+    n_rows: int = len(df)
+
+    total_table_height = (n_rows * table_row_height) + (max_header_levels * table_row_height)
+    return total_table_height
+
 
 # @function_attributes(short_name=None, tags=['table', 'dataframe', 'formatter', 'display', 'render'], input_requires=[], output_provides=[], uses=['ellided_dataframe], used_by=[], creation_date='2025-01-01 13:39', related_items=[])
 def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: str = 'viridis', max_height: int = 400, width: str = '100%', is_dark_mode: bool=True, max_rows_to_render_for_performance: int = 100, output_fn=HTML, **kwargs) -> Union[HTML, str]:
@@ -1721,8 +1749,7 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
             raise ValueError(f"Invalid colormap name '{cmap_name}'. Use one of: {', '.join(plt.colormaps())}.")
     
 
-    # Truncate DataFrame if too many rows ________________________________________________________________________________ #
-    num_truncated_rows_per_ellipsis_rows: int = 1000
+    # Truncate DataFrame (for PERFORMANCE) if too many rows ________________________________________________________________________________ #
     n_rows: int = len(df)
     n_rows_truncated: int = 0
     if n_rows > max_rows_to_render_for_performance:
@@ -1738,6 +1765,9 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
     
     normalized_df = deepcopy(truncated_df)
     
+    estimated_table_height = estimate_rendered_df_table_height(df=normalized_df)
+    will_scroll_vertically: bool = (estimated_table_height >= max_height)
+
     # Function to calculate luminance and return appropriate text color
     def text_contrast(rgba):
         r, g, b, a = rgba[:4]
@@ -1776,9 +1806,12 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
     
 
     # Updated shadow and gradient for scroll indication
-    box_shadow = 'inset 0 -32px 15px -10px rgba(20,255,20,0.5);' ## this one is good
+    box_shadow = ""
+    if will_scroll_vertically:
+        ## only add the shadow if the table's estimated height exceeds the available height
+        box_shadow = 'box-shadow: inset 0 -32px 15px -10px rgba(20,255,20,0.5);' ## this one is good
 
-    formatted_table = styled_df.set_table_attributes(f'style="display:block;overflow-x:auto;max-height:{max_height}px;width:{width};border-collapse:collapse;position:relative;box-shadow: {box_shadow};"').render()
+    formatted_table = styled_df.set_table_attributes(f'style="display:block;overflow-x:auto;max-height:{max_height}px;width:{width};border-collapse:collapse;position:relative;{box_shadow};"').render()
     
     table_shape_footer = f"""
         <div style="text-align: left; margin-top: 10px; font-size: 12px; color: {white_color if is_dark_mode else black_color};">
@@ -1809,7 +1842,6 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
     #     </div>
     # """
 
-
     # # Gradient overlay now positioned outside the scrollable container
     # gradient_overlay = f"""
     #     <div style="position:absolute;bottom:0;left:0;width:100%;height:40px;
@@ -1819,7 +1851,8 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
 
     # Updated full HTML structure
     full_html = f"""
-        <div style="position:relative;">
+    """
+    full_html += f""" <div style="position:relative;">
             {scrollable_container}
             {table_shape_footer}
         </div>

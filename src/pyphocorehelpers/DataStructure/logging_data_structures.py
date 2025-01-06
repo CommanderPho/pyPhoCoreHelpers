@@ -7,7 +7,9 @@ from pyphocorehelpers.programming_helpers import metadata_attributes
 from pyphocorehelpers.function_helpers import function_attributes
 
 # from pyphoplacecellanalysis.External.pyqtgraph.Qt import QtCore, QtGui, QtWidgets
-from qtpy import QtCore, QtWidgets
+# from qtpy import QtCore, QtWidgets
+from pyphoplacecellanalysis.External.pyqtgraph.Qt import QtCore
+
 
 @define(repr=False, slots=False)
 class LoggingBaseClass(QtCore.QObject):

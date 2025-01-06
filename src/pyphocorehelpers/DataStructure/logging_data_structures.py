@@ -26,7 +26,7 @@ class LoggingBaseClass(QtCore.QObject):
     
     """
     log_records: List[str] = field(default=Factory(list))
-    
+    debug_print: bool = field(default=False)
 
     sigLogUpdated = QtCore.pyqtSignal(object) # passes self
     sigLogUpdateFinished = QtCore.pyqtSignal() # passes self
@@ -67,13 +67,16 @@ class LoggingBaseClass(QtCore.QObject):
         did_log_change: bool = (initial_log_text != post_log_text)
         
         if did_log_change:
-            print(f'log did change!!')
+            if self.debug_print:
+                print(f'log did change!!')
             self.sigLogUpdated.emit(self)
         else:
-            print(f'log did not change!!')
+            if self.debug_print:
+                print(f'log did not change!!')
             
         if not defer_log_changed_event:
-            print(f'log did finish editing!!')
+            if self.debug_print:
+                print(f'log did finish editing!!')
             self.sigLogUpdateFinished.emit()
             
     def add_log_lines(self, new_lines: List[str], allow_split_newlines: bool = True, defer_log_changed_event:bool=False):
@@ -87,7 +90,8 @@ class LoggingBaseClass(QtCore.QObject):
         did_log_change: bool = (initial_log_text != post_log_text)
 
         if (not defer_log_changed_event):
-            print(f'log did finish editing!!')
+            if self.debug_print:
+                print(f'log did finish editing!!')
             self.sigLogUpdateFinished.emit()
 
 
@@ -103,6 +107,12 @@ class LoggingBaseClassLoggerOwningMixin:
     def LoggingBaseClassLoggerOwningMixin_logger(self) -> Optional[LoggingBaseClass]:
         """`LoggingBaseClassLoggerOwningMixin`-conformance required property."""
         return self._logger
+    
+    @property
+    def debug_print(self) -> bool:
+        """`LoggingBaseClassLoggerOwningMixin`-conformance required property."""
+        return self.params.debug_print
+    
     # @logger.setter
     # def logger(self, value: LoggingBaseClass):
     #     self._logger = value
@@ -115,7 +125,8 @@ class LoggingBaseClassLoggerOwningMixin:
 
     # @pyqtExceptionPrintingSlot(object)
     def on_log_updated(self, logger):
-        print(f'LoggingBaseClassLoggerOwningMixin.on_log_updated(logger: {logger})')
+        if self.debug_print:
+            print(f'LoggingBaseClassLoggerOwningMixin.on_log_updated(logger: {logger})')
         # logger: LoggingBaseClass
         target_text: str = self.LoggingBaseClassLoggerOwningMixin_logger.get_flattened_log_text(flattening_delimiter='|', limit_to_n_most_recent=3)
         # self.ui.txtLogLine.setText(target_text)
@@ -124,7 +135,8 @@ class LoggingBaseClassLoggerOwningMixin:
 
     # @pyqtExceptionPrintingSlot()
     def on_log_update_finished(self):
-        print(f'LoggingBaseClassLoggerOwningMixin.on_log_update_finished()')
+        if self.debug_print:
+            print(f'LoggingBaseClassLoggerOwningMixin.on_log_update_finished()')
         # logger: LoggingBaseClass
         target_text: str = self.LoggingBaseClassLoggerOwningMixin_logger.get_flattened_log_text(flattening_delimiter='|', limit_to_n_most_recent=3)
         # self.ui.txtLogLine.setText(target_text)
@@ -134,13 +146,15 @@ class LoggingBaseClassLoggerOwningMixin:
     @function_attributes(short_name=None, tags=['logging', 'LoggingBaseClassLoggerOwningMixin'], input_requires=[], output_provides=[], uses=[], used_by=['add_log_lines'], creation_date='2025-01-06 11:26', related_items=[])
     def add_log_line(self, new_line: str, allow_split_newlines: bool = True, defer_log_changed_event:bool=False):
         """ adds an additional entry to the log """
-        print(f'.add_log_line(...): self.LoggingBaseClassLoggerOwningMixin_logger: {self.LoggingBaseClassLoggerOwningMixin_logger.get_flattened_log_text()}')
+        if self.debug_print:
+            print(f'.add_log_line(...): self.LoggingBaseClassLoggerOwningMixin_logger: {self.LoggingBaseClassLoggerOwningMixin_logger.get_flattened_log_text()}')
         self.LoggingBaseClassLoggerOwningMixin_logger.add_log_line(new_line=new_line, allow_split_newlines=allow_split_newlines, defer_log_changed_event=defer_log_changed_event)
             
     @function_attributes(short_name=None, tags=['logging', 'LoggingBaseClassLoggerOwningMixin'], input_requires=[], output_provides=[], uses=['add_log_line'], used_by=['log_print'], creation_date='2025-01-06 11:26', related_items=[])
     def add_log_lines(self, new_lines: List[str], allow_split_newlines: bool = True, defer_log_changed_event:bool=False):
         """ adds an additional entries to the log """
-        print(f'.add_log_lines(...): self.LoggingBaseClassLoggerOwningMixin_logger: {self.LoggingBaseClassLoggerOwningMixin_logger.get_flattened_log_text()}')
+        if self.debug_print:
+            print(f'.add_log_lines(...): self.LoggingBaseClassLoggerOwningMixin_logger: {self.LoggingBaseClassLoggerOwningMixin_logger.get_flattened_log_text()}')
         self.LoggingBaseClassLoggerOwningMixin_logger.add_log_lines(new_lines=new_lines, allow_split_newlines=allow_split_newlines, defer_log_changed_event=defer_log_changed_event)
                     
     @function_attributes(short_name=None, tags=['logging', 'print', 'LoggingBaseClassLoggerOwningMixin'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-01-06 11:25', related_items=[])

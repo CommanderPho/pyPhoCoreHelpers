@@ -96,7 +96,7 @@ class LoggingBaseClass(QtCore.QObject):
 
 
 
-
+@metadata_attributes(short_name=None, tags=['logging'], input_requires=[], output_provides=[], uses=[], used_by=['SpikeRasterBottomFrameControlsMixin', 'SpikeRasterBase'], creation_date='2025-01-06 16:01', related_items=[])
 class LoggingBaseClassLoggerOwningMixin:
     """ Usage
 

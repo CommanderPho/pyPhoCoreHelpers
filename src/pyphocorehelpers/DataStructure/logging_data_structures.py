@@ -15,6 +15,8 @@ from pyphoplacecellanalysis.External.pyqtgraph.Qt import QtCore
 class LoggingBaseClass(QtCore.QObject):
 	""" 
 	
+	Used By: Spike3DRasterBottomPlaybackControlBar, 
+	
 	from pyphocorehelpers.DataStructure.logging_data_structures import LoggingBaseClass
 	
 	logger = LoggingBaseClass(log_records=[])

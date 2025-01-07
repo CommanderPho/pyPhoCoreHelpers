@@ -12,7 +12,9 @@ class FilesystemMetadata:
     """ helps with accessing cross-platform filesystem metadata
     
     
-    from pyphocorehelpers.Filesystem.metadata_helpers import FilesystemMetadata
+    from pyphocorehelpers.Filesystem.metadata_helpers import FilesystemMetadata, get_file_metadata, get_files_metadata
+    
+
     """
     
     @staticmethod

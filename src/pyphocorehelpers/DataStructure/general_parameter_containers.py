@@ -79,3 +79,17 @@ class RenderPlotsData(iPythonKeyCompletingMixin, DynamicParameters):
         super(RenderPlotsData, self).__init__(name=name, **kwargs)
 
 
+    @classmethod
+    def get_non_data_keys(cls) -> List[str]:
+        """ a list of the non-user-contributed keys. """
+        return ['name', 'context'] # , '_display_library'
+
+    @property
+    def data_keys(self):
+        """The data_keys property."""
+        return [k for k in self.keys() if k not in self.get_non_data_keys()]
+
+
+    def data_items(self):
+        return {k:v for k, v in self.items() if k in self.data_keys}.items()
+

@@ -328,6 +328,10 @@ def build_metadata_tags_database(discovered_with_metadata: Dict[PythonPathStr, D
 # ==================================================================================================================== #
 def copy_to_clipboard(code_str: str, message_print=True):
     """ tries a clean method that uses the jaraco.clipboard library, but falls back to Pandas for compatibility if it isn't available
+
+
+        from pyphocorehelpers.programming_helpers import copy_to_clipboard
+
     """
     try:
         # Try to import jaraco.clipboard

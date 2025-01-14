@@ -356,10 +356,41 @@ def filesystem_path_folder_contents_widget(a_path: Union[Path, str], on_file_ope
 
 
 
+# @function_attributes(short_name=None, tags=['panel', 'widget', 'filesystem'], input_requires=[], output_provides=[], uses=['panel'], used_by=[], creation_date='2025-01-14 08:41', related_items=[])
+def create_filtered_file_selector(directory, general_pattern, allowed_patterns):
+    """
+    Create a filtered FileSelector widget.
+
+    Parameters:
+        directory (str): The directory to search files.
+        general_pattern (str): The general glob pattern to match files.
+        allowed_patterns (list): List of specific glob patterns to filter the files.
+
+    Returns:
+        pn.widgets.FileSelector: A FileSelector widget with filtering applied.
+    """
+    import panel as pn
+    
+    pn.extension()
+        
+    # Create the FileSelector widget
+    file_selector = pn.widgets.FileSelector(directory=directory, file_pattern=general_pattern, only_files=False)
+
+    # Define the filtering function
+    def filter_files(event):
+        filtered_files = [
+            file for file in file_selector.value if 
+            any(pn.util.glob.fnmatch.fnmatch(file, pattern) for pattern in allowed_patterns)
+        ]
+        print("Filtered Files:", filtered_files)  # Replace with your desired processing logic
+
+    # Attach the filtering function to changes in the FileSelector value
+    file_selector.param.watch(filter_files, 'value')
+
+    return file_selector
 
 
-
-# Function to create a file browser widget with metadata
+# @function_attributes(short_name=None, tags=['panel', 'filesystem', 'file', 'selection', 'interactive', 'USEFUL', 'Tabulator'], input_requires=[], output_provides=[], uses=['panel', 'pn.widgets.Tabulator'], used_by=[], creation_date='2025-01-14 08:42', related_items=[])
 def create_file_browser(directory, patterns, page_size:int=25, widget_height:int=600, selectable='toggle', on_selected_files_changed_fn: Optional[Callable]=None, debug_print=False):
     """
     Create a file browser widget showing file metadata (name, size, dates).

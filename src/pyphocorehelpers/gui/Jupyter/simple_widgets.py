@@ -1,3 +1,6 @@
+from copy import deepcopy
+import os
+import pandas as pd
 from typing import Callable, Optional, List, Dict, Union, Any
 import ipywidgets as widgets
 from ipywidgets import HBox, VBox
@@ -352,6 +355,123 @@ def filesystem_path_folder_contents_widget(a_path: Union[Path, str], on_file_ope
         )
 
 
+
+
+
+
+# Function to create a file browser widget with metadata
+def create_file_browser(directory, patterns, page_size:int=25, widget_height:int=600, selectable='toggle', on_selected_files_changed_fn: Optional[Callable]=None, debug_print=False):
+    """
+    Create a file browser widget showing file metadata (name, size, dates).
+
+    Parameters:
+        directory (str): The directory to search files.
+        patterns (list): List of glob patterns to match files.
+
+    Returns:
+        pn.widgets.Tabulator: A Tabulator widget displaying file metadata.
+        
+    
+    Usage:
+
+        from pyphocorehelpers.gui.Jupyter.simple_widgets import create_file_browser
+
+        # # Function to create a file browser widget with metadata
+
+        # Example usage
+        directory = basedir # basedir.as_posix() # "/mnt/data"  # Replace with an appropriate path
+        patterns = ['*loadedSessPickle.pkl', 'output/*.pkl']
+
+        def on_selected_files_changed(selected_df: pd.DataFrame):
+            ''' captures: file_table, on_selected_files_changed '''
+            print(f"on_selected_files_changed(selected_df: {selected_df})")
+            full_paths = selected_df['File Path'].to_list()
+            print(f'\tfull_paths: {full_paths}')
+            
+
+        # Create the file browser widget
+        file_browser_widget = create_file_browser(directory, patterns, page_size=10, widget_height=400, on_selected_files_changed_fn=on_selected_files_changed)
+
+        # Display the widget
+        file_browser_widget.servable()
+
+    """
+    import panel as pn
+    
+    pn.extension()
+    # Initialize Panel extension
+    pn.extension('tabulator')
+                    
+    # Function to get file information
+    def get_file_info(directory, patterns):
+        files_data = []
+        for pattern in patterns:
+            for file_path in Path(directory).glob(pattern):
+                if file_path.is_file():
+                    stat = file_path.stat()
+                    files_data.append({
+                        "File Name": file_path.name,
+                        "Size (KB)": round(stat.st_size / 1024, 2),
+                        "Creation Date": pd.to_datetime(stat.st_ctime, unit='s'),
+                        "Modification Date": pd.to_datetime(stat.st_mtime, unit='s'),
+                        "Rel Path": str(file_path.relative_to(directory)),  # Relative path
+                        "File Path": str(file_path),  # abs path
+                    })
+        return pd.DataFrame(files_data).sort_values(by=['Modification Date', "Creation Date", "Size (KB)", "File Name"], axis='index', ascending=False).reset_index(drop=True)
+    
+
+    # Fetch file data
+    file_info_df = get_file_info(directory, patterns)
+
+    # Create a Tabulator widget
+    file_table = pn.widgets.Tabulator(
+        file_info_df,
+        selectable=selectable,
+        pagination="local",
+        page_size=page_size,
+        height=widget_height,
+        sorters=[{"field": "Modification Date", "dir": "desc"}],  # Sort by most recent modification
+        # editable=False,  # Make cells read-only
+        show_index=False,
+        disabled=True, # Make cells read-only
+    )
+
+    # Callback to handle selection
+    def on_selection(event):
+        """ captures: file_table, on_selected_files_changed
+        """
+        # if event.new:
+        #     # selected_file = file_info_df.iloc[event.new[0]]  # Get selected row
+        #     # print(f"Selected File: {selected_file['File Path']}")
+        #     # selected_files = file_info_df.iloc[event.new]  # Get selected row
+            
+        #     # # Map visible row index to original DataFrame index
+        #     # sorted_indexes = file_table.indexes
+        #     # selected_row_index = event.new[0]  # Get the visible row index
+        #     # original_index = sorted_indexes[selected_row_index]  # Map to original DataFrame index
+        #     # selected_file = file_info_df.iloc[original_index]  # Get the correct row
+        #     # print(f"Selected File: {selected_file['File Path']}")
+            
+        #     # Map visible row indices to original DataFrame indices
+        #     print(f'file_table.selection: {file_table.selection}')
+        #     sorted_indexes = file_table.indexes
+        #     selected_rows = [sorted_indexes[i] for i in event.new]  # Map visible indices to original indices
+        #     selected_files = file_info_df.iloc[selected_rows]  # Get the correct rows
+        #     print("Selected Files:")
+        #     print(selected_files["File Path"].to_list())  # Print the selected file paths
+            
+        # selection
+        # file_table.selection
+        selected_df = deepcopy(file_table.selected_dataframe)
+        # print(f"Selected Files: {selected_df['File Path']}")
+        if on_selected_files_changed_fn is not None:
+            on_selected_files_changed_fn(selected_df)
+            
+
+    file_table.param.watch(on_selection, 'selection')
+    return file_table
+    
+    
 
 def create_tab_widget(display_dict: Dict[str, Any], **tab_kwargs) -> widgets.Tab:
     """

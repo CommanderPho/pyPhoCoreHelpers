@@ -353,6 +353,13 @@ class DocumentationFilePrinter:
     # extra methods ______________________________________________________________________________________________________ #
     def display_widget(self):
         """ Display an interactive jupyter-widget that allows you to open/reveal the generated files in the fileystem or default system display program. 
+        
+        Usage:
+        
+            doc_printer = DocumentationFilePrinter(doc_output_parent_folder=Path('C:/Users/pho/repos/PhoPy3DPositionAnalysis2021/EXTERNAL/DEVELOPER_NOTES/DataStructureDocumentation'), doc_name='ComputationResult')
+            doc_printer.save_documentation('ComputationResult', curr_active_pipeline.computation_results['maze1'], non_expanded_item_keys=['_reverse_cellID_index_map'])
+            doc_printer.display_widget()
+        
         """
         import ipywidgets as widgets
         from IPython.display import display

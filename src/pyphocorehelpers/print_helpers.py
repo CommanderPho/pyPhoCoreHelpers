@@ -744,6 +744,7 @@ def print_dataframe_memory_usage(df, enable_print=True):
 def print_object_memory_usage(obj, enable_print=True):
     """ prints the size of the passed in object in MB (Megabytes)
     Usage:
+        from pyphocorehelpers.print_helpers import print_object_memory_usage, print_filesystem_file_size
         print_object_memory_usage(curr_bapun_pipeline.sess)
     """
     # size_bytes = obj.__sizeof__() # 1753723032

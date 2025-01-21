@@ -18,7 +18,7 @@ def debug_print_color(color: QColor):
     print(f'rgbaF: {color.getRgbF()}, HexARgb: {color.name(color_hex_format)}')
     
 
-def build_adjusted_color(color: QColor, hue_shift=0.0, saturation_scale=1.0, value_scale=1.0):
+def build_adjusted_color(color: QColor, hue_shift:float=0.0, saturation_scale:float=1.0, value_scale:float=1.0, alpha_scale: float=1.0):
     """ Builds a copy of the color QColor with optionally modified HSV properties
     Example:
         from pyphocorehelpers.gui.Qt.color_helpers import build_adjusted_color
@@ -34,7 +34,8 @@ def build_adjusted_color(color: QColor, hue_shift=0.0, saturation_scale=1.0, val
     curr_color_copy.setHsvF(np.clip((curr_color_copy.hueF() + hue_shift), 0.0, 1.0),
                             np.clip((saturation_scale*curr_color_copy.saturationF()), 0.0, 1.0),
                             np.clip((value_scale * curr_color_copy.valueF()), 0.0, 1.0))
-    curr_color_copy.setAlphaF(color.alphaF())
+    curr_color_copy.setAlphaF(np.clip((alpha_scale*curr_color_copy.alphaF()), 0.0, 1.0))
+    # curr_color_copy.setAlphaF(color.alphaF())
     assert curr_color_copy.isValid(), "Constructed color is invalid!"
     return curr_color_copy
 

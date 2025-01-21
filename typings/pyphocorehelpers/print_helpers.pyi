@@ -169,6 +169,13 @@ class DocumentationFilePrinter:
     
     def display_widget(self): # -> VBox:
         """ Display an interactive jupyter-widget that allows you to open/reveal the generated files in the fileystem or default system display program. 
+        
+        Usage:
+        
+            doc_printer = DocumentationFilePrinter(doc_output_parent_folder=Path('C:/Users/pho/repos/PhoPy3DPositionAnalysis2021/EXTERNAL/DEVELOPER_NOTES/DataStructureDocumentation'), doc_name='ComputationResult')
+            doc_printer.save_documentation('ComputationResult', curr_active_pipeline.computation_results['maze1'], non_expanded_item_keys=['_reverse_cellID_index_map'])
+            doc_printer.display_widget()
+        
         """
         ...
     
@@ -318,6 +325,7 @@ def print_dataframe_memory_usage(df, enable_print=...):
 def print_object_memory_usage(obj, enable_print=...): # -> float:
     """ prints the size of the passed in object in MB (Megabytes)
     Usage:
+        from pyphocorehelpers.print_helpers import print_object_memory_usage, print_filesystem_file_size
         print_object_memory_usage(curr_bapun_pipeline.sess)
     """
     ...

@@ -365,7 +365,7 @@ def partition(df: pd.DataFrame, partitionColumn: str) -> Tuple[NDArray, NDArray]
 
     Usage:
 
-    from pyphocorehelpers.indexing_helpers import partition
+    from pyphocorehelpers.indexing_helpers import partition, partition_df, partition_df_dict
 
 
     History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`

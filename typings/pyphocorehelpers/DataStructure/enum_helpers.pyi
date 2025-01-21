@@ -43,6 +43,9 @@ class ExtendedEnum(Enum):
 class OrderedEnum(Enum):
     """ An enum that can be compared via comparison operators (like < and <=)
     Usage:
+    
+        from pyphocorehelpers.DataStructure.enum_helpers import OrderedEnum
+            
         class PipelineStage(OrderedEnum):
             Input = 0
             Loaded = 1

@@ -11,7 +11,9 @@ class FilesystemMetadata:
     """ helps with accessing cross-platform filesystem metadata
     
     
-    from pyphocorehelpers.Filesystem.metadata_helpers import FilesystemMetadata
+    from pyphocorehelpers.Filesystem.metadata_helpers import FilesystemMetadata, get_file_metadata, get_files_metadata
+    
+
     """
     @staticmethod
     def get_last_modified_time(file_path: str) -> datetime:

@@ -235,7 +235,26 @@ class ColormapHelpers:
             colors = cmap(np.linspace(0, 1, n_samples))  # Sample the original colormap
             return LinearSegmentedColormap.from_list(f"{cmap.name}_linear", colors)
 
-
+    @classmethod
+    def mpl_to_pg_colormap(cls, mpl_cmap_name: Union[str, Any], resolution=256) -> pg.ColorMap:
+        """
+        Converts a Matplotlib colormap to a PyQtGraph ColorMap.
+        
+        Args:
+            mpl_cmap_name (str): Name of the Matplotlib colormap.
+            resolution (int): Number of discrete color steps (default is 256).
+        
+        Returns:
+            pg.ColorMap: The equivalent PyQtGraph ColorMap.
+        """
+        import matplotlib.pyplot as plt
+        mpl_cmap = plt.get_cmap(mpl_cmap_name)
+        positions = np.linspace(0, 1, resolution)
+        colors = [mpl_cmap(i) for i in positions]
+        colors_rgb = [tuple(int(c * 255) for c in color[:3]) for color in colors]
+        return pg.ColorMap(positions, colors_rgb)
+                
+            
 
     @classmethod
     def create_colormap_transparent_below_value(cls, mycmap: Union[str, Any], low_value_cuttoff:float=0.2, below_low_value_cuttoff_alpha_value: float=0.0, resampled_num_colors:int=7):

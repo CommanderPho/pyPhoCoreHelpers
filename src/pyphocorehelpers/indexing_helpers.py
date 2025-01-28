@@ -711,6 +711,8 @@ def partition_df(df: pd.DataFrame, partitionColumn: str)-> Tuple[NDArray, List[p
         
         partitioned_dfs = dict(zip(*partition_df(spikes_df, partitionColumn='new_epoch_IDX')))
 
+        
+        unique_values, partitioned_dfs_list = partition_df(spikes_df, partitionColumn='new_epoch_IDX')
 
     History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
     """

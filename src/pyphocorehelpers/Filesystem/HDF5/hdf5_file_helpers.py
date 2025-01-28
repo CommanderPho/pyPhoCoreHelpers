@@ -1,6 +1,14 @@
+from pathlib import Path
+from typing import Dict, List, Tuple
 import h5py
+import numpy as np
+import pandas as pd
+import tables
 
 ignored_keys = ['#subsystem#', '#refs#']
+
+
+
 
 
 def h5dump(path, group='/', enable_print_attributes=False):
@@ -9,7 +17,7 @@ def h5dump(path, group='/', enable_print_attributes=False):
     """
     with h5py.File(path,'r') as f:
          HDF5_Helper.descend_obj(f[group], enable_print_attributes=enable_print_attributes)
-         
+
 class HDF5_Helper(object):
     """docstring for hdf5Helper."""
     
@@ -155,3 +163,240 @@ class HDF5_Helper(object):
         with h5py.File(path,'r') as f:
             cls.descend_obj(f[group], enable_print_attributes=enable_print_attributes)
             
+
+    @classmethod
+    def get_leaf_datasets(cls, file_path: Path):
+        """
+        Retrieve all leaf datasets from an HDF5 file.
+
+        Args:
+            file_path (Path): Path to the HDF5 file.
+
+        Returns:
+            list: A list of leaf dataset paths.
+            
+        Usage:
+            from pyphocorehelpers.Filesystem.HDF5.hdf5_file_helpers import HDF5_Helper
+            load_path = Path('output/all_decoded_epoch_posteriors.h5').resolve()
+            assert load_path.exists()
+            leaf_datasets = HDF5_Helper.get_leaf_datasets(load_path)
+            print(leaf_datasets)
+
+        """
+        leaf_datasets = []
+
+        def visit_func(name, node):
+            # Check if the node is a dataset and add to list if true
+            if isinstance(node, h5py.Dataset):
+                leaf_datasets.append(name)
+
+        # Open the HDF5 file in read mode and apply the visit function
+        with h5py.File(file_path, 'r') as f:
+            f.visititems(visit_func)
+
+        return leaf_datasets
+
+    @classmethod
+    def find_groups_by_name(cls, file_path: Path, group_name: str):
+        """
+        Search for groups with a specific name in an HDF5 file and return their paths.
+
+        Args:
+            file_path (Path): Path to the HDF5 file.
+            group_name (str): Name of the group to search for.
+
+        Returns:
+            list: A list of paths to groups that match the specified name.
+            
+        Usage:
+            load_path = Path('output/all_decoded_epoch_posteriors.h5').resolve()
+            assert load_path.exists()
+            found_groups = HDF5_Helper.find_groups_by_name(load_path, 'save_decoded_posteriors_to_HDF5')
+            print(found_groups) # ['kdiba/gor01/one/2006-6-08_14-26-15/save_decoded_posteriors_to_HDF5']
+
+
+        """
+        matching_groups = []
+
+        def visit_func(name, node):
+            # Check if the node is a group and its name matches the search criteria
+            if isinstance(node, h5py.Group) and name.endswith(group_name):
+                matching_groups.append(name)
+
+        # Open the HDF5 file in read mode and apply the visit function
+        with h5py.File(file_path, 'r') as f:
+            f.visititems(visit_func)
+
+        return matching_groups
+
+
+# ==================================================================================================================== #
+# 2024-04-01 - Unfinished                                                                                              #
+# ==================================================================================================================== #
+            
+
+# # Raw h5py ___________________________________________________________________________________________________________ #
+# def _hdf5_to_dict_recurr(hdf5_object):
+#     """
+#     Recursively reads HDF5 file objects and constructs a nested dictionary
+#     of datasets and arrays.
+    
+#     Parameters:
+#         hdf5_object: An h5py.Group or h5py.File object.
+        
+#     Returns:
+#         A nested dictionary with the HDF5 hierarchy's structure.
+#     """
+#     result = {}
+#     for name, item in hdf5_object.items():
+#         if isinstance(item, h5py.Dataset):  # Found a dataset
+#             result[name] = item[()]  # Load the dataset's content into the dict
+#         elif isinstance(item, h5py.Group):  # Found a group, recurse
+#             result[name] = _hdf5_to_dict_recurr(item)  # Recursively call on the group
+#     return result
+
+# def hdf5_to_dict(hdf5_path: Path):
+#     """
+#     Recursively reads HDF5 file objects and constructs a nested dictionary
+#     of datasets and arrays.
+    
+#     Parameters:
+#         hdf5_object: An h5py.Group or h5py.File object.
+        
+#     Returns:
+#         A nested dictionary with the HDF5 hierarchy's structure.
+#     """
+#     data_dict = {}
+#     failed_keys = []
+
+#     # Open the HDF5 file and start the conversion process
+#     with h5py.File(hdf5_path, 'r') as hdf_file:
+#         data_dict = _hdf5_to_dict_recurr(hdf_file)
+
+#     return data_dict, failed_keys
+
+
+def write_hdf5_data_manifest(hdf5_path: Path, manifest_key_strings: List[str], datamanifest_key: str = 'data_manifest'):
+    """ tries to write a list of keys as a manifest of the data contained within the file for easier loading.
+    
+    Usage:
+        from pyphocorehelpers.Filesystem.HDF5.hdf5_file_helpers import write_hdf5_data_manifest
+
+        hdf5_path = debug_output_hdf5_file_path # 'your_existing_file.h5'
+        # nested_strings = [['provided/long_LR/laps_df', 'provided/long_LR/train_df', 'provided/long_LR/test_df'], ['valid/long_LR/train_df', 'valid/long_LR/test_df'], ['provided/long_RL/laps_df', 'provided/long_RL/train_df', 'provided/long_RL/test_df'], ['valid/long_RL/train_df', 'valid/long_RL/test_df'], ['provided/short_LR/laps_df', 'provided/short_LR/train_df', 'provided/short_LR/test_df'], ['valid/short_LR/train_df', 'valid/short_LR/test_df'], ['provided/short_RL/laps_df', 'provided/short_RL/train_df', 'provided/short_RL/test_df'], ['valid/short_RL/train_df', 'valid/short_RL/test_df']]
+        # Flatten the nested list into a single list of strings
+        # strings = [item for sublist in nested_strings for item in sublist]
+        manifest_key_strings = ['provided/long_LR/laps_df', 'provided/long_LR/train_df', 'provided/long_LR/test_df', 'valid/long_LR/train_df', 'valid/long_LR/test_df', 'provided/long_RL/laps_df', 'provided/long_RL/train_df', 'provided/long_RL/test_df', 'valid/long_RL/train_df', 'valid/long_RL/test_df', 'provided/short_LR/laps_df', 'provided/short_LR/train_df', 'provided/short_LR/test_df', 'valid/short_LR/train_df', 'valid/short_LR/test_df', 'provided/short_RL/laps_df', 'provided/short_RL/train_df', 'provided/short_RL/test_df', 'valid/short_RL/train_df', 'valid/short_RL/test_df']
+        write_hdf5_data_manifest(hdf5_path=hdf5_path, manifest_key_strings=manifest_key_strings)
+
+    """
+    # Convert the list of strings to a fixed-size numpy array of strings. 
+    # This is necessary because HDF5 datasets require fixed-size elements.
+    # variable_length_string_dtype = h5py.special_dtype(vlen=str)
+    # string_arr = np.array(strings, dtype=variable_length_string_dtype)
+    # variable_length_data = np.array(strings, dtype=variable_length_string_dtype)
+
+    # Convert variable-length strings to fixed-length strings (truncating if necessary)
+    fixed_length_dtype = 'S200'  # This example creates strings with a fixed length of 100 chars
+    string_arr = np.array(manifest_key_strings, dtype=fixed_length_dtype)
+    # string_arr = np.array(variable_length_data.astype(fixed_length_dtype), dtype=fixed_length_dtype)
+    # Path to your existing HDF5 file
+    
+    # Open the HDF5 file in append mode (or "a" mode)
+    with h5py.File(hdf5_path, 'a') as hdf_file:
+        # Create a new dataset within the file to hold your array of strings,
+        # or overwrite an existing one.
+        dataset_name = 'data_manifest'
+        
+        # Check if the dataset already exists and if so, delete it.
+        if dataset_name in hdf_file:
+            del hdf_file[dataset_name]
+        
+        # Create a new dataset to store the list of strings
+        hdf_file.create_dataset(dataset_name, data=string_arr)
+
+        # Optionally you can specify compression to save space:
+        # hdf_file.create_dataset('strings_dataset', data=string_arr, compression='gzip')
+
+
+
+# # PyTables ___________________________________________________________________________________________________________ #
+# def _pytables_to_dict_recurr(hdf5_node):
+#     """
+#     Recursively reads HDF5 file nodes stored with PyTables and constructs a
+#     nested dictionary of tables and arrays.
+    
+#     Parameters:
+#         hdf5_node: A PyTables Group or File node.
+        
+#     Returns:
+#         A nested dictionary with the HDF5 hierarchy's structure.
+#     """
+#     result = {}
+#     for node in hdf5_node:
+#         if isinstance(node, tables.Group):
+#             # Recurse into the group
+#             result[node._v_name] = _pytables_to_dict_recurr(node) # call recurrsively
+#         elif isinstance(node, tables.Table) or isinstance(node, tables.Array):
+#             # Read the Table or Array data
+#             # print(f'found node: "{node._v_name}" that is a Table or Array')
+#             result[node._v_name] = node.read()
+#             # if (node._v_name) == 'table':
+#             #     result[node._v_name] = node.read()
+#             #     node.read
+#             #     node.t
+#             # else:
+#             #     print(f'\t not dataframe.')
+#             #     result[node._v_name] = node.read()
+
+#     return result
+
+# def pytables_to_dict(hdf5_path: Path):
+#     """
+#     Recursively reads HDF5 file nodes stored with PyTables and constructs a
+#     nested dictionary of tables and arrays.
+    
+#     Parameters:
+#         hdf5_node: A PyTables Group or File node.
+        
+#     Returns:
+#         A nested dictionary with the HDF5 hierarchy's structure.
+#     """
+
+
+#     data_dict = {}
+#     failed_keys = []
+
+#     # Open the HDF5 file using PyTables and start the conversion process
+#     with tables.open_file(hdf5_path, 'r') as hdf_file:
+#         data_dict = _pytables_to_dict_recurr(hdf_file.root)
+
+#     return data_dict
+
+
+# pandas _____________________________________________________________________________________________________________ #
+def hdf5_to_pandas_df_dict(hdf5_path: Path) -> Tuple[Dict[str, pd.DataFrame], List[str]]:
+    # Using the pandas HDFStore to manage access to the file
+
+    data_dict = {}
+    failed_keys = []
+
+    with pd.HDFStore(hdf5_path, 'r') as store:
+        # Iterate over all the keys in the HDFStore and read each one as a DataFrame
+        for key in store.keys():
+            # Use exception handling to catch errors for non-DataFrame data
+            try:
+                data_dict[key] = pd.read_hdf(store, key)
+            except (ValueError, TypeError) as e:
+                print(f"Could not read key '{key}': {e}")
+                # Handle non-DataFrame data differently or skip
+                # For example, store the keys that failed for further investigation
+                failed_keys.append(key)
+
+
+
+    # Now `data_dict` is a nested dictionary structure with the HDF5 file's content.
+    # You can access the datasets and groups just like you would with a normal Python dict.
+    return data_dict, failed_keys
+
+

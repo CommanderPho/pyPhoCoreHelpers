@@ -2,7 +2,38 @@
 # -*- coding: utf-8 -*-
 
 from enum import Enum, auto
-from PyQt5.QtWidgets import QDesktopWidget
+from attrs import define, field, Factory
+
+# max_size = 16777215
+
+
+@define(slots=False)
+class WidgetGeometryInfo:
+    """ represents constraints on a widget's size/shape/geometry/etc
+    from pyphocorehelpers.gui.Qt.widget_positioning_helpers import WidgetGeometryInfo
+
+    """
+    minimumSize = field() # QSize # metadata={'setter':lambda w: w.setMinimumSize(}
+    maximumSize = field() # QSize
+    baseSize = field() # QSize
+    sizePolicy = field() # QSizePolicy 
+    geometry = field() # QRect
+    
+    @classmethod
+    def init_from_widget(cls, a_widget) -> "WidgetGeometryInfo":
+        # (a_widget.minimumSize(), a_widget.maximumSize(), a_widget.baseSize(), a_widget.sizePolicy(), a_widget.geometry())
+        return WidgetGeometryInfo(minimumSize=a_widget.minimumSize(), maximumSize=a_widget.maximumSize(), baseSize=a_widget.baseSize(), sizePolicy=a_widget.sizePolicy(), geometry=a_widget.geometry())
+    
+    def apply_to_widget(self, a_widget):
+        """ apply the constraints to the widget. """
+        if self.minimumSize is not None:
+            a_widget.setMinimumSize(self.minimumSize)
+        if self.maximumSize is not None:
+            a_widget.setMaximumSize(self.maximumSize)
+
+
+
+
 
 
 # class DesiredWidgetLocation(Enum):
@@ -63,9 +94,13 @@ class WidgetPositioningHelpers:
         Specifying a screen_index does not work. Only works if screen_index=None
   
         Examples:
-              WidgetPositioningHelpers.move_widget_to_top_left_corner(spike_raster_plt_3d, screen_index=None, debug_print=True)
-  
+              
+            from pyphocorehelpers.gui.Qt.widget_positioning_helpers import WidgetPositioningHelpers
+            WidgetPositioningHelpers.get_screen_desktopRect(screen_index=None, debug_print=True)
+
         """
+        from PyQt5.QtWidgets import QDesktopWidget
+        
         if screen_index is None:
             # Global Desktop Widget:		
             desktopWidget = QDesktopWidget()
@@ -172,12 +207,14 @@ class WidgetPositioningHelpers:
     def align_window_edges(cls, main_window, secondary_window, relative_position = 'below', resize_to_main=(1.0, None), debug_print=False):
         """ align the two separate windows (with main_window being the one that's stationary and secondary_window being the one adjusted to sit relative to it).
         
-            relative_position: str? - 'above', 'below', or None
+            relative_position: str? - 'above', 'below', 'left_of', 'right_of', or None
             resize_to_main: (percent_of_main_width?, percent_of_main_height?): specifying None for either value will prevent resize in that dimension
 
             Usage:
-                WidgetPositioningHelpers.align_3d_and_2d_windows(spike_raster_plt_3d, spike_raster_plt_2d)
+                WidgetPositioningHelpers.align_window_edges(spike_raster_plt_3d, spike_raster_plt_2d)
         """
+        if relative_position is not None:
+            assert relative_position in ['above', 'below', 'left_of', 'right_of']
         # _move_widget_to_top_left_corner(spike_raster_plt_3d, screen_index=1, debug_print=debug_print) # move to secondary screen's top-left corner.
         main_win_geom = main_window.window().geometry() # get the QTCore PyRect object
         if debug_print:
@@ -214,6 +251,12 @@ class WidgetPositioningHelpers:
             desired_secondary_window_x = main_x
             desired_secondary_window_y = main_y - desired_secondary_dy # subtract the secondary window's height from the top of the primary window
             # TODO: make sure they both fit on the screen together.
+        elif relative_position == 'left_of':
+            desired_secondary_window_x = main_x - desired_secondary_dx # subtract the secondary window's width from the left edge of the primary window
+            desired_secondary_window_y = main_y 
+        elif relative_position == 'right_of':
+            desired_secondary_window_x = main_x + main_dx # place directly to the right of the main window
+            desired_secondary_window_y = main_y 
         else:
             raise NotImplementedError
 
@@ -223,3 +266,22 @@ class WidgetPositioningHelpers:
   
   
   
+    # @function_attributes(short_name=None, tags=['window', 'foreground', 'focus', 'gui'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-08-02 16:28', related_items=['pyphocorehelpers.plotting.figure_management.raise_window'])
+    @classmethod
+    def qt_win_to_foreground(cls, win):
+        """ Brings the window to the foreground. Works where others fail.
+        
+        from pyphocorehelpers.gui.Qt.widget_positioning_helpers import WidgetPositioningHelpers
+        WidgetPositioningHelpers.qt_win_to_foreground(win)
+        
+        """
+        from qtpy import QtCore
+        
+        win.setWindowFlags(win.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+        win.show()
+        win.raise_()
+        win.activateWindow()
+        # Reset the window flags to normal after showing it on top
+        win.setWindowFlags(win.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)
+        win.show()
+

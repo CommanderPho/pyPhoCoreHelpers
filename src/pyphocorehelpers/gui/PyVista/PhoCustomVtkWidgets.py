@@ -7,7 +7,8 @@ import pyvista
 from pyvista import _vtk
 from pyvista.utilities import (NORMALS, generate_plane, get_array,
                                try_callback, get_array_association)
-from pyvista.plotting.tools import parse_color, FONTS
+# from pyvista.plotting.tools import parse_color, FONTS
+
 # from ConfigurationFunctions import SIGNAL
 
 # from PhoGui import vtk_ui
@@ -175,6 +176,8 @@ class PhoWidgetHelper:
             The VTK button widget configured as a checkbox button.
 
         """
+        from pyvista.plotting.tools import parse_color, FONTS
+        
         if not hasattr(p, "button_widgets"):
             p.button_widgets = []
         
@@ -286,6 +289,8 @@ class PhoWidgetHelper:
 
     @staticmethod
     def perform_add_button_text_label(p, text, position, font_size=18, color=[1, 1, 1], font='courier', shadow=False, name=None, viewport=False):
+        from pyvista.plotting.tools import parse_color, FONTS
+        
         text_actor = _vtk.vtkTextActor()
         text_actor.SetInput(text)
         text_actor.SetPosition(position)
@@ -365,6 +370,8 @@ class PhoWidgetHelper:
         >>> pl.show()
         
         """
+        from pyvista.plotting.tools import parse_color, FONTS
+        
         if font is None:
             font = p._theme.font.family
         if font_size is None:

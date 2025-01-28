@@ -1,14 +1,17 @@
+from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 import numpy as np
 from copy import deepcopy
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure, FigureBase # FigureBase: both Figure and SubFigure
+from matplotlib.backend_bases import FigureCanvasBase, FigureManagerBase
+
 from pyphocorehelpers.programming_helpers import metadata_attributes
 from pyphocorehelpers.function_helpers import function_attributes
 
 
-
-@metadata_attributes(short_name=None, tags=['matplotlib', 'figures', 'manager', 'helper', 'plotting'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-05-08 14:53', related_items=[])
+@metadata_attributes(short_name=None, tags=['matplotlib', 'figures', 'manager', 'helper', 'plotting'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-05-08 14:53',
+                      related_items=['DataStructure.RenderPlots.MatplotLibRenderPlots.FigureCollector'])
 class PhoActiveFigureManager2D(object):
     """Offers convenience methods for accessing and updating the extent (size and position on the screen) for the current Matplotlib figures (via its current_figure_manager property.
     
@@ -39,7 +42,7 @@ class PhoActiveFigureManager2D(object):
     debug_print = False
     
     @property
-    def current_figure_manager(self):
+    def current_figure_manager(self) -> Optional[FigureManagerBase]:
         """The current_figure_manager property."""
         return plt.get_current_fig_manager() # get the active figure manager
  
@@ -194,6 +197,7 @@ class PhoActiveFigureManager2D(object):
         )
 
 
+@function_attributes(short_name=None, tags=['matplotlib', 'figures', 'function_decorator'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-06-05 17:05', related_items=[])
 def capture_new_figures_decorator(func):
     """ a decorator that's supposed to capture all matplotlib figures generated within the function that it decorates by comparing the global plt.get_fignums() before and after that function's executions. Won't detect updated figures, and hasn't been thoroughly tested. 
     
@@ -282,7 +286,7 @@ class FigureFormatter2D(object):
 
     
 
-
+@function_attributes(short_name=None, tags=['window', 'foreground', 'focus', 'gui', 'figure'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-08-02 16:30', related_items=['qt_win_to_foreground'])
 def raise_window(figname=None):
     """ find the backend and use the appropriate method """
     def _raise_window_Qt(figname=None):

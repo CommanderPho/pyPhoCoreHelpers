@@ -1,6 +1,7 @@
 import numpy as np
 from attrs import astuple, define, field, Factory
 
+from neuropy.utils.mixins.indexing_helpers import UnpackableMixin
 from pyphocorehelpers.DataStructure.data_structure_builders import Width_Height_Tuple, cartesian_product
 
 ## Centroid point for camera
@@ -176,7 +177,7 @@ def compute_data_aspect_ratio(xbin, ybin, sorted_inputs=True):
 
 
 @define(slots=False)
-class BoundsRect:
+class BoundsRect(UnpackableMixin):
     """ Kinda overkill. Represents a boundary rectangle.
     
     from pyphocorehelpers.geometry_helpers import BoundsRect
@@ -185,10 +186,10 @@ class BoundsRect:
     grid_bin_bounds
 
     """
-    xmin: float
-    xmax: float
-    ymin:float
-    ymax: float
+    xmin: float = field()
+    xmax: float = field()
+    ymin:float = field()
+    ymax: float = field()
     
     @property
     def size(self):
@@ -235,7 +236,7 @@ class BoundsRect:
         for value in self.range_pairs:
             yield value
 
-    def contains_point(test_point) -> bool:
+    def contains_point(self, test_point) -> bool:
         return is_point_in_rect(test_point, self.extents)
 
 

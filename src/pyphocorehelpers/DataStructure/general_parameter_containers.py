@@ -16,17 +16,29 @@ class DebugHelper(iPythonKeyCompletingMixin, DynamicParameters):
 #TODO 2023-06-13 10:59: - [ ] Convert to an attrs-based class instead of inheriting from DynamicParameters
 # @attrs.define(slots=False)
 class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
+    """
+    from pyphocorehelpers.DataStructure.general_parameter_containers import RenderPlots
+
+    """
     _display_library:str = 'unknown'
     def __init__(self, name, context=None, **kwargs) -> None:
         super(RenderPlots, self).__init__(name=name, context=context, **kwargs)
 
     @classmethod
-    def non_data_keys(cls) -> List[str]:
+    def get_non_data_keys(cls) -> List[str]:
         """ a list of the non-user-contributed keys. """
         return ['name', 'context'] # , '_display_library'
 
+    @property
     def data_keys(self):
-        return [k for k in self.keys() if k not in self.non_data_keys] 
+        """The data_keys property."""
+        return [k for k in self.keys() if k not in self.get_non_data_keys()]
+
+
+    def data_items(self):
+        return {k:v for k, v in self.items() if k in self.data_keys}.items()
+
+
 
     # Display Library Test Functions _____________________________________________________________________________________ #
     @classmethod
@@ -39,6 +51,21 @@ class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
         return cls._display_library == 'pyqtgraph'
 
 
+    # def __add__(self, other):
+    #     # Combine figures and axes from self and other MatplotlibRenderPlots instances
+    #     # combined_figures = self.figures + other.figures
+    #     # combined_axes = self.axes + other.axes
+
+    #     for k, v in other.data_items().items():
+    #         if k not in self.data_keys:
+    #             # unique to other, add it as a property to self
+    #             self[k] = v 
+    #         else:
+    #             # present in both
+    #             self[k] = self[k] + v  ## append or w/e
+
+    #     return self ## return the updated self
+    
 
     # def __add__(self, other):
     #     if not isinstance(other, CustomDict):
@@ -51,4 +78,18 @@ class RenderPlotsData(iPythonKeyCompletingMixin, DynamicParameters):
     def __init__(self, name, **kwargs) -> None:
         super(RenderPlotsData, self).__init__(name=name, **kwargs)
 
+
+    @classmethod
+    def get_non_data_keys(cls) -> List[str]:
+        """ a list of the non-user-contributed keys. """
+        return ['name', 'context'] # , '_display_library'
+
+    @property
+    def data_keys(self):
+        """The data_keys property."""
+        return [k for k in self.keys() if k not in self.get_non_data_keys()]
+
+
+    def data_items(self):
+        return {k:v for k, v in self.items() if k in self.data_keys}.items()
 

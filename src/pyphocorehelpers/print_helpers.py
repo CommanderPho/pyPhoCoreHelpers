@@ -1,5 +1,9 @@
+from copy import deepcopy
+from functools import partial
 import socket # for getting hostname
-from typing import List, Tuple, Dict, Optional, OrderedDict  # for OrderedMeta
+from typing import Union, List, Dict, Tuple, Set, Any, Optional, OrderedDict, Callable  # for OrderedMeta
+from nptyping import NDArray
+
 from datetime import datetime, date, timedelta # for `get_now_day_str`
 import time # for `get_now_time_str`, `get_now_time_precise_str`
 import numpy as np
@@ -18,8 +22,6 @@ from traceback import extract_tb, format_list, format_exception_only # Required 
 from attrs import define, field, Factory
 
 import re ## required for strip_type_str_to_classname(...)
-
-# Required for build_module_logger
 from pathlib import Path
 import logging
 
@@ -28,8 +30,15 @@ import itertools
 # Required for proper print_object_memory_usage
 import objsize # python -m pip install objsize==0.6.1
 
-from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters # for CapturedException
 # from pyphocorehelpers.function_helpers import function_attributes # # function_attributes causes circular import issue :[
+import numpy as np
+import dask.array as da
+from IPython.display import Image, display, HTML
+
+from io import BytesIO
+import base64
+import ipywidgets as widgets
+
 
 
 # @function_attributes(short_name=None, tags=['unused', 'repr', 'str', 'string_representation', 'preview'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-11-28 12:43', related_items=[])
@@ -147,7 +156,7 @@ class WrappingMessagePrinter(object):
 class CustomTreeFormatters:
 
     @classmethod
-    def basic_custom_tree_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False) -> str:
+    def basic_custom_tree_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_formatting_fn=None) -> str:
         """ For use with `print_keys_if_possible` to render a neat and pretty tree
 
             from pyphocorehelpers.print_helpers import CustomTreeFormatters
@@ -161,7 +170,28 @@ class CustomTreeFormatters:
         depth_string_with_link = depth_string + link_char
         formatted_string = f"{depth_string_with_link}{prefix}{curr_key}: {type_name}"
         if is_omitted_from_expansion:
+            value_str = f"{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC)}"
+        else:
+            ## try to get the value:
+            value_str = value_formatting_fn(curr_value)
+            if (value_str is not None) and (len(value_str) > 0):
+                value_str = f"{(ANSI_COLOR_STRINGS.WARNING + value_str + ANSI_COLOR_STRINGS.ENDC)}"
+            else:
+                value_str = ""
+    
+        if is_omitted_from_expansion:
             formatted_string += ' (children omitted)'
+        else:
+            ## try to get the value:
+            if value_formatting_fn is None:
+                # value_string_rep_fn = DocumentationFilePrinter.never_string_rep
+                value_formatting_fn = DocumentationFilePrinter.string_rep_if_short_enough
+            
+            value_str = value_formatting_fn(curr_value)
+            if (value_str is not None) and (len(value_str) > 0):
+                ## add the value str
+                formatted_string += f' {value_str}'
+
         return formatted_string
 
 
@@ -323,6 +353,13 @@ class DocumentationFilePrinter:
     # extra methods ______________________________________________________________________________________________________ #
     def display_widget(self):
         """ Display an interactive jupyter-widget that allows you to open/reveal the generated files in the fileystem or default system display program. 
+        
+        Usage:
+        
+            doc_printer = DocumentationFilePrinter(doc_output_parent_folder=Path('C:/Users/pho/repos/PhoPy3DPositionAnalysis2021/EXTERNAL/DEVELOPER_NOTES/DataStructureDocumentation'), doc_name='ComputationResult')
+            doc_printer.save_documentation('ComputationResult', curr_active_pipeline.computation_results['maze1'], non_expanded_item_keys=['_reverse_cellID_index_map'])
+            doc_printer.display_widget()
+        
         """
         import ipywidgets as widgets
         from IPython.display import display
@@ -344,7 +381,7 @@ class DocumentationFilePrinter:
             ])
 
         _out_row_md = JupyterButtonRowWidget.init_from_button_defns(button_defns=[("Open generated .md Documentation", lambda _: open_file_with_system_default(str(self.output_md_file.resolve())), default_kwargs),
-        		("Reveal Generated .md Documentation", lambda _: reveal_in_system_file_manager(self.output_md_file), default_kwargs),
+                ("Reveal Generated .md Documentation", lambda _: reveal_in_system_file_manager(self.output_md_file), default_kwargs),
             ])
 
         return widgets.VBox([_out_row.root_widget,
@@ -354,24 +391,144 @@ class DocumentationFilePrinter:
 
     # private methods ____________________________________________________________________________________________________ #
     @classmethod
-    def _default_plain_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+    def never_string_rep(cls, value_rep: str):
+        """ always returns None indicating no string-rep of the value should be included """
+        return None
+
+    @classmethod
+    def string_rep_if_short_enough(cls, value: Any, max_length:int=280, max_num_lines:int=1, allow_reformatting:bool=True, allow_ellipsis_fill_too_long_regions:bool=True, debug_print:bool=False):
+        """ returns the formatted str-rep of the value if it meets the criteria, otherwise nothing. An example `value_formatting_fn` 
+        
+        allow_reformatting: if True, allows removing lines to meet max_num_lines requirements so long as max_length is short enough
+        
+        
+        Usage:
+            from functools import partial
+            from pyphocorehelpers.print_helpers import DocumentationFilePrinter
+
+            custom_value_formatting_fn = partial(DocumentationFilePrinter.string_rep_if_short_enough, max_length=280, max_num_lines=1)
+            new_custom_item_formatter = partial(DocumentationFilePrinter._default_rich_text_formatter, value_formatting_fn=custom_value_formatting_fn)
+            print_keys_if_possible('context', context, max_depth=4, custom_item_formatter=new_custom_item_formatter)
+
+
+        """
+        if not isinstance(value, str):
+            value = str(value)
+            
+        reformatting_line_replacement_str: str = '<br>'
+        # reformatting_line_replacement_str: str = '\t'
+        
+        
+        ellipsis_join_chars: str = '...'
+        
+
+        does_repr_have_too_many_lines: bool = (len(value.splitlines()) > max_num_lines)
+        
+        if (does_repr_have_too_many_lines and allow_reformatting):
+            _val_arr = value.splitlines()
+            _original_num_lines: int = len(_val_arr)
+            _num_lines_to_combine: int = _original_num_lines - max_num_lines
+                
+            if (max_num_lines == 1) and (_original_num_lines > 1):
+                if allow_ellipsis_fill_too_long_regions:
+                    _reformatted_value = reformatting_line_replacement_str.join(_val_arr) ## join all lines
+                else:
+                    _reformatted_value = reformatting_line_replacement_str.join(_val_arr)
+    
+            elif (max_num_lines >= 3) and (_original_num_lines >= 3):
+                _first_line = _val_arr.pop(0)
+                _last_line = _val_arr.pop(-1) # remove the last line
+                _middle_lines = _val_arr # remaining lines
+                if allow_ellipsis_fill_too_long_regions:
+                    _reformatted_value = '\n'.join((_first_line, ellipsis_join_chars, _last_line))  ## join extra lines after that                    
+                else:
+                    _reformatted_value = '\n'.join((_first_line, reformatting_line_replacement_str.join(_middle_lines), _last_line))  ## join extra lines after that
+            else:
+                raise NotImplementedError(f"_original_num_lines: {_original_num_lines}, max_num_lines: {max_num_lines}, _val_arr: {_val_arr}")
+
+            does_repr_have_too_many_lines: bool = (len(_reformatted_value.splitlines()) > max_num_lines)
+            assert (not does_repr_have_too_many_lines), f"string_rep_if_short_enough(...): ERROR:\n even after reformatting the _reformatted_value has too many lines! max_num_lines: {max_num_lines}\n len(_reformatted_value.splitlines()): {len(_reformatted_value.splitlines())}\n _reformatted_value: {_reformatted_value}\n value: {value}"
+            ## update value if needed
+            if value != _reformatted_value:
+                if debug_print:
+                    print(f'string_rep_if_short_enough(...): valueChanged:\n value: {value}\n\n _reformatted_value: {_reformatted_value}')
+            value = _reformatted_value
+
+        is_repr_too_long: bool = (len(value) > max_length)
+        if is_repr_too_long and allow_ellipsis_fill_too_long_regions:
+            # replaces all characters following the allowed max_length with ellipses
+            characters_to_ellipses: int = (max_length-len(ellipsis_join_chars)) - len(value) # characters needed to be replaced by elipses
+            _value_start = value[:(max_length-len(ellipsis_join_chars))]
+            _reformatted_value = f"{_value_start}{ellipsis_join_chars}"
+            is_repr_too_long: bool = (len(_reformatted_value) > max_length)
+            
+            assert (not is_repr_too_long), f"string_rep_if_short_enough(...): ERROR:\n even after replacing with ellipses the _reformatted_value has too many chars! max_length: {max_length}\n len(_reformatted_value): {len(_reformatted_value)}\n _reformatted_value: {_reformatted_value}\n value: {value}"
+            ## update value if needed
+            if (value != _reformatted_value):
+                if debug_print:
+                    print(f'string_rep_if_short_enough(...): valueChanged:\n value: {value}\n\n _reformatted_value: {_reformatted_value}')
+            value = _reformatted_value
+
+
+        is_repr_good_as_is: bool = (not does_repr_have_too_many_lines) and (not is_repr_too_long)
+        if is_repr_good_as_is:
+            # valid rep, include the value
+            return f' = {value}'
+        else:
+            return None
+
+    @classmethod
+    def value_memory_usage_MB(cls, value: Any):
+        """ returns the formatted memory size in MB. An example `value_formatting_fn` """
+        if value is not None:
+            memory_size_str_value: str = f"{print_object_memory_usage(value, enable_print=False):0.3f} MB"
+            return memory_size_str_value        
+        else:
+            return None
+
+
+    # Default formatters _________________________________________________________________________________________________ #
+    @classmethod
+    def _default_plain_text_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_formatting_fn=None):
         """       """
-        return CustomTreeFormatters.basic_custom_tree_formatter(depth_string=depth_string, curr_key=curr_key, type_string=type_string, type_name=type_name, is_omitted_from_expansion=is_omitted_from_expansion)
+        if value_formatting_fn is None:
+            value_formatting_fn = cls.string_rep_if_short_enough
+
+        return CustomTreeFormatters.basic_custom_tree_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=type_string, type_name=type_name, is_omitted_from_expansion=is_omitted_from_expansion, value_formatting_fn=value_formatting_fn)
     
     @classmethod
-    def _default_rich_text_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+    def _default_rich_text_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_formatting_fn=None):
         """ formats using ANSI_Coloring for rich colored output """
+        if value_formatting_fn is None:
+            # value_string_rep_fn = cls.never_string_rep
+            value_formatting_fn = cls.string_rep_if_short_enough
+            
         key_color = ANSI_COLOR_STRINGS.OKBLUE
         variable_type_color = ANSI_COLOR_STRINGS.LIGHTGREEN # looks better on screen
         # variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA # converts to greyscale for printing better
-        return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC) if is_omitted_from_expansion else ''}"
+        if is_omitted_from_expansion:
+            value_str = f"{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC)}"
+        else:
+            ## try to get the value:
+            value_str = value_formatting_fn(curr_value)
+            if (value_str is not None) and (len(value_str) > 0):
+                value_str = f"{(ANSI_COLOR_STRINGS.WARNING + value_str + ANSI_COLOR_STRINGS.ENDC)}"
+            else:
+                value_str = ""
+
+        return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}{value_str}"
 
     @classmethod
-    def _default_rich_text_greyscale_print_formatter(cls, depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False):
+    def _default_rich_text_greyscale_print_formatter(cls, depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False, value_formatting_fn=None):
+        if value_formatting_fn is None:
+            # value_string_rep_fn = cls.never_string_rep
+            value_formatting_fn = cls.string_rep_if_short_enough
+    
         """ formats using ANSI_Coloring for rich colored output """
         key_color = ANSI_COLOR_STRINGS.OKBLUE
         variable_type_color = ANSI_COLOR_STRINGS.LIGHTMAGENTA # converts to greyscale for printing better
-        return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}"
+        value_str = f"{(ANSI_COLOR_STRINGS.WARNING + ' (children omitted)' + ANSI_COLOR_STRINGS.ENDC) if is_omitted_from_expansion else (value_formatting_fn(curr_value) or '')}"
+        return f"{depth_string}- {key_color}{curr_key}{ANSI_COLOR_STRINGS.ENDC}: {variable_type_color}{ANSI_Coloring.ansi_highlight_only_suffix(type_name, suffix_color=ANSI_COLOR_STRINGS.BOLD)}{ANSI_COLOR_STRINGS.ENDC}{value_str}"
 
 
 
@@ -420,13 +577,20 @@ def generate_html_string(input_str, color=None, font_size=None, bold=False, ital
 # Category: Getting Current Date/Time as String for File Names/Logging/etc:                                            #
 # ==================================================================================================================== #
 # Helpers to get the current date and time. Written as functions so they stay current:
-# from pyphocorehelpers.print_helpers import get_now_day_str, get_now_time_str, get_now_time_precise_str
+# from pyphocorehelpers.print_helpers import get_now_day_str, get_now_time_str, get_now_time_precise_str, get_now_rounded_time_str
 def get_now_day_str() -> str:
     return datetime.today().strftime('%Y-%m-%d')
 def get_now_time_str(time_separator='-') -> str:
     return str(time.strftime(f"%Y-%m-%d_%H{time_separator}%m", time.localtime(time.time())))
 def get_now_time_precise_str(time_separator='-') -> str:
     return str(time.strftime(f"%Y-%m-%d_%H{time_separator}%m{time_separator}%S", time.localtime(time.time())))
+def get_now_rounded_time_str(rounded_minutes:float=2.5, time_separator='') -> str:
+    """ rounded_minutes:float=2.5 - nearest previous minute mark to round to
+    """
+    current_time = datetime.now()
+    rounded_time = (current_time - timedelta(minutes=current_time.minute % rounded_minutes)).replace(second=0, microsecond=0)
+    formatted_time = rounded_time.strftime(f"%Y-%m-%d_%I{time_separator}%M%p")
+    return formatted_time
 
 # TODO: enable simple backup-filename output
 # current_time = datetime.now()
@@ -587,6 +751,7 @@ def print_dataframe_memory_usage(df, enable_print=True):
 def print_object_memory_usage(obj, enable_print=True):
     """ prints the size of the passed in object in MB (Megabytes)
     Usage:
+        from pyphocorehelpers.print_helpers import print_object_memory_usage, print_filesystem_file_size
         print_object_memory_usage(curr_bapun_pipeline.sess)
     """
     # size_bytes = obj.__sizeof__() # 1753723032
@@ -890,7 +1055,7 @@ def dbg_dump(*args, dumpopt_stream=sys.stderr, dumpopt_forcename=True, dumpopt_p
 from pyphocorehelpers.DataStructure.enum_helpers import ExtendedEnum
 
 class TypePrintMode(ExtendedEnum):
-    """Describes the type of file progress actions that can be performed to get the right verbage.
+    """Describes the various ways of formatting an objects  type identity (`type(obj)`)
     Used by `print_file_progress_message(...)`
     """
     FULL_TYPE_STRING = "FullTypeString" # the complete output of calling type(obj) on the object. -- e.g. "<class 'pandas.core.frame.DataFrame'>"
@@ -937,7 +1102,14 @@ class TypePrintMode(ExtendedEnum):
         """
         if isinstance(curr_str, type):
             curr_str = str(curr_str) # convert to a string
-        return re.search(r"<class '([^']+)'>", curr_str).group(1)
+
+        _search_results = re.search(r"<class '([^']+)'>", curr_str)
+        if _search_results is not None:        
+            return _search_results.group(1)
+
+        _search_results = re.search(r"typing\.Optional\[\s*([\w\.\[\],\s]+)\s*\]", curr_str) # 'typing.Optional[float]'
+        return f"Optional[{_search_results.group(1)}]"
+
 
     @classmethod
     def _convert_FQDN_to_NAME_ONLY(cls, curr_str: str) -> str:
@@ -949,7 +1121,7 @@ class TypePrintMode(ExtendedEnum):
         """
         return curr_str.rsplit('.', 1)[-1] # 
 
-def strip_type_str_to_classname(a_type_str):
+def strip_type_str_to_classname(a_type_str: str) -> str:
     """ Extracts the class string out of the string returned by type(an_obj) 
     a_type_str: a string returned by type(an_obj) in the form of ["<class 'tuple'>", "<class 'int'>", "<class 'float'>", "<class 'numpy.ndarray'>", "<class 'pandas.core.series.Series'>", "<class 'pandas.core.frame.DataFrame'>", "<class 'pyphocorehelpers.indexing_helpers.BinningInfo'>", "<class 'pyphocorehelpers.DataStructure.dynamic_parameters.DynamicParameters'>"]
     return: str
@@ -1013,12 +1185,12 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         depth (int, optional): _description_. Defaults to 0.
         additional_excluded_item_classes (list, optional): A list of class types to exclude
         non_expanded_item_keys (list, optional): a list of keys which will not be expanded, no matter their type, only themselves printed.
-        custom_item_formater (((depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False) -> str), optional): e.g. , custom_item_formatter=(lambda depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False: f"{depth_string}- {curr_key}: {type_name}")
+        custom_item_formater (((depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False) -> str), optional): e.g. , custom_item_formatter=(lambda depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False: f"{depth_string}- {curr_key}: {type_name}")
 
             custom_item_formater Examples:
                 from pyphocorehelpers.print_helpers import TypePrintMode
-                print_keys_if_possible('computation_config', curr_active_pipeline.computation_results['maze1'].computation_config, custom_item_formatter=(lambda depth_string, curr_key, type_string, type_name, is_omitted_from_expansion=False: f"{depth_string}- {curr_key}: <{TypePrintMode.FULL_TYPE_STRING.convert(type_string, new_type=TypePrintMode.TYPE_NAME_ONLY)}>{' (children omitted)' if is_omitted_from_expansion else ''}))
-                ! See DocumentationFilePrinter._plain_text_format_curr_value and DocumentationFilePrinter._rich_text_format_curr_value for further examples 
+                print_keys_if_possible('computation_config', curr_active_pipeline.computation_results['maze1'].computation_config, custom_item_formatter=(lambda depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion=False: f"{depth_string}- {curr_key}: <{TypePrintMode.FULL_TYPE_STRING.convert(type_string, new_type=TypePrintMode.TYPE_NAME_ONLY)}>{' (children omitted)' if is_omitted_from_expansion else ''}))
+                ! See `DocumentationFilePrinter._plain_text_format_curr_value` and `DocumentationFilePrinter._rich_text_format_curr_value` for further examples 
 
     Returns:
         None
@@ -1062,7 +1234,7 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
                 - all_pairwise_overlaps: <class 'numpy.ndarray'> - (741, 59, 21)
         
         ## Defining custom formatting functions:
-            def _format_curr_value(depth_string, curr_key, type_string, type_name):
+            def _format_curr_value(depth_string, curr_key, curr_value, type_string, type_name):
                 return f"{depth_string}['{curr_key}']: {type_name}"                
         
             print_keys_if_possible('active_firing_rate_trends', active_firing_rate_trends, custom_item_formatter=_format_curr_value)
@@ -1112,13 +1284,21 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         if custom_item_formatter is None:
             # Define default print format function if no custom one is provided:
             # see DocumentationFilePrinter._plain_text_format_curr_value and DocumentationFilePrinter._rich_text_format_curr_value for examples
-            custom_item_formatter = DocumentationFilePrinter._default_plain_text_formatter
-        # e.g. lambda depth_string, curr_key, type_string, type_name, is_omitted_from_expansion: f"{depth_string}- {curr_key}: {type_name}"
+            # custom_item_formatter = DocumentationFilePrinter._default_plain_text_formatter
+            ## Plaintext:
+            custom_value_formatting_fn = partial(DocumentationFilePrinter.string_rep_if_short_enough, max_length=280, max_num_lines=1)
+            custom_item_formatter = partial(DocumentationFilePrinter._default_plain_text_formatter, value_formatting_fn=custom_value_formatting_fn)
+            
+            # ## Rich:
+            # custom_value_formatting_fn = partial(DocumentationFilePrinter.string_rep_if_short_enough, max_length=280, max_num_lines=1)
+            # custom_item_formatter = partial(DocumentationFilePrinter._default_rich_text_formatter, value_formatting_fn=custom_value_formatting_fn)
+
+        # e.g. lambda depth_string, curr_key, curr_value, type_string, type_name, is_omitted_from_expansion: f"{depth_string}- {curr_key}: {type_name}"
 
         if isinstance(curr_value, tuple(_GLOBAL_DO_NOT_EXPAND_CLASS_TYPES)) or (curr_value_type_string in _GLOBAL_DO_NOT_EXPAND_CLASSNAMES) or (curr_value_type_string in (additional_excluded_item_classes or [])) or (is_non_expanded_item):
             # Non-expanded items (won't recurrsively call `print_keys_if_possible` but will print unless omit_curr_item_print is True:
             if not omit_curr_item_print:
-                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=True)
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=True)
                 # Recommendationa against using hasattr suggested here: https://hynek.me/articles/hasattr/
                 try:
                     print(f"{curr_item_str} - {curr_value.shape}")
@@ -1127,7 +1307,7 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
         elif isinstance(curr_value, (np.ndarray, list, tuple)): 
             # Objects that are considered list-like are for example Python lists, tuples, sets, NumPy arrays, and Pandas Series.
             if not omit_curr_item_print:
-                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
+                curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
                 print(f"{curr_item_str} - {safe_get_variable_shape(curr_value)}") ## Shape only
                 
         else:
@@ -1138,13 +1318,13 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
                 if not omit_curr_item_print:
                     # Get value type since they're all the same
                     # dict_values_type_string:str = str(type(list(curr_value.values())[0]))
-                    curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=True) + f"(all scalar values) - size: {len(curr_value)}"
+                    curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=True) + f"(all scalar values) - size: {len(curr_value)}"
                     print(curr_item_str)
                 return  # Return early, don't print individual items
             else:
                 # Typical case where we can't proclude expansion.
                 if not omit_curr_item_print:
-                    curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
+                    curr_item_str = custom_item_formatter(depth_string=depth_string, curr_key=curr_key, curr_value=curr_value, type_string=curr_value_type_string, type_name=curr_value_type_name, is_omitted_from_expansion=False)
                     print(curr_item_str)
 
 
@@ -1324,63 +1504,18 @@ def document_active_variables(params, include_explicit_values=False, enable_prin
     
     
 
-# ==================================================================================================================== #
-# Exceptions and Error Handling                                                                                        #
-# ==================================================================================================================== #
-
-
-@define(slots=False, repr=False)
-class CapturedException:
-    """ Formats a captured exception in a try/catch block
-
-    Usage:
-        from pyphocorehelpers.print_helpers import CapturedException
-
-        # ...
-
-        try:
-            # *SOMETHING*
-        except Exception as e:
-            exception_info = sys.exc_info()
-            e = CapturedException(e, exception_info)
-            print(f'exception occured: {e}')
-            if fail_on_exception:
-                raise e
-
-    """
-    exc: BaseException = field()
-    exc_info: Tuple = field()
-    captured_result_state: Optional[object] = field(default=None) # additional state that you might want for debugging, but usually None
-    
-    """ An exception and its related info/context during the process of executing composed functions with error handling."""
-    
-    def __repr__(self):
-        # Don't print out captured_result_state (as it's huge and clogs the console)
-        return f'!! {self.exc} ::::: {self.exc_info}'
-
-
-
-
-# class CapturedException(DynamicParameters):
-#     """ An exception and its related info/context during the process of executing composed functions with error handling."""
-    
-#     def __repr__(self):
-#         # Don't print out captured_result_state (as it's huge and clogs the console)
-#         return f'!! {self.exc} ::::: {self.exc_info}'
-#         # return super().__repr__()
-
-    
-#     def __init__(self, exc, exc_info, captured_result_state):
-#         super(CapturedException, self).__init__(exc=exc, exc_info=exc_info, captured_result_state=captured_result_state)
-#         # self.exc = exc
-#         # self.exc_info = exc_info
-#         # self.captured_result_state = captured_result_state
-
-
     
 # ==================================================================================================================== #
 # LOGGING                                                                                                              #
 # ==================================================================================================================== #
+
+def get_system_hostname(enable_print:bool=False) -> str:
+    hostname = socket.gethostname()
+    if enable_print:
+        print(f"Hostname: {hostname}") # Hostname: LNX00052
+    return hostname
+
+
 
 # logging.basicConfig()
 # logging.root.setLevel(logging.DEBUG)
@@ -1405,172 +1540,103 @@ class CapturedException:
 
 
 
-def build_module_logger(module_name='Spike3D.notebook', file_logging_dir=Path('EXTERNAL/TESTING/Logging'), debug_print=False):
-    """ Builds a logger for a specific module that logs to console output and a file. 
+def build_run_log_task_identifier(run_context: Union[str, List[str]], logging_root_FQDN: str = f'com.PhoHale.Spike3D', include_curr_time_str: bool=True, include_hostname:bool=True, additional_suffix:Optional[str]=None) -> str:
+    """ Builds an identifier string for logging task progress like 'LNX00052.kdiba.gor01.two.2006-6-07_16-40-19'
     
-    
-    Testing:
-    
-        module_logger.debug (f'DEBUG: module_logger: "com.PhoHale.Spike3D.notebook"')
-        module_logger.info(f'INFO: module_logger: "com.PhoHale.Spike3D.notebook"')
-        module_logger.warning(f'WARNING: module_logger: "com.PhoHale.Spike3D.notebook"')
-        module_logger.error(f'ERROR: module_logger: "com.PhoHale.Spike3D.notebook"')
-        module_logger.critical(f'CRITICAL: module_logger: "com.PhoHale.Spike3D.notebook"')
-        module_logger.exception(f'EXCEPTION: module_logger: "com.PhoHale.Spike3D.notebook"')
 
+    Usage:    
+        from pyphocorehelpers.print_helpers import build_run_log_task_identifier
+
+        build_run_log_task_identifier('test')
+        
+        >>> '2024-05-01_14-05-31.Apogee.com.PhoHale.Spike3D.test'
+
+        build_run_log_task_identifier('test', logging_root_FQDN='Spike3D') # '2024-05-01_14-05-26.Apogee.Spike3D.test'
+    
     """
-    # logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] %(name)s [%(levelname)-5.5s]  %(message)s")
-    logFormatter = logging.Formatter("%(relativeCreated)d %(name)s]  [%(levelname)-5.5s]  %(message)s")
+    _out_parts = []
 
-    module_logger = logging.getLogger(f'com.PhoHale.{module_name}') # create logger
-    print(f'build_module_logger(module_name="{module_name}"):')
+    if include_curr_time_str:
+        # runtime_start_str: str = f'{datetime.now().strftime("%Y%m%d%H%M%S")}'
+        runtime_start_str: str = get_now_time_precise_str()
+        _out_parts.append(runtime_start_str)
+    
+    if include_hostname:
+        hostname: str = get_system_hostname() # get the system's hostname
+        # print(f"Hostname: {hostname}") # Hostname: LNX00052
+        _out_parts.append(hostname)
+
+
+    if (logging_root_FQDN is not None) and (len(logging_root_FQDN) > 0):
+        _out_parts.append(logging_root_FQDN)
+
+    ## add the main content name
+    if isinstance(run_context, (list, tuple)):
+        _out_parts.extend(run_context)
+    elif hasattr(run_context, 'get_description'):
+        # like an IdentifyingContext object
+        _out_parts.append(str(run_context.get_description(separator='.'))) # 'kdiba.gor01.two.2006-6-07_16-40-19'
+    else:
+        _out_parts.append(str(run_context))
+
+    ## build the output string
+    out_str: str = '.'.join(_out_parts)
+
+    if additional_suffix is not None:
+        out_str = f"{out_str}.{additional_suffix.lstrip('.')}"
+
+    return out_str
+
+
+def build_logger(full_logger_string: str, file_logging_dir=None,
+                logFormatter: Optional[logging.Formatter]=None, debug_print=True):
+    """ builds a logger
+    
+    from pyphocorehelpers.print_helpers import build_run_log_task_identifier, build_logger
+
+    Default used to be:
+        file_logging_dir=Path('EXTERNAL/TESTING/Logging')
+    """
+    if logFormatter is None:
+        # logFormatter = logging.Formatter("%(relativeCreated)d %(name)s]  [%(levelname)-5.5s]  %(message)s")
+        logFormatter = logging.Formatter("%(asctime)s %(name)s]  [%(levelname)-5.5s]  %(message)s")
+    
+    task_logger: logging.Logger = logging.getLogger(full_logger_string) # create logger
+    print(f'build_logger(full_logger_string="{full_logger_string}", file_logging_dir: {file_logging_dir}):')
     if debug_print:
-        print(f'\t module_logger.handlers: {module_logger.handlers}')
-    module_logger.handlers = []
-    # module_logger.removeHandler()
+        print(f'\t task_logger.handlers: {task_logger.handlers}')
+    task_logger.handlers = []
+    # task_logger.removeHandler()
 
     if file_logging_dir is not None:
         # file logging enabled:
+        if file_logging_dir.is_file():
+            # file_logging_dir is an entire logging file:
+            module_logging_path = file_logging_dir.resolve()
+            file_logging_dir = module_logging_path.parent.resolve() # get the parent of the log file provided as the logging directory
+        else:
+            # file_logging_dir = Path('EXTERNAL/TESTING/Logging') # 'C:\Users\pho\repos\PhoPy3DPositionAnalysis2021\EXTERNAL\TESTING\Logging'
+            module_logging_path = file_logging_dir.joinpath(f'debug_{task_logger.name}.log') # task_logger.name # 'com.PhoHale.Spike3D.notebook'
+
         # Create logging directory if it doesn't exist
         file_logging_dir.mkdir(parents=True, exist_ok=True)
 
-        # file_logging_dir = Path('EXTERNAL/TESTING/Logging') # 'C:\Users\pho\repos\PhoPy3DPositionAnalysis2021\EXTERNAL\TESTING\Logging'
-        module_logging_path = file_logging_dir.joinpath(f'debug_{module_logger.name}.log') # module_logger.name # 'com.PhoHale.Spike3D.notebook'
-
         # File Logging:    
-        print(f'\t Module logger {module_logger.name} has file logging enabled and will log to {str(module_logging_path)}')
-        fileHandler = logging.FileHandler(module_logging_path)
+        print(f'\t Task logger "{task_logger.name}" has file logging enabled and will log to "{str(module_logging_path)}"')
+        fileHandler: logging.FileHandler = logging.FileHandler(module_logging_path)
         fileHandler.setFormatter(logFormatter)
-        module_logger.addHandler(fileHandler)
+        
+        # fileHandler.baseFilename
+        task_logger.addHandler(fileHandler)
 
     # consoleHandler = logging.StreamHandler(sys.stdout)
     # consoleHandler.setFormatter(logFormatter)
-    # # module_logger.addHandler(consoleHandler)
+    # # task_logger.addHandler(consoleHandler)
 
     # General Logger Setup:
-    module_logger.setLevel(logging.DEBUG)
-    module_logger.info(f'==========================================================================================\n========== Module Logger INIT "{module_logger.name}" ==============================')
-    return module_logger
-
-
-
-# ==================================================================================================================== #
-# Stack Trace Formatting                                                                                               #
-# ==================================================================================================================== #
-
-class StackTraceFormatting(object):
-    """
-
-    https://stackoverflow.com/questions/31949760/how-to-limit-python-traceback-to-specific-files
-    vaultah answered Oct 9, 2015 at 15:43
-
-    They both use the traceback.extract_tb.
-    It returns "a list of “pre-processed” stack trace entries extracted from the traceback object"; all of them are instances of traceback.FrameSummary (a named tuple).
-    Each traceback.FrameSummary object has a filename field which stores the absolute path of the corresponding file.
-    We check if it starts with any of the directory paths provided as separate function arguments to determine if we'll need to exclude the entry (or keep it).
-
-    """
-    @classmethod
-    def spotlight(cls, *show):
-        ''' Return a function to be set as new sys.excepthook.
-            It will SHOW traceback entries for files from these directories. 
-            https://stackoverflow.com/questions/31949760/how-to-limit-python-traceback-to-specific-files
-            vaultah answered Oct 9, 2015 at 15:43
-        '''
-        show = tuple(join(abspath(p), '') for p in show)
-
-        def _check_file(name):
-            return name and name.startswith(show)
-
-        def _print(type, value, tb):
-            show = (fs for fs in extract_tb(tb) if _check_file(fs.filename))
-            fmt = format_list(show) + format_exception_only(type, value)
-            print(''.join(fmt), end='', file=sys.stderr)
-
-        return _print
-
-    @classmethod
-    def shadow(cls, *hide):
-        ''' Return a function to be set as new sys.excepthook.
-            It will HIDE traceback entries for files from these directories. 
-            https://stackoverflow.com/questions/31949760/how-to-limit-python-traceback-to-specific-files
-            vaultah answered Oct 9, 2015 at 15:43
-        '''
-        hide = tuple(join(abspath(p), '') for p in hide)
-
-        def _check_file(name):
-            print(f'shadow:\t name: {name}')
-            return name and not name.startswith(hide)
-
-        def _print(type, value, tb):
-            print(f'shadow:\t tb: {tb}')
-            show = (fs for fs in extract_tb(tb) if _check_file(fs.filename))
-            fmt = format_list(show) + format_exception_only(type, value)
-            print(''.join(fmt), end='', file=sys.stderr)
-
-        return _print
-
-    @classmethod
-    def restore_default(cls):
-        """ Restores the default sys.excepthook from sys.__excepthook__
-        
-        """
-        sys.excepthook = sys.__excepthook__
-        print(f'Restored the default sys.excepthook from sys.__excepthook__.')
-        return sys.__excepthook__
-
-    @classmethod
-    def shadow_sitepackages(cls):
-        # Gets the "sitepackges" library directories for exclusion from the stacktrace
-        curr_sitepackages = site.getsitepackages()
-        print(f'Excluding sitepackages (library) directories from stacktraces: {curr_sitepackages}')
-        sys.excepthook = cls.shadow(*curr_sitepackages)
-        return sys.excepthook
-
-
-# """ Solution for long and convoluted stacktraces into libraries. Installs a sys.excepthook
-# From:
-#     https://stackoverflow.com/questions/2615414/python-eliminating-stack-traces-into-library-code/2616262#2616262
-
-# Solution by Alex Martelli answered Apr 10, 2010 at 23:37
-
-# """
-
-# # def trimmedexceptions(type, value, tb, pylibdir=None, lev=None):
-# #     """trim system packages from the exception printout"""
-# #     if pylibdir is None:
-# #         import traceback, distutils.sysconfig
-# #         pylibdir = distutils.sysconfig.get_python_lib(1,1)
-# #         nlev = trimmedexceptions(type, value, tb, pylibdir, 0)
-# #         traceback.print_exception(type, value, tb, nlev)
-# #     else:
-# #         fn = tb.tb_frame.f_code.co_filename
-# #         if tb.tb_next is None or fn.startswith(pylibdir):
-# #             return lev
-# #         else:
-# #             return trimmedexceptions(type, value, tb.tb_next, pylibdir, lev+1)
-
-# # import sys
-# # sys.excepthook=trimmedexceptions
-# # This one doesn't seem to change anything either.
-
-# import sys
-# from pyphocorehelpers.print_helpers import StackTraceFormatting
-
-# # ## TODO: Investigate https://pymotw.com/2/sys/exceptions.html to try and figure out why my stacktrace handling isn't working
-# # # StackTraceFormatting.shadow_sitepackages()
-
-# sys.excepthook = StackTraceFormatting.restore_default()
-# # sys.excepthook = StackTraceFormatting.shadow('~\miniconda3\envs\phoviz_ultimate\lib\site-packages')
-
-
-def get_system_hostname(enable_print:bool=False) -> str:
-    hostname = socket.gethostname()
-    if enable_print:
-        print(f"Hostname: {hostname}") # Hostname: LNX00052
-    return hostname
-
-
+    task_logger.setLevel(logging.DEBUG)
+    task_logger.info(f'==========================================================================================\n========== Logger INIT "{task_logger.name}" ==============================')
+    return task_logger
 
 
 # ==================================================================================================================== #
@@ -1580,4 +1646,648 @@ def get_system_hostname(enable_print:bool=False) -> str:
 
 
 
+
+# ==================================================================================================================== #
+# PPRINTING                                                                                                            #
+# ==================================================================================================================== #
+
+
+
+# ==================================================================================================================== #
+# 2024-05-30 - Custom Formatters                                                                                       #
+# ==================================================================================================================== #
+import numpy as np
+import pandas as pd
+import math
+from IPython.display import HTML
+import matplotlib.pyplot as plt
+
+# @function_attributes(short_name=None, tags=['elide', 'truncation', 'display'], input_requires=[], output_provides=[], uses=[], used_by=['render_scrollable_colored_table_from_dataframe'], creation_date='2025-01-01 14:44', related_items=[])
+def ellided_dataframe(df: pd.DataFrame, max_rows_to_include: int = 200, num_truncated_rows_per_ellipsis_rows: int = 1000) -> pd.DataFrame:
+    """ returns a truncated/elided dataframe if the number of rows exceeds `max_rows_to_include`. Returned unchanged if n_rows is already less than `max_rows_to_include`.
+    
+    from pyphocorehelpers.print_helpers import ellided_dataframe
+    
+    truncated_df = ellided_dataframe(df=df, max_rows_to_include=100)
+    """
+    # Truncate DataFrame if too many rows ________________________________________________________________________________ #
+    n_rows: int = len(df)
+    n_rows_truncated: int = 0
+    if n_rows <= max_rows_to_include:
+        return df
+    else:
+        n_rows_truncated: int = (n_rows - max_rows_to_include)
+        n_truncation_symbols: int = math.ceil(n_rows_truncated / num_truncated_rows_per_ellipsis_rows)
+        half = max_rows_to_include // 2
+        top_df = df.head(half)
+        bottom_df = df.tail(half)
+        
+        # Generate multiple ellipsis rows (One per 1,000 truncated rows)
+        # starts = (np.arange(n_truncation_symbols) * num_truncated_rows_per_ellipsis_rows)
+        # ends = ((np.arange(n_truncation_symbols)+1) * num_truncated_rows_per_ellipsis_rows) # [1:] could use modulo `n_rows_truncated`
+        # ellipsis_index = [f"... trunc<{starts[i]}-{ends[i]}>)" for i in range(n_truncation_symbols)]
+        ellipsis_index = [f"... trunc[{i}<{num_truncated_rows_per_ellipsis_rows} rows>)" for i in range(n_truncation_symbols)]
+        ellipsis_rows = pd.DataFrame(
+            [['…'] * df.shape[1]] * n_truncation_symbols,
+            columns=df.columns,
+            index=ellipsis_index
+        )
+        return pd.concat([top_df, ellipsis_rows, bottom_df], axis=0)
+
+
+# @function_attributes(short_name=None, tags=['HTML', 'render', 'formatting', 'layout'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-01-01 15:30', related_items=[])  
+def estimate_rendered_df_table_height(df: pd.DataFrame, debug_print=False) -> float:
+    """ estimates the required height in px for rendered df
+    
+    Usage:
+        estimated_table_height = estimate_rendered_df_table_height(df=normalized_df)
+        will_scroll_vertically: bool = (estimated_table_height >= max_height)
+    
+    """
+    table_row_height: int = 24
+    const_table_parts_height = 72
+
+    # Get the number of levels in the MultiIndex
+    # Get the number of levels in the index and columns
+    index_levels = df.index.nlevels
+    column_levels = df.columns.nlevels
+
+    # Determine the maximum number of levels
+    max_header_levels = max(index_levels, column_levels) + 1
+    if debug_print:
+        print(f"Index levels: {index_levels}, Column levels: {column_levels}")
+        print(f"Maximum number of levels: {max_header_levels}")
+
+    n_rows: int = len(df)
+
+    total_table_height = (n_rows * table_row_height) + (max_header_levels * table_row_height)
+    return total_table_height
+
+
+# @function_attributes(short_name=None, tags=['table', 'dataframe', 'formatter', 'display', 'render'], input_requires=[], output_provides=[], uses=['ellided_dataframe], used_by=[], creation_date='2025-01-01 13:39', related_items=[])
+def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: str = 'viridis', max_height: Optional[int] = 400, width: str = '100%', is_dark_mode: bool=True, max_rows_to_render_for_performance: int = 100, output_fn=HTML, **kwargs) -> Union[HTML, str]:
+    """ Takes a numpy array of values and returns a scrollable and color-coded table rendition of it
+
+    Usage:    
+        from pyphocorehelpers.print_helpers import render_scrollable_colored_table_from_dataframe
+
+        # Example usage:
+
+        # Example 2D NumPy array
+        array = np.random.rand(100, 10)
+        # Draw it
+        render_scrollable_colored_table(array)
+        
+        # Example 2:
+            render_scrollable_colored_table(np.random.rand(100, 10), cmap_name='plasma', max_height=500, width='80%')
+            render_scrollable_colored_table_from_dataframe(df=normalized_df, cmap_name=cmap_name, max_height=max_height, width=width, **kwargs)
+            
+    """
+    # white_color: str = 'white'
+    white_color: str = '#cacaca'
+    black_color: str = 'black'
+
+    # Validate input array
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a DataFrame array.")
+        
+    # Validate colormap name
+    if cmap_name is not None:
+        if cmap_name not in plt.colormaps():
+            raise ValueError(f"Invalid colormap name '{cmap_name}'. Use one of: {', '.join(plt.colormaps())}.")
+    
+
+    # Truncate DataFrame (for PERFORMANCE) if too many rows ________________________________________________________________________________ #
+    n_rows: int = len(df)
+    n_rows_truncated: int = 0
+    if n_rows > max_rows_to_render_for_performance:
+        n_rows_truncated: int = (n_rows - max_rows_to_render_for_performance)
+        truncated_df = ellided_dataframe(df=df, max_rows_to_include=max_rows_to_render_for_performance)
+
+    else:
+        truncated_df = df
+        
+    ## Normalize each column to the 0, 1 range or ignore formatting
+    # Normalize the data to [0, 1] range
+    # normalized_df = (df - df.min().min()) / (df.max().max() - df.min().min())
+    
+    normalized_df = deepcopy(truncated_df)
+    
+    will_scroll_vertically: bool = False
+    estimated_table_height = estimate_rendered_df_table_height(df=normalized_df)
+    if max_height is None:
+        max_height_str: str = 'auto'
+    else:
+        will_scroll_vertically = (estimated_table_height >= max_height)
+        max_height_str: str = f"{max_height}px"
+
+    # Function to calculate luminance and return appropriate text color
+    def text_contrast(rgba):
+        r, g, b, a = rgba[:4]
+        luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        return black_color if luminance > 0.5 else white_color
+
+    # Define a function to apply a colormap and text color based on luminance
+    def color_map(val):
+        use_default_formatting = True
+        cmap = None
+        if cmap_name is not None:
+            cmap = plt.get_cmap(cmap_name)  # Use the provided colormap
+        
+        try:
+            color = cmap(val)
+            text_color = text_contrast(color)
+            use_default_formatting = False
+        except TypeError as e:
+            ## Not formattable, return default text color (white)
+            use_default_formatting = True
+        except Exception as e:
+            raise e
+        
+        if use_default_formatting:
+            if is_dark_mode:
+                color = black_color
+                text_color = white_color
+            else:
+                color = white_color
+                text_color = black_color
+
+        return f'background-color: rgba({color[0]*255}, {color[1]*255}, {color[2]*255}, {color[3]}); color: {text_color}'
+
+    # Apply the color map with contrast adjustment
+    styled_df = normalized_df.style.applymap(color_map)
+    
+
+    # Updated shadow and gradient for scroll indication
+    box_shadow = ""
+    if will_scroll_vertically:
+        ## only add the shadow if the table's estimated height exceeds the available height
+        box_shadow = 'box-shadow: inset 0 -32px 15px -10px rgba(20,255,20,0.5);' ## this one is good
+
+    formatted_table = styled_df.set_table_attributes(f'style="display:block;overflow-x:auto;max-height:{max_height_str};width:{width};border-collapse:collapse;position:relative;{box_shadow};"').render()
+    
+    table_shape_footer = f"""
+        <div style="text-align: left; margin-top: 10px; font-size: 12px; color: {white_color if is_dark_mode else black_color};">
+            {df.shape[0]} rows × {df.shape[1]} columns
+    """    
+
+    if n_rows_truncated > 0:
+        # table_shape_footer += f"    <{n_rows_truncated} rows truncated>\n"
+        table_shape_footer += f"    <{n_rows - n_rows_truncated}/{n_rows} rows displayed>\n"
+
+    table_shape_footer += """
+        </div>
+    """
+    
+    # Updated gradient overlay placement
+    scrollable_container = f"""
+        <div style="position:relative;max-height:{max_height_str};overflow:auto;">
+            {formatted_table}
+        </div>
+    """
+    
+    # scrollable_container = f"""
+    #     <div style="position:relative;max-height:{max_height_str};overflow:auto;padding-bottom:20px;">
+    #         {formatted_table}
+    #         <div style="position:sticky;bottom:0;left:0;width:100%;height:20px;
+    #         background:linear-gradient(to top, rgba(255,0,0,0.5), rgba(255,0,0,0));pointer-events:none;">
+    #         </div>
+    #     </div>
+    # """
+
+    # # Gradient overlay now positioned outside the scrollable container
+    # gradient_overlay = f"""
+    #     <div style="position:absolute;bottom:0;left:0;width:100%;height:40px;
+    #     background:linear-gradient(to top, rgba(255,0,0,0.5), rgba(255,0,0,0));z-index:1;pointer-events:none;">
+    #     </div>
+    # """
+
+    # Updated full HTML structure
+    full_html = f"""
+    """
+    full_html += f""" <div style="position:relative;">
+            {scrollable_container}
+            {table_shape_footer}
+        </div>
+    """
+    # {gradient_overlay}  <!-- Ensures gradient is outside the scrollable area -->
+
+    # Render the DataFrame as a scrollable table with color-coded values
+    scrollable_table = output_fn(full_html)
+
+    return scrollable_table
+        
+
+def render_scrollable_colored_table(array: NDArray, cmap_name: str = 'viridis', max_height: Optional[int] = 400, width: str = '100%', **kwargs) -> Union[HTML, str]:
+    """ Takes a numpy array of values and returns a scrollable and color-coded table rendition of it
+
+    Usage:    
+        from pyphocorehelpers.print_helpers import render_scrollable_colored_table
+
+        # Example 2D NumPy array
+        array = np.random.rand(100, 10)
+        # Draw it
+        render_scrollable_colored_table(array)
+
+    """
+    # Validate input array
+    if not isinstance(array, np.ndarray):
+        raise TypeError("Input must be a NumPy array.")
+    
+    if array.ndim != 2:
+        raise ValueError("Input array must be 2D.")
+    
+    # Validate colormap name
+    if cmap_name not in plt.colormaps():
+        raise ValueError(f"Invalid colormap name '{cmap_name}'. Use one of: {', '.join(plt.colormaps())}.")
+    
+    # Convert the array to a Pandas DataFrame
+    df = pd.DataFrame(array)
+
+    # Normalize the data to [0, 1] range
+    normalized_df = (df - df.min().min()) / (df.max().max() - df.min().min())
+
+    return render_scrollable_colored_table_from_dataframe(df=normalized_df, cmap_name=cmap_name, max_height=max_height, width=width, **kwargs)
+
+    
+# Example usage:
+# render_scrollable_colored_table(np.random.rand(100, 10), cmap_name='plasma', max_height=500, width='80%')
+
+    
+    
+
+    
+    
+def array_preview_with_shape(arr):
+    """ Text-only Represntation that prints np.shape(arr) 
+    
+        from pyphocorehelpers.print_helpers import array_preview_with_shape
+
+        # Register the custom display function for numpy arrays
+        import IPython
+        ip = IPython.get_ipython()
+        ip.display_formatter.formatters['text/html'].for_type(np.ndarray, array_preview_with_shape) # only registers for NDArray
+
+        # Example usage
+        arr = np.random.rand(3, 4)
+        display(arr)
+
+    """
+    if isinstance(arr, np.ndarray):
+        display(HTML(f"<pre>array{arr.shape} of dtype {arr.dtype}</pre>"))
+    elif isinstance(arr, (list, tuple)):
+        display(HTML(f"<pre>native-python list {len(arr)}</pre>"))
+    elif isinstance(arr, pd.DataFrame):
+        display(HTML(f"<pre>DataFrame with {len(arr)} rows and {len(arr.columns)} columns</pre>"))
+    else:
+        raise ValueError("The input is not a NumPy array.")
+
+
+def array_preview_with_graphical_shape_repr_html(arr):
+    """Generate an HTML representation for a NumPy array, similar to Dask.
+        
+    from pyphocorehelpers.print_helpers import array_preview_with_graphical_shape_repr_html
+    
+    # Register the custom display function for NumPy arrays
+    import IPython
+    ip = IPython.get_ipython()
+    ip.display_formatter.formatters['text/html'].for_type(np.ndarray, lambda arr: array_preview_with_graphical_shape_repr_html(arr))
+
+    # Example usage
+    arr = np.random.rand(3, 4)
+    display(arr)
+
+
+    arr = np.random.rand(9, 64)
+    display(arr)
+
+    arr = np.random.rand(9, 64, 4)
+    display(arr)
+
+    """
+    if isinstance(arr, np.ndarray):
+        arr = da.array(arr)
+        return display(arr)
+        # shape_str = ' &times; '.join(map(str, arr.shape))
+        # dtype_str = arr.dtype
+        # return f"<pre>array[{shape_str}] dtype={dtype_str}</pre>"
+    else:
+        raise ValueError("The input is not a NumPy array.")
+
+
+
+# Generate heatmap
+
+    
+def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None) -> Optional[BytesIO]: # , omission_indices: list = None
+    """ 
+    
+    #TODO 2024-08-16 04:05: - [ ] Make non-interactive and open in the background
+
+    from neuropy.utils.matplotlib_helpers import matplotlib_configuration
+    with matplotlib_configuration(is_interactive=False, backend='AGG'):
+        # Perform non-interactive Matplotlib operations with 'AGG' backend
+        plt.plot([1, 2, 3, 4], [1, 4, 9, 16])
+        plt.xlabel('X-axis')
+        plt.ylabel('Y-axis')
+        plt.title('Non-interactive Mode with AGG Backend')
+        plt.savefig('plot.png')  # Save the plot to a file (non-interactive mode)
+
+            
+    import matplotlib
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+    _bak_rcParams = mpl.rcParams.copy()
+
+    matplotlib.use('Qt5Agg')
+    # %matplotlib inline
+    # %matplotlib auto
+
+
+    # _restore_previous_matplotlib_settings_callback = matplotlib_configuration_update(is_interactive=True, backend='Qt5Agg')
+    _restore_previous_matplotlib_settings_callback = matplotlib_configuration_update(is_interactive=True, backend='Qt5Agg')
+
+        
+    """
+    if (data.ndim < 2):
+        data = np.atleast_2d(data)
+        # fix issues with 1D data like `TypeError: Invalid shape (58,) for image data`
+    
+    import matplotlib.pyplot as plt
+    
+    try:
+        imshow_shared_kwargs = {
+            'origin': 'lower',
+        }
+
+        active_cmap = 'viridis'
+        fig = plt.figure(figsize=(3, 3), num='_jup_backend')
+        ax = fig.add_subplot(111)
+        ax.imshow(data, cmap=active_cmap, **imshow_shared_kwargs)
+        ax.axis('off')
+            
+        buf = BytesIO()
+        
+        fig.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
+
+        buf.seek(0)
+        
+    except SystemError as err:
+        # SystemError: tile cannot extend outside image
+        print(f'ERROR: Encountered error while plotting heatmap:\n\terr: {err}')
+        print(f'\tnp.shape(data): {np.shape(data)}\n\tdata: {data}')
+        buf = None
+
+    finally:
+        plt.close()        
+    
+    return buf
+
+# Convert to ipywidgets Image
+def _subfn_display_heatmap(data: NDArray, brokenaxes_kwargs=None, **img_kwargs) -> Optional[Image]:
+    """ Renders a small thumbnail Image of a heatmap array
+    
+    """
+    img_kwargs = dict(width=None, height=img_kwargs.get('height', 100), format='png') | img_kwargs
+    buf = _subfn_create_heatmap(data, brokenaxes_kwargs=brokenaxes_kwargs)
+    if buf is not None:
+        # Create an IPython Image object
+        img = Image(data=buf.getvalue(), **img_kwargs)
+        return img
+    else:
+        return None
+
+def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizontal_layout=True, include_plaintext_repr:bool=False, **kwargs):
+    """ Generate an HTML representation for a NumPy array with a Dask shape preview and a thumbnail heatmap
+    
+        from pyphocorehelpers.print_helpers import array_preview_with_heatmap_repr_html
+
+        # Register the custom display function for numpy arrays
+        import IPython
+        ip = IPython.get_ipython()
+        ip.display_formatter.formatters['text/html'].for_type(np.ndarray, array_preview_with_heatmap) # only registers for NDArray
+
+        # Example usage
+        arr = np.random.rand(3, 4)
+        display(arr)
+
+    """
+    max_allowed_arr_elements: int = 10000
+
+    if isinstance(arr, np.ndarray):
+        
+        n_dim: int = np.ndim(arr)
+        if n_dim > 2:
+            print(f'WARN: n_dim: {n_dim} greater than 2 is unsupported!')
+            from pyphocorehelpers.plotting.media_output_helpers import get_array_as_image_stack
+            # #TODO 2024-08-13 05:05: - [ ] use get_array_as_image_stack to render the 3D array
+            message = f"Heatmap Err: n_dim: {n_dim} greater than 2 is unsupported!"
+            heatmap_html = f"""
+            <div style="text-align: center; padding: 20px; border: 1px solid #ccc;">
+                <p style="font-size: 16px; color: red;">{message}</p>
+            </div>
+            """
+
+        else:
+            ## n_dim == 2
+            if np.shape(arr)[0] > max_allowed_arr_elements: 
+                # truncate 
+                arr = arr[max_allowed_arr_elements:]
+            
+            heatmap_image = _subfn_display_heatmap(arr, **kwargs)
+            if (heatmap_image is not None):
+                orientation = "row" if horizontal_layout else "column"
+                ## Lays out side-by-side:
+                # Convert the IPython Image object to a base64-encoded string
+                heatmap_image_data = heatmap_image.data
+                b64_image = base64.b64encode(heatmap_image_data).decode('utf-8')
+                # Create an HTML widget for the heatmap
+                heatmap_size_format_str: str = ''
+                width = kwargs.get('width', None)
+                if (width is not None) and (width > 0):
+                    heatmap_size_format_str = heatmap_size_format_str + f'width="{width}" '
+                height = kwargs.get('height', None)
+                if (height is not None) and (height > 0):
+                    heatmap_size_format_str = heatmap_size_format_str + f'height="{height}" '
+                
+                heatmap_html = f'<img src="data:image/png;base64,{b64_image}" {heatmap_size_format_str}style="background:transparent;"/>' #  width="{ndarray_preview_config.heatmap_thumbnail_width}"
+
+            else:
+                # getting image failed:
+                # Create an HTML widget for the heatmap
+                message = "Heatmap Err"
+                heatmap_html = f"""
+                <div style="text-align: center; padding: 20px; border: 1px solid #ccc;">
+                    <p style="font-size: 16px; color: red;">{message}</p>
+                </div>
+                """
+
+        # height="{height}"
+        dask_array_widget_html = ""
+        plaintext_html = ""
+        
+        if include_shape:
+            dask_array_widget: widgets.HTML = widgets.HTML(value=da.array(arr)._repr_html_())
+            dask_array_widget_html: str = dask_array_widget.value
+            dask_array_widget_html = f"""
+                <div style="margin-left: 10px;">
+                    {dask_array_widget_html}
+                </div>
+            """
+
+        if include_plaintext_repr:                
+            # plaintext_repr = np.array2string(arr, edgeitems=3, threshold=5)  # Adjust these parameters as needed
+            plaintext_repr = np.array2string(arr)
+            plaintext_html = f"<pre>{plaintext_repr}</pre>"
+            plaintext_html = f"""
+                <div style="margin-left: 10px;">
+                    {plaintext_html}
+                </div>
+            """
+            
+        # Combine both HTML representations
+        if horizontal_layout:
+            combined_html = f"""
+            <div style="display: flex; flex-direction: row; align-items: flex-start;">
+                <div>{heatmap_html}</div>
+                {dask_array_widget_html}
+                {plaintext_html}
+            </div>
+            """
+        else:
+            combined_html = f"""
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <div>{heatmap_html}</div>
+                <div style="margin-top: 10px;">
+                    {dask_array_widget_html}
+                    {plaintext_html}
+                </div>
+            </div>
+            """
+        return combined_html
+
+    else:
+        raise ValueError("The input is not a NumPy array.")
+
+
+
+# # omitted_indicies_list = []
+# def _leading_trailing(a: NDArray, edgeitems: int, index=()): # , omitted_indicies_list=[]
+#     """
+#     Keep only the N-D corners (leading and trailing edges) of an array.
+
+#     Should be passed a base-class ndarray, since it makes no guarantees about
+#     preserving subclasses.
+#     """
+#     global omitted_indicies_list
+#     axis = len(index)
+#     if axis == a.ndim:
+#         return a[index]
+
+#     if a.shape[axis] > 2*edgeitems:
+#         left_edge_idxs = (index + np.index_exp[:edgeitems])
+#         right_edge_idxs = (index + np.index_exp[-edgeitems:])
+#         print(f'index: {index}, axis: {axis}, a.shape[axis]: {a.shape[axis]}')
+#         # omitted_idxs = (left_edge_idxs[-1], right_edge_idxs[0])
+#         omitted_idxs = (int(edgeitems), int((a.shape[axis]-edgeitems)))
+#         # omitted_idxs = (index + np.index_exp[edgeitems:-edgeitems])
+#         omitted_indicies_list.append(omitted_idxs)
+        
+#         return np.concatenate((
+#             _leading_trailing(a, edgeitems, left_edge_idxs),
+#             _leading_trailing(a, edgeitems, right_edge_idxs)
+#         ), axis=axis)#, omitted_idxs)
+#     else:
+#         # can include all items
+#         # return (_leading_trailing(a, edgeitems, index + np.index_exp[:]), None)
+#         return _leading_trailing(a, edgeitems, (index + np.index_exp[:]))
+
+# omitted_indicies_list = []
+# def _dropping_middle_leading_trailing(a: NDArray, edgeitems: int, index=(), n_fill_middle_items: int = 4): # , omitted_indicies_list=[]
+#     """
+#     Keep only the N-D corners (leading and trailing edges) of an array.
+
+#     Should be passed a base-class ndarray, since it makes no guarantees about
+#     preserving subclasses.
+#     """
+#     global omitted_indicies_list
+#     axis = len(index)
+#     if axis == a.ndim:
+#         return a[index]
+    
+#     n_left_fill_middle_items = int(n_fill_middle_items / 2)
+#     n_right_fill_middle_items = int(n_fill_middle_items / 2)
+#     n_total_edgeitems: int = (2*edgeitems)
+#     curr_axis_size: int = a.shape[axis]
+    
+#     if (curr_axis_size > n_total_edgeitems):
+#         left_range = (0, (edgeitems-n_left_fill_middle_items))
+#         right_range = ((-edgeitems + n_right_fill_middle_items), n_total_edgeitems)
+#         middle_fill_range = ((left_range[-1]+1), (right_range[0]-1))
+#         middle_fill_n_xbins = middle_fill_range[-1] - middle_fill_range[0]
+#         print(f'left_range: {left_range}, right_range: {right_range}, middle_fill_range: {middle_fill_range}, middle_fill_n_xbins: {middle_fill_n_xbins}')
+        
+#         left_edge_idxs = (index + np.index_exp[:(edgeitems-n_left_fill_middle_items)])
+#         right_edge_idxs = (index + np.index_exp[(-edgeitems + n_right_fill_middle_items):])
+#         print(f'axis: {axis}, a.shape[axis]: {a.shape[axis]}') # index: {index}, 
+#         # omitted_idxs = (left_edge_idxs[-1], right_edge_idxs[0])
+#         omitted_idxs = (int(edgeitems), int((a.shape[axis]-edgeitems)))
+#         # omitted_idxs = (index + np.index_exp[edgeitems:-edgeitems])
+#         omitted_indicies_list.append(omitted_idxs)
+        
+#         middle_fill_array = np.full((middle_fill_n_xbins, *np.shape(a)[1:]), fill_value=np.nan)
+        
+        
+#         return np.concatenate((
+#             _leading_trailing(a, edgeitems, left_edge_idxs),
+#             middle_fill_array,
+#             _leading_trailing(a, edgeitems, right_edge_idxs)
+#         ), axis=axis)#, omitted_idxs)
+#     else:
+#         # can include all items
+#         # return (_leading_trailing(a, edgeitems, index + np.index_exp[:]), None)
+#         return _leading_trailing(a, edgeitems, (index + np.index_exp[:]))
+    
+
+    
+
+# max_allowed_arr_elements: int = 200
+
+# arr = deepcopy(long_LR_pf1D_Decoder.p_x_given_n)
+# arr_shape = np.array(np.shape(arr))
+# arr_shape
+# arr_too_large_dim = (arr_shape > max_allowed_arr_elements)
+# arr_too_large_dim
+
+# any_dim_arr_has_too_large_dimension: bool = np.any(arr_too_large_dim)
+
+# edgeitems: int = int(max_allowed_arr_elements / 2)
+# print(f'edgeitems: {edgeitems}')
+
+# removed_items = [(a_len - (edgeitems * 2)) if is_too_large else 0 for a_len, is_too_large in zip(arr_shape, arr_too_large_dim)]
+# # removed_items = arr_shape[arr_too_large_dim] - (edgeitems * 2)
+# removed_items
+
+# omitted_indicies_list = []
+# # _corners = _leading_trailing(arr, edgeitems=edgeitems)
+# _corners = _dropping_middle_leading_trailing(arr, edgeitems=edgeitems)
+
+# _left_edge = _corners[:, :edgeitems]
+# _right_edge = _corners[:, edgeitems:]
+# # [_corners[:, :edgeitems], _corners[:, edgeitems:]]
+# _corners
+
+# omitted_indicies_list = np.array(omitted_indicies_list)
+# omitted_indicies_list = np.squeeze(omitted_indicies_list.flatten()).tolist()
+# omitted_indicies_list
+
+# omission_indices = deepcopy(omitted_indicies_list)
+# omission_indices = sorted(set(omission_indices))
+# omission_indices
+
+# ylims = [(0, arr_shape[0],)]
+# ylims
+
+# xlims = [(0, omission_indices[0],), (omission_indices[-1], arr_shape[1],)]
+# xlims
 

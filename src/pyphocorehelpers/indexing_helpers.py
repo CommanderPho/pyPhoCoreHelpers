@@ -1,6 +1,7 @@
 from collections import namedtuple
 from itertools import islice
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from nptyping import NDArray
 import numpy as np
 import pandas as pd
 
@@ -13,6 +14,33 @@ from pyphocorehelpers.function_helpers import function_attributes
 # List-Like and Iterators                                                                                              #
 # ==================================================================================================================== #
 
+def safe_get_if_not_None(a_list: Optional[List], index: int, fallback_value: Any):
+    """Similar to dict's .get(key, fallback) function but for lists, and the lists don't even have to be non-None!. Returns a fallback/default value if the index is not valid for the list, otherwise returns the value at that index.
+    Args:
+        list (_type_): a list-like object
+        index (_type_): an index into the list
+        fallback_value (_type_): any value to be returned when the indexing fails
+
+    Returns:
+        _type_: the value in the list, or the fallback_value is the index is not valid for the list.
+        
+    Usage:
+        from pyphocorehelpers.indexing_helpers import safe_get_if_not_None
+    
+    """
+    try:
+        if a_list is None:
+            return fallback_value # not a list or indexable, return the fallback
+        ## otherwise try to de-reference it        
+        return a_list[index]
+    except TypeError:
+        # TypeError: 'NoneType' object is not subscriptable
+        return fallback_value
+    except IndexError:
+        return fallback_value
+    
+
+    
 def safe_get(list, index, fallback_value):
     """Similar to dict's .get(key, fallback) function but for lists. Returns a fallback/default value if the index is not valid for the list, otherwise returns the value at that index.
     Args:
@@ -40,24 +68,24 @@ def safe_len(v):
     
 
 def safe_find_index_in_list(a_list, a_search_obj):
-	""" tries to find the index of `a_search_obj` in the list `a_list` 
-	If found, returns the index
-	If not found, returns None (instead of throwing a ValueError which is the default)
-	
-	Example:
-		an_ax = plots.axs[2]
-		safe_find_index_in_list(plots.axs, an_ax)
-		# list(plots.axs).index(an_ax)
-	"""
-	if not isinstance(a_list, list):
-		a_list = list(a_list) # convert to list
-	try:
-		return a_list.index(a_search_obj)
-	except ValueError as e:
-		# Item not found
-		return None
-	except Exception as e:
-		raise e
+    """ tries to find the index of `a_search_obj` in the list `a_list` 
+    If found, returns the index
+    If not found, returns None (instead of throwing a ValueError which is the default)
+    
+    Example:
+        an_ax = plots.axs[2]
+        safe_find_index_in_list(plots.axs, an_ax)
+        # list(plots.axs).index(an_ax)
+    """
+    if not isinstance(a_list, list):
+        a_list = list(a_list) # convert to list
+    try:
+        return a_list.index(a_search_obj)
+    except ValueError as e:
+        # Item not found
+        return None
+    except Exception as e:
+        raise e
 
 
 
@@ -197,19 +225,19 @@ def interleave_elements(start_points, end_points, debug_print:bool=False):
 
 
 def are_all_equal(arr) -> bool:
-	""" returns True if arr is empty, or if all elements of arr are equal to each other """
-	if len(arr) == 0:
-		return True
-	else:
-		val = arr[0] # get first element
-		return np.all([x == val for x in arr])
+    """ returns True if arr is empty, or if all elements of arr are equal to each other """
+    if len(arr) == 0:
+        return True
+    else:
+        val = arr[0] # get first element
+        return np.all([x == val for x in arr])
     
 
 # ==================================================================================================================== #
 # Dictionary and Maps                                                                                                  #
 # ==================================================================================================================== #
 
-def get_dict_subset(a_dict, included_keys=None, require_all_keys=False):
+def get_dict_subset(a_dict, included_keys=None, subset_excludelist=None, require_all_keys=False):
     """Gets a subset of a dictionary from a list of keys (included_keys)
 
     Args:
@@ -220,6 +248,10 @@ def get_dict_subset(a_dict, included_keys=None, require_all_keys=False):
     Returns:
         [type]: [description]
     """
+    if subset_excludelist is not None:
+        assert included_keys is None, "included_keys must be None when a subset_excludelist is provided!"
+        included_keys = [key for key in a_dict.keys() if key not in subset_excludelist]
+        
     if included_keys is not None:
         if require_all_keys:
             return {included_key:a_dict[included_key] for included_key in included_keys} # filter the dictionary for only the keys specified
@@ -436,6 +468,78 @@ def apply_to_dict_values(a_dict: dict, a_callable: Callable, include_condition: 
         return {k:a_callable(v) for k, v in a_dict.items()}
 
 
+def list_of_dicts_to_dict_of_lists(list_of_dicts):
+    dict_of_lists = {}
+    for item in list_of_dicts:
+        for key, value in item.items():
+            if key in dict_of_lists:
+                dict_of_lists[key].append(value)
+            else:
+                dict_of_lists[key] = [value]
+    return dict_of_lists
+    
+        
+def reorder_keys(a_dict: Dict, key_name_desired_index_dict: Dict[str, int]) -> Dict:
+    """Reorders specified keys in a Dict while preserving other keys.
+    
+    based off of `reorder_columns`
+                
+    """
+    # Validate column names
+    missing_columns = set(key_name_desired_index_dict.keys()) - set(a_dict.keys())
+    if missing_columns:
+        raise ValueError(f"Keys {missing_columns} not found in the Dict.")
+
+    # Ensure desired indices are unique and within range
+    desired_indices = key_name_desired_index_dict.values()
+    if len(set(desired_indices)) != len(desired_indices) or any(index < 0 or index >= len(list(a_dict.keys())) for index in desired_indices):
+        raise ValueError("Desired indices must be unique and within the range of existing keys.")
+
+    # Create a list of columns to reorder
+    reordered_columns_desired_index_dict: Dict[str, int] = {column_name:desired_index for column_name, desired_index in sorted(key_name_desired_index_dict.items(), key=lambda item: item[1])}
+    # print(reordered_columns_desired_index_dict)
+    
+    # # Reorder specified columns while preserving remaining columns
+    remaining_columns = [col for col in list(a_dict.keys()) if col not in key_name_desired_index_dict]
+    
+    reordered_columns_list: List[str] = remaining_columns.copy()
+    for item_to_insert, desired_index in reordered_columns_desired_index_dict.items():    
+        reordered_columns_list.insert(desired_index, item_to_insert)
+        
+    # print(reordered_columns_list)
+    reordered_dict = {k:a_dict[k] for k in reordered_columns_list}
+    return reordered_dict
+
+def reorder_keys_relative(a_dict: Dict, key_names: List[str], relative_mode='end') -> Dict:
+    """Reorders specified keys in a Dict while preserving other keys.
+    
+    Based off of `reorder_columns_relative`
+                
+    Usage:
+        from pyphocorehelpers.indexing_helpers import reorder_keys_relative
+
+    """
+    if relative_mode == 'end':
+        existing_columns = list(a_dict.keys())
+        return reorder_keys(a_dict, key_name_desired_index_dict=dict(zip(key_names, np.arange(len(existing_columns)-4, len(existing_columns))))) # -4 ???
+    else:
+        raise NotImplementedError
+    
+
+def set_if_none(d: Dict, key, default):
+    """ similar to `setdefault(...)` for dict but even if the dictionary has the key, if its value is None it will replace it with the provided default
+    
+    Usage:
+        from pyphocorehelpers.indexing_helpers import set_if_none
+        set_if_none(a_config, key='dockAddLocationOpts', default=('bottom', ))
+    
+    """
+    if d.get(key, None) is None:
+        ## key either doesn't exist, or does exist but has a value of `None`. Set the default
+        d[key] = default
+    return d[key]
+    
+
 
 # ==================================================================================================================== #
 # Numpy NDArrays                                                                                                       #
@@ -479,6 +583,95 @@ def safe_np_hstack(arr):
         return np.array(arr) # ChatGPT suggests returning np.empty((0, 0))  # Create an empty array with shape (0, 0)
     
 
+def dict_to_full_array(a_dict: Dict, full_indicies: NDArray, fill_value=-1) -> NDArray:
+    """ 
+    a_dict: the dictionary of values you want to build into a NDArray
+    full_indicies: NDArray - the completely list of all possible indicies that you want to build the array for. Any matching entries in `a_dict.keys()` will be filled with their corresponding value, otherwise `fill_value` will be used.
+    Returns a NDArray of size: (len(full_indicies), )
+    """
+    keys_list =	list(a_dict.keys())
+    values_list = list(a_dict.values())
+    found_indicies = np.array([list(full_indicies).index(k) for k in keys_list])
+    # print(f'found_indicies: {found_indicies}')
+    key_to_index_map = dict(zip(keys_list, found_indicies))
+    out_array: NDArray = np.full_like(full_indicies, fill_value=fill_value)
+    out_array[found_indicies] = np.array(values_list)
+    # print(f'values_list: {values_list}')
+    # print(f'out_array: {out_array}')
+    return out_array
+
+
+class NumpyHelpers:
+    """ various extensions and generalizations for numpy arrays 
+    
+    from pyphocorehelpers.indexing_helpers import NumpyHelpers
+
+
+    """
+    @classmethod
+    def all_array_generic(cls, pairwise_numpy_fn, list_of_arrays: List[NDArray], **kwargs) -> bool:
+        """ A n-element generalization of a specified pairwise numpy function such as `np.array_equiv`
+        Usage:
+        
+            list_of_arrays = list(xbins.values())
+            NumpyHelpers.all_array_generic(list_of_arrays=list_of_arrays)
+
+        """
+        # Input type checking
+        if not np.all(isinstance(arr, np.ndarray) for arr in list_of_arrays):
+            raise ValueError("All elements in 'list_of_arrays' must be NumPy arrays.")        
+    
+        if len(list_of_arrays) == 0:
+            return True # empty arrays are all equal
+        elif len(list_of_arrays) == 1:
+            # if only a single array, make sure it's not accidentally passed in incorrect
+            reference_array = list_of_arrays[0] # Use the first array as a reference for comparison
+            assert isinstance(reference_array, np.ndarray)
+            return True # as long as imput is intended, always True
+        
+        else:
+            ## It has more than two elements:
+            reference_array = list_of_arrays[0] # Use the first array as a reference for comparison
+            # Check equivalence for each array in the list
+            return np.all([pairwise_numpy_fn(reference_array, an_arr, **kwargs) for an_arr in list_of_arrays[1:]]) # can be used without the list comprehension just as a generator if you use all(...) instead.
+            # return all(np.all(np.array_equiv(reference_array, an_arr) for an_arr in list_of_arrays[1:])) # the outer 'all(...)' is required, otherwise it returns a generator object like: `<generator object NumpyHelpers.all_array_equiv.<locals>.<genexpr> at 0x00000128E0482AC0>`
+
+    @classmethod
+    def all_array_equal(cls, list_of_arrays: List[NDArray], equal_nan=True) -> bool:
+        """ A n-element generalization of `np.array_equal`
+        Usage:
+        
+            list_of_arrays = list(xbins.values())
+            NumpyHelpers.all_array_equal(list_of_arrays=list_of_arrays)
+
+        """
+        return cls.all_array_generic(np.array_equal, list_of_arrays=list_of_arrays, equal_nan=equal_nan)
+    
+    @classmethod
+    def all_array_equiv(cls, list_of_arrays: List[NDArray]) -> bool:
+        """ A n-element generalization of `np.array_equiv`
+        Usage:
+        
+            list_of_arrays = list(xbins.values())
+            NumpyHelpers.all_array_equiv(list_of_arrays=list_of_arrays)
+
+        """
+        return cls.all_array_generic(np.array_equiv, list_of_arrays=list_of_arrays)
+
+
+    @classmethod
+    def all_allclose(cls, list_of_arrays: List[NDArray], rtol:float=1.e-5, atol:float=1.e-8, equal_nan:bool=True) -> bool:
+        """ A n-element generalization of `np.allclose`
+        Usage:
+        
+            list_of_arrays = list(xbins.values())
+            NumpyHelpers.all_allclose(list_of_arrays=list_of_arrays)
+
+        """
+        return cls.all_array_generic(np.allclose, list_of_arrays=list_of_arrays, rtol=rtol, atol=atol, equal_nan=equal_nan)
+    
+
+
 # ==================================================================================================================== #
 # Pandas Dataframes                                                                                                    #
 # ==================================================================================================================== #
@@ -494,21 +687,53 @@ def safe_pandas_get_group(dataframe_group, key):
     
 
 ## Pandas DataFrame helpers:
-def partition(df: pd.DataFrame, partitionColumn: str):
+def partition(df: pd.DataFrame, partitionColumn: str) -> Tuple[NDArray, NDArray]:
     """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
+
+    Usage:
+
+    from pyphocorehelpers.indexing_helpers import partition, partition_df, partition_df_dict
+
+
     History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
     """
     unique_values = np.unique(df[partitionColumn]) # array([ 0,  1,  2,  3,  4,  7, 11, 12, 13, 14])
     grouped_df = df.groupby([partitionColumn]) #  Groups on the specified column.
     return unique_values, np.array([grouped_df.get_group(aValue) for aValue in unique_values], dtype=object) # dataframes split for each unique value in the column
 
-def partition_df(df: pd.DataFrame, partitionColumn: str):
+def partition_df(df: pd.DataFrame, partitionColumn: str)-> Tuple[NDArray, List[pd.DataFrame]]:
     """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
+
+    USEFUL NOTE: to get a dict, do `partitioned_dfs = dict(zip(*partition_df(spikes_df, partitionColumn='new_epoch_IDX')))`
+    
+    Usage:
+        from pyphocorehelpers.indexing_helpers import partition_df
+        
+        partitioned_dfs = dict(zip(*partition_df(spikes_df, partitionColumn='new_epoch_IDX')))
+
+        
+        unique_values, partitioned_dfs_list = partition_df(spikes_df, partitionColumn='new_epoch_IDX')
+
     History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
     """
     unique_values = np.unique(df[partitionColumn]) # array([ 0,  1,  2,  3,  4,  7, 11, 12, 13, 14])
     grouped_df = df.groupby([partitionColumn]) #  Groups on the specified column.
     return unique_values, [grouped_df.get_group(aValue) for aValue in unique_values] # dataframes split for each unique value in the column
+
+def partition_df_dict(df: pd.DataFrame, partitionColumn: str)-> Dict[Any, pd.DataFrame]:
+    """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
+
+    Usage:
+        from pyphocorehelpers.indexing_helpers import partition_df_dict
+        
+        partitioned_dfs = partition_df_dict(spikes_df, partitionColumn='new_epoch_IDX')
+
+    History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
+    """
+    return dict(zip(*partition_df(df, partitionColumn=partitionColumn))) # dataframes split for each unique value in the column
+
+
+        
 
 
 def find_neighbours(value, df, colname):
@@ -537,35 +762,35 @@ def find_neighbours(value, df, colname):
 
 # Concatenate dataframes
 def simple_merge(*dfs_list, debug_print=False) -> pd.DataFrame:
-	""" naievely merges several dataframes with an equal number of rows (and in the same order) into a single dataframe with all of the unique columns of the individual dfs. Any duplicate columns will be removed.
+    """ naievely merges several dataframes with an equal number of rows (and in the same order) into a single dataframe with all of the unique columns of the individual dfs. Any duplicate columns will be removed.
 
-	Usage:
-		dfs_list = (deepcopy(neuron_identities_table), deepcopy(long_short_fr_indicies_analysis_table), deepcopy(neuron_replay_stats_table))
-		dfs_list = (deepcopy(neuron_identities_table), deepcopy(long_short_fr_indicies_analysis_table), deepcopy(neuron_replay_stats_table))
-		df_combined, dropped_duplicate_columns = simple_merge(*dfs_list, debug_print=False)
-		df_combined
+    Usage:
+        dfs_list = (deepcopy(neuron_identities_table), deepcopy(long_short_fr_indicies_analysis_table), deepcopy(neuron_replay_stats_table))
+        dfs_list = (deepcopy(neuron_identities_table), deepcopy(long_short_fr_indicies_analysis_table), deepcopy(neuron_replay_stats_table))
+        df_combined, dropped_duplicate_columns = simple_merge(*dfs_list, debug_print=False)
+        df_combined
 
-	"""
-	assert are_all_equal([len(x) for x in dfs_list]), f"all dataframes must be the same length but [len(x) for x in dfs_list]: {[len(x) for x in dfs_list]}"
-	df_combined = pd.concat(dfs_list, axis=1)
-	# df_combined = pd.concat([df1, df2, df3], axis=1)
+    """
+    assert are_all_equal([len(x) for x in dfs_list]), f"all dataframes must be the same length but [len(x) for x in dfs_list]: {[len(x) for x in dfs_list]}"
+    df_combined = pd.concat(dfs_list, axis=1)
+    # df_combined = pd.concat([df1, df2, df3], axis=1)
 
-	# Remove duplicate columns if values are the same
-	to_drop = []
-	columns = df_combined.columns
-	for i in range(len(columns)):
-		for j in range(i+1, len(columns)):
-			if columns[i] == columns[j] and df_combined[columns[i]].equals(df_combined[columns[j]]):
-				to_drop.append(columns[j])
-	if debug_print:
-		print(f"to_drop: {to_drop}")
-	df_combined = df_combined.drop(columns=to_drop)
-	# # Handle columns with the same name but conflicting values
-	# # (Here, we're simply renaming them for clarity, you can handle them differently if needed)
-	# for col in to_drop:
-	#     df_combined[col + '_conflict'] = df_combined[col]
-	# print(df_combined)
-	return df_combined, to_drop
+    # Remove duplicate columns if values are the same
+    to_drop = []
+    columns = df_combined.columns
+    for i in range(len(columns)):
+        for j in range(i+1, len(columns)):
+            if columns[i] == columns[j] and df_combined[columns[i]].equals(df_combined[columns[j]]):
+                to_drop.append(columns[j])
+    if debug_print:
+        print(f"to_drop: {to_drop}")
+    df_combined = df_combined.drop(columns=to_drop)
+    # # Handle columns with the same name but conflicting values
+    # # (Here, we're simply renaming them for clarity, you can handle them differently if needed)
+    # for col in to_drop:
+    #     df_combined[col + '_conflict'] = df_combined[col]
+    # print(df_combined)
+    return df_combined, to_drop
 
 
 def join_on_index(*dfs, join_index='aclu', suffixes_list=None) -> pd.DataFrame:
@@ -588,7 +813,7 @@ def join_on_index(*dfs, join_index='aclu', suffixes_list=None) -> pd.DataFrame:
 
 
 
-def reorder_columns(df: pd.DataFrame, column_name_desired_index_dict: Dict[str, int]) -> pd.DataFrame:
+def reorder_columns(df: pd.DataFrame, column_name_desired_index_dict: Union[List[str], Dict[str, int]]) -> pd.DataFrame:
     """Reorders specified columns in a DataFrame while preserving other columns.
     
     Pure: Does not modify the df
@@ -611,9 +836,17 @@ def reorder_columns(df: pd.DataFrame, column_name_desired_index_dict: Dict[str, 
         dict(zip(['Long_LR_evidence', 'Long_RL_evidence', 'Short_LR_evidence', 'Short_RL_evidence'], np.arange(4)+4))
         reorder_columns(merged_complete_epoch_stats_df, column_name_desired_index_dict=dict(zip(['Long_LR_evidence', 'Long_RL_evidence', 'Short_LR_evidence', 'Short_RL_evidence'], np.arange(4)+4)))
         
+        ## Move the "height" columns to the end
+        result_df = reorder_columns(result_df, column_name_desired_index_dict=dict(zip(list(filter(lambda column: column.endswith('_peak_heights'), result_df.columns)), np.arange(len(result_df.columns)-4, len(result_df.columns)))))
+        result_df
+                
     """
+    if isinstance(column_name_desired_index_dict, (list, tuple)):
+        # not a dict, assume the provided list specifies the order of the first elements
+        column_name_desired_index_dict = dict(zip(column_name_desired_index_dict, np.arange(len(column_name_desired_index_dict))))
+
     # Validate column names
-    missing_columns = set(column_name_desired_index_dict.keys()) - set(df.columns)
+    missing_columns: bool = set(column_name_desired_index_dict.keys()) - set(df.columns)
     if missing_columns:
         raise ValueError(f"Columns {missing_columns} not found in the DataFrame.")
 
@@ -634,12 +867,55 @@ def reorder_columns(df: pd.DataFrame, column_name_desired_index_dict: Dict[str, 
         reordered_columns_list.insert(desired_index, item_to_insert)
         
     # print(reordered_columns_list)
-    # reordered_columns = reordered_columns + remaining_columns
     reordered_df = df[reordered_columns_list]
     return reordered_df
 
 
+def reorder_columns_relative(df: pd.DataFrame, column_names: list[str], relative_mode='end') -> pd.DataFrame:
+    """Reorders specified columns in a DataFrame while preserving other columns.
+    
+    Pure: Does not modify the df
 
+    Args:
+        df (pd.DataFrame): The DataFrame to reorder.
+        column_name_desired_index_dict (Dict[str, int]): A dictionary where keys are column names
+            to reorder and values are their desired indices in the reordered DataFrame.
+
+    Returns:
+        pd.DataFrame: The DataFrame with specified columns reordered while preserving remaining columns.
+
+    Raises:
+        ValueError: If any column in the dictionary is not present in the DataFrame.
+        
+        
+    Usage:
+    
+        from pyphocorehelpers.indexing_helpers import reorder_columns, reorder_columns_relative
+        
+        ## Move the "height" columns to the end
+        result_df = reorder_columns_relative(result_df, column_names=list(filter(lambda column: column.endswith('_peak_heights'), existing_columns)), relative_mode='end')
+        result_df
+                
+        
+    Usage 2:
+        # move the specified columns to the start of the df:
+        neuron_replay_stats_table = reorder_columns_relative(neuron_replay_stats_table, column_names=['neuron_uid', 'format_name', 'animal', 'exper_name', 'session_name', 'neuron_type', 'aclu', 'session_uid', 'session_datetime'],
+                                                    relative_mode='start')
+
+
+    """
+    existing_columns = list(df.columns)
+
+    if relative_mode == 'end':    
+        return reorder_columns(df, column_name_desired_index_dict=dict(zip(column_names, np.arange(len(existing_columns)-4, len(existing_columns)))))
+    elif relative_mode == 'start':    
+        return reorder_columns(df, column_name_desired_index_dict=column_names)    
+    else:
+        raise NotImplementedError
+    
+    
+
+            
 
 # ==================================================================================================================== #
 # Discrete Bins/Binning                                                                                                #
@@ -661,144 +937,6 @@ def get_bin_edges(bin_centers):
     out.append(last_edge_bin) # append the last_edge_bin to the bins.
     return np.array(out)
 
-
-@dataclass
-class BinningInfo(object):
-    """Docstring for BinningInfo."""
-    variable_extents: tuple
-    step: float
-    num_bins: int
-    bin_indicies: np.ndarray
-
-class BinningContainer(object):
-    """A container that allows accessing either bin_edges (self.edges) or bin_centers (self.centers) """
-    edges: np.ndarray
-    centers: np.ndarray
-    
-    edge_info: BinningInfo
-    center_info: BinningInfo
-    
-    def __init__(self, edges: Optional[np.ndarray]=None, centers: Optional[np.ndarray]=None, edge_info: Optional[BinningInfo]=None, center_info: Optional[BinningInfo]=None):
-        super(BinningContainer, self).__init__()
-        assert (edges is not None) or (centers is not None) # Require either centers or edges to be provided
-        if edges is not None:
-            self.edges = edges
-        else:
-            # Compute from edges
-            self.edges = get_bin_edges(centers)
-            
-        if centers is not None:
-            self.centers = centers
-        else:
-            self.centers = get_bin_centers(edges)
-            
-            
-        if edge_info is not None:
-            self.edge_info = edge_info
-        else:
-            # Otherwise try to reverse engineer edge_info:
-            self.edge_info = BinningContainer.build_edge_binning_info(self.edges)
-            
-        if center_info is not None:
-            self.center_info = center_info
-        else:
-            self.center_info = BinningContainer.build_center_binning_info(self.centers, self.edge_info.variable_extents)
-            
-            
-    @classmethod
-    def build_edge_binning_info(cls, edges):
-        # Otherwise try to reverse engineer edge_info            
-        actual_window_size = edges[2] - edges[1]
-        variable_extents = [edges[0], edges[-1]] # get first and last values as the extents
-        return BinningInfo(variable_extents, actual_window_size, len(edges), np.arange(len(edges)))
-    
-    
-    @classmethod
-    def build_center_binning_info(cls, centers, variable_extents):
-        # Otherwise try to reverse engineer center_info
-        actual_window_size = centers[2] - centers[1]
-        return BinningInfo(variable_extents, actual_window_size, len(centers), np.arange(len(centers)))
-    
-    def setup_from_edges(self, edges: np.ndarray, edge_info: Optional[BinningInfo]=None):
-        # Set the edges first:
-        self.edges = edges
-        if edge_info is not None:
-            self.edge_info = edge_info # valid edge_info provided, use that
-        else:
-            # Otherwise try to reverse engineer edge_info:
-            self.edge_info = BinningContainer.build_edge_binning_info(self.edges)
-            # actual_window_size = self.edges[2] - self.edges[1]
-            # variable_extents = [self.edges[0], self.edges[-1]] # get first and last values as the extents
-            # self.edge_info = BinningInfo(variable_extents, actual_window_size, len(self.edges), np.arange(len(self.edges)))
-        
-        
-        ## Build the Centers from the new edges:
-        self.centers = get_bin_centers(edges)
-        # actual_window_size = self.centers[2] - self.centers[1]
-        # self.center_info = BinningInfo(self.edge_info.variable_extents, actual_window_size, len(self.centers), np.arange(len(self.centers)))
-        self.center_info = BinningContainer.build_center_binning_info(self.centers, self.edge_info.variable_extents)
-            
-
-def compute_spanning_bins(variable_values, num_bins:int=None, bin_size:float=None, variable_start_value:float=None, variable_end_value:float=None):
-    """[summary]
-
-    Args:
-        variable_values ([type]): The variables to be binned, used to determine the start and end edges of the returned bins.
-        num_bins (int, optional): The total number of bins to create. Defaults to None.
-        bin_size (float, optional): The size of each bin. Defaults to None.
-        variable_start_value (float, optional): The minimum value of the binned variable. If specified, overrides the lower binned limit instead of computing it from variable_values. Defaults to None.
-        variable_end_value (float, optional): The maximum value of the binned variable. If specified, overrides the upper binned limit instead of computing it from variable_values. Defaults to None.
-        debug_print (bool, optional): Whether to print debug messages. Defaults to False.
-
-    Raises:
-        ValueError: [description]
-
-    Returns:
-        np.array<float>: The computed bins
-        BinningInfo: information about how the binning was performed
-        
-    Usage:
-        ## Binning with Fixed Number of Bins:    
-        xbin_edges, xbin_edges_binning_info = compute_spanning_bins(pos_df.x.to_numpy(), bin_size=active_config.computation_config.grid_bin[0]) # bin_size mode
-        print(xbin_edges_binning_info)
-        ## Binning with Fixed Bin Sizes:
-        xbin_edges_edges, xbin_edges_binning_info = compute_spanning_bins(pos_df.x.to_numpy(), num_bins=num_bins) # num_bins mode
-        print(xbin_edges_binning_info)
-        
-    """
-    assert (num_bins is None) or (bin_size is None), 'You cannot constrain both num_bins AND bin_size. Specify only one or the other.'
-    assert (num_bins is not None) or (bin_size is not None), 'You must specify either the num_bins XOR the bin_size.'
-    
-    if variable_start_value is not None:
-        curr_variable_min_extent = variable_start_value
-    else:
-        curr_variable_min_extent = np.nanmin(variable_values)
-        
-    if variable_end_value is not None:
-        curr_variable_max_extent = variable_end_value
-    else:
-        curr_variable_max_extent = np.nanmax(variable_values)
-        
-    curr_variable_extents = (curr_variable_min_extent, curr_variable_max_extent)
-    
-    if num_bins is not None:
-        ## Binning with Fixed Number of Bins:
-        mode = 'num_bins'
-        xnum_bins = num_bins
-        xbin, xstep = np.linspace(curr_variable_extents[0], curr_variable_extents[1], num=num_bins, retstep=True)  # binning of x position
-        
-    elif bin_size is not None:
-        ## Binning with Fixed Bin Sizes:
-        mode = 'bin_size'
-        xstep = bin_size
-        xbin = np.arange(curr_variable_extents[0], (curr_variable_extents[1] + xstep), xstep, )  # binning of x position
-        # the interval does not include this value, except in some cases where step is not an integer and floating point round-off affects the length of out.
-        xnum_bins = len(xbin)
-        
-    else:
-        raise ValueError
-    
-    return xbin, BinningInfo(curr_variable_extents, xstep, xnum_bins, np.arange(xnum_bins))
             
 def compute_position_grid_size(*any_1d_series, num_bins:tuple):
     """  Computes the required bin_sizes from the required num_bins (for each dimension independently)
@@ -807,6 +945,8 @@ def compute_position_grid_size(*any_1d_series, num_bins:tuple):
     active_grid_bin = tuple(out_grid_bin_size)
     print(f'active_grid_bin: {active_grid_bin}') # (3.776841861770752, 1.043326930905373)
     """
+    from neuropy.utils.mixins.binning_helpers import compute_spanning_bins
+    
     assert (len(any_1d_series)) == len(num_bins), f'(len(other_1d_series)) must be the same length as the num_bins tuple! But (len(other_1d_series)): {(len(any_1d_series))} and len(num_bins): {len(num_bins)}!'
     num_series = len(num_bins)
     out_bins = []
@@ -888,44 +1028,6 @@ def compute_paginated_grid_config(num_required_subplots, max_num_columns, max_su
     if debug_print:
         print(f'page_grid_sizes: {page_grid_sizes}')
     return subplot_no_pagination_configuration, included_combined_indicies_pages, page_grid_sizes
-
-def build_spanning_grid_matrix(x_values, y_values, debug_print=False):
-    """ builds a 2D matrix with entries spanning x_values across axis 0 and spanning y_values across axis 1.
-        
-        For example, used to build a grid of position points from xbins and ybins.
-    Usage:
-        from pyphocorehelpers.indexing_helpers import build_spanning_grid_matrix
-        all_positions_matrix, flat_all_positions_matrix, original_data_shape = build_spanning_grid_matrix(active_one_step_decoder.xbin_centers, active_one_step_decoder.ybin_centers)
-        
-    Outputs:
-        all_positions_matrix: a 3D matrix # .shape # (num_cols, num_rows, 2)
-        flat_all_positions_matrix: a list of 2-tuples of length num_rows * num_cols
-        original_data_shape: a tuple containing the shape of the original data (num_cols, num_rows)
-    """
-    num_rows = len(y_values)
-    num_cols = len(x_values)
-
-    original_data_shape = (num_cols, num_rows) # original_position_data_shape: (64, 29)
-    if debug_print:
-        print(f'original_position_data_shape: {original_data_shape}')
-    x_only_matrix = np.repeat(np.expand_dims(x_values, 1).T, num_rows, axis=0).T
-    # np.shape(x_only_matrix) # (29, 64)
-    flat_x_only_matrix = np.reshape(x_only_matrix, (-1, 1))
-    if debug_print:
-        print(f'np.shape(x_only_matrix): {np.shape(x_only_matrix)}, np.shape(flat_x_only_matrix): {np.shape(flat_x_only_matrix)}') # np.shape(x_only_matrix): (64, 29), np.shape(flat_x_only_matrix): (1856, 1)
-    y_only_matrix = np.repeat(np.expand_dims(y_values, 1), num_cols, axis=1).T
-    # np.shape(y_only_matrix) # (29, 64)
-    flat_y_only_matrix = np.reshape(y_only_matrix, (-1, 1))
-
-    # flat_all_positions_matrix = np.array([np.append(an_x, a_y) for (an_x, a_y) in zip(flat_x_only_matrix, flat_y_only_matrix)])
-    flat_all_entries_matrix = [tuple(np.append(an_x, a_y)) for (an_x, a_y) in zip(flat_x_only_matrix, flat_y_only_matrix)] # a list of position tuples (containing two elements)
-    # reconsitute its shape:
-    all_entries_matrix = np.reshape(flat_all_entries_matrix, (original_data_shape[0], original_data_shape[1], 2))
-    if debug_print:
-        print(f'np.shape(all_positions_matrix): {np.shape(all_entries_matrix)}') # np.shape(all_positions_matrix): (1856, 2) # np.shape(all_positions_matrix): (64, 29, 2)
-        print(f'flat_all_positions_matrix[0]: {flat_all_entries_matrix[0]}\nall_positions_matrix[0,0,:]: {all_entries_matrix[0,0,:]}')
-
-    return all_entries_matrix, flat_all_entries_matrix, original_data_shape
 
 
 # ==================================================================================================================== #

@@ -3,9 +3,9 @@ import traceback
 from functools import reduce
 from itertools import accumulate
 from functools import wraps # This convenience func preserves name and docstring
-from typing import List, Callable, Optional # for function composition
+from typing import Dict, List, Callable, Optional, Any # for function composition
 
-from pyphocorehelpers.print_helpers import CapturedException
+from pyphocorehelpers.exception_helpers import CapturedException
 
 """ 
 TODO: add a version of compose_functions that's capable of reporting progress of executing the composed functions, and perhaps that is capable of timing them. 
@@ -59,7 +59,10 @@ def compose_functions_with_error_handling(*args, progress_logger=None, error_log
                 # result shouldn't be updated unless there wasn't an error, so it should be fine to move on to the next function
                 if error_logger is not None:
                     error_logger(f'\t Encountered error: {accumulated_errors[f]} continuing.')
-                                
+            except BaseException as e:
+                print(f'UNHANDLED EXCEPTION: {e}')
+                raise
+                
             else:
                 # only if no error occured do we commit the temp_result to result
                 result = temp_result
@@ -120,31 +123,13 @@ _custom_function_metadata_attribute_names = dict(short_name=None, tags=None, cre
                                          input_requires=None, output_provides=None,
                                          uses=None, used_by=None,
                                          related_items=None, # references to items related to this definition
-                                         conforms_to=None, is_global=False, validate_computation_test=None
+                                         conforms_to=None, is_global=False, validate_computation_test=None,
+                                         requires_global_keys=None, provides_global_keys=None,
 )
 
 
-def global_function(is_global:bool=True):
-    """Adds function attributes to a function that marks it as global
 
-    ```python
-        from pyphocorehelpers.function_helpers import global_function
-
-        @global_function()
-        def _perform_time_dependent_pf_sequential_surprise_computation(computation_result, debug_print=False):
-            # function body
-    ```
-
-    func.is_global
-    """
-    def decorator(func):
-        func.is_global = is_global
-        return func
-    return decorator
-
-
-
-def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None, uses=None, used_by=None, related_items=None, conforms_to=None, is_global:bool=False, validate_computation_test:Optional[Callable]=None):
+def function_attributes(short_name=None, tags=None, creation_date=None, input_requires=None, output_provides=None, uses=None, used_by=None, related_items=None, conforms_to=None, is_global:bool=False, validate_computation_test:Optional[Callable]=None, requires_global_keys=None, provides_global_keys=None, **kwargs):
     """Adds function attributes to a function or class
 
     ```python
@@ -153,6 +138,8 @@ def function_attributes(short_name=None, tags=None, creation_date=None, input_re
         @function_attributes(short_name='pf_dt_sequential_surprise', tags=['tag1','tag2'], input_requires=[], output_provides=[], uses=[], used_by=[], related_items=[])
         def _perform_time_dependent_pf_sequential_surprise_computation(computation_result, debug_print=False):
             # function body
+            
+        
     ```
 
     func.short_name, func.tags, func.creation_date, func.input_requires, func.output_provides, func.uses, func.used_by, func.related_items, func.conforms_to, func.is_global, func.validate_computation_test
@@ -169,13 +156,42 @@ def function_attributes(short_name=None, tags=None, creation_date=None, input_re
         func.conforms_to = conforms_to
         func.is_global = is_global
         func.validate_computation_test = validate_computation_test
+        func.requires_global_keys = requires_global_keys
+        func.provides_global_keys = provides_global_keys
+        for k, v in kwargs.items():
+            setattr(func, k, v)
         return func
     return decorator
 
 
+def get_decorated_function_attributes(obj) -> Dict:
+    """ returns the `function_attributes` metadata from a function or method is decorated with the `function_attributes` decorator """
+    known_key_names = list(_custom_function_metadata_attribute_names.keys())
+    _fcn_values_dict = {}
+    for k in known_key_names:
+        if hasattr(obj, k):
+            _fcn_values_dict[k] = getattr(obj, k)
+    return _fcn_values_dict
 
 
+def is_decorated_with_function_attributes(obj) -> bool:
+    """ returns True if the function or method is decorated with the metadata consistent with a `function_attributes` decorator """
+    known_key_names = list(_custom_function_metadata_attribute_names.keys())
+    for k in known_key_names:
+        if hasattr(obj, k):
+            return True
+    return False # had no attributes
+    # return hasattr(obj, 'short_name') or hasattr(obj, 'tags') or hasattr(obj, 'creation_date') or hasattr(obj, 'input_requires') or hasattr(obj, 'output_provides')
 
+    
+def fn_best_name(a_fn) -> str:
+    """ returns the .short_name if the function is decorated with one, otherwise returns the functions name
+    from pyphocorehelpers.function_helpers import fn_best_name
+    {k:fn_best_name(v) for k, v in curr_active_pipeline.registered_merged_computation_function_dict.items()}
+    
+    """
+    # _comp_specifier.short_name
+    return get_decorated_function_attributes(a_fn).get('short_name', a_fn.__name__)
 
 
 def invocation_log(func):
@@ -205,3 +221,46 @@ def invocation_log(func):
     return inner_func
 
 
+
+
+def get_fn_kwargs_with_defaults(func: Callable, ignore_kwarg_names: Optional[List[str]]=None) -> Dict[str, Any]:
+    """
+    Extracts keyword arguments with default values from a function, optionally ignoring specified arguments.
+
+    :param func: The function object to inspect.
+    :param ignore_kwarg_names: Optional list of keyword argument names to ignore.
+    :return: Dictionary mapping keyword argument names to their default values.
+    
+    Usage:
+    
+        from pyphocorehelpers.function_helpers import get_fn_kwargs_with_defaults
+
+        ignore_kwarg_names = ['include_includelist', 'debug_print']
+        registered_merged_computation_function_default_kwargs_dict = {k:get_fn_kwargs_with_defaults(v, ignore_kwarg_names=ignore_kwarg_names) for k, v in curr_active_pipeline.registered_merged_computation_function_dict.items()}
+        registered_merged_computation_function_default_kwargs_dict
+    """
+    import inspect
+    from inspect import Parameter
+    # Get the signature of the function
+    sig = inspect.signature(func)
+    # Initialize the dictionary to hold keyword arguments with defaults
+    kwargs_with_defaults = {}
+    
+    # Convert ignore list to a set for efficiency
+    if ignore_kwarg_names is not None:
+        ignore_kwarg_names = set(ignore_kwarg_names)
+    else:
+        ignore_kwarg_names = set()
+    
+    for param in sig.parameters.values():
+        # Determine if parameter has a default value
+        has_default = param.default is not Parameter.empty
+        # Determine if parameter is a keyword argument
+        is_kwarg = (param.kind == Parameter.KEYWORD_ONLY or
+                    param.kind == Parameter.POSITIONAL_OR_KEYWORD)
+        # Determine if parameter should be ignored
+        is_ignored = param.name in ignore_kwarg_names
+        # Add to dictionary if conditions are met
+        if has_default and is_kwarg and not is_ignored:
+            kwargs_with_defaults[param.name] = param.default
+    return kwargs_with_defaults

@@ -8,10 +8,24 @@ from typing import List, Dict
 # import dill
 import dill as pickle
 import pandas as pd
+from pyphocorehelpers.assertion_helpers import Assert
+from pathlib import Path
 
 move_modules_list = {'pyphoplacecellanalysis.SpecificResults.PhoDiba2023Paper.SingleBarResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.SingleBarResult',
     'pyphoplacecellanalysis.SpecificResults.PhoDiba2023Paper.InstantaneousSpikeRateGroupsComputation':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.InstantaneousSpikeRateGroupsComputation',
+    'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.DirectionalPlacefieldGlobalComputationFunctions.DirectionalMergedDecodersResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.DirectionalPlacefieldGlobalComputationFunctions.DirectionalPseudo2DDecodersResult',
+    'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.DirectionalPlacefieldGlobalComputationFunctions.DirectionalDecodersDecodedResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.DirectionalPlacefieldGlobalComputationFunctions.DirectionalDecodersContinuouslyDecodedResult',
+    'pyphocorehelpers.indexing_helpers.BinningInfo':'neuropy.utils.mixins.binning_helpers.BinningInfo',
+    'pyphoplacecellanalysis.General.Model.Configs.DynamicConfigs.BaseConfig':'neuropy.core.parameters.BaseConfig',
+    'neuropy.core.session.Formats.BaseDataSessionFormats.ParametersContainer':'neuropy.core.parameters.ParametersContainer',
     }
+
+
+# Custom unpickling to remove property 'b'
+def remove_property(obj_dict):
+    if 'b' in obj_dict:
+        del obj_dict['b']
+    return obj_dict
 
 
 class RenameUnpickler(pickle.Unpickler):
@@ -21,8 +35,6 @@ class RenameUnpickler(pickle.Unpickler):
                     'pyphoplacecellanalysis.SpecificResults.PhoDiba2023Paper.InstantaneousSpikeRateGroupsComputation':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.InstantaneousSpikeRateGroupsComputation',
                     }
 
-    
-        
     Usage:
         from pyphocorehelpers.Filesystem.pickling_helpers import RenameUnpickler, renamed_load
     
@@ -38,7 +50,8 @@ class RenameUnpickler(pickle.Unpickler):
         renamed_module = module
         assert self._move_modules_list is not None
         
-        found_full_replacement_name = self._move_modules_list.get(original_full_name, None)        
+        found_full_replacement_name = self._move_modules_list.get(original_full_name, None)
+        found_full_replacement_import_name = None
         if found_full_replacement_name is not None:
             found_full_replacement_module, found_full_replacement_import_name = found_full_replacement_name.rsplit('.', 1)
             renamed_module = found_full_replacement_module
@@ -49,7 +62,10 @@ class RenameUnpickler(pickle.Unpickler):
             key = (module, name)
             renamed_module, name = self._pandas_rename_map.get(key, key)
     
-        return super(RenameUnpickler, self).find_class(renamed_module, name)
+        if found_full_replacement_import_name is not None:
+            return super(RenameUnpickler, self).find_class(renamed_module, found_full_replacement_import_name)
+        else:
+            return super(RenameUnpickler, self).find_class(renamed_module, name)
 
     def __init__(self, *args, **kwds):
         # settings = pickle.Pickler.settings
@@ -69,29 +85,6 @@ def renamed_load(file_obj, move_modules_list:Dict=None, **kwargs):
 def renamed_loads(pickled_bytes):
     file_obj = io.BytesIO(pickled_bytes)
     return renamed_load(file_obj)
-
-
-
-# def update_module_path_in_pickled_object(pickle_path: str, old_module_path: str, new_module: ModuleType) -> None:
-#     """Update a python module's dotted path in a pickle dump if the
-#     corresponding file was renamed.
-
-#     Implements the advice in https://stackoverflow.com/a/2121918.
-
-#     Args:
-#         pickle_path (str): Path to the pickled object.
-#         old_module_path (str): The old.dotted.path.to.renamed.module.
-#         new_module (ModuleType): from new.location import module.
-#     """
-#     sys.modules[old_module_path] = new_module
-
-#     dic = pickle.load(open(pickle_path, "rb"))
-#     # dic = torch.load(pickle_path, map_location="cpu")
-
-#     del sys.modules[old_module_path]
-
-#     pickle.dump(dic, open(pickle_path, "wb"))
-#     # torch.save(dic, pickle_path)
 
 
 exclude_modules_list = ['pyphoplacecellanalysis.External.pyqtgraph'] # , 'pyphoplacecellanalysis.External.pyqtgraph.Qt.QtWidgets', 'pyphoplacecellanalysis.External.pyqtgraph.Qt.QtWidgets.QApplication'
@@ -203,4 +196,125 @@ def custom_dumps(obj, protocol=None, byref=None, fmode=None, recurse=None, **kwd
 #         pickler.dump(obj)
         
 
+# @function_attributes(short_name=None, tags=['pickle', 'dill', 'debug', 'tool'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-01-01 00:00', related_items=[])
+def diagnose_pickling_issues(object_to_pickle, stop_after_first_problemmatic_attribute: bool=False):
+   """Intellegently diagnoses which property on an object is causing pickling via Dill to fail.
+   
+   Usage:
+        import dill as pickle
+        from pyphocorehelpers.Filesystem.pickling_helpers import diagnose_pickling_issues
 
+        diagnose_pickling_issues(curr_active_pipeline.global_computation_results.computed_data['RankOrder'])
+        diagnose_pickling_issues(v_dict)
+   """
+
+   try:
+       # Attempt to pickle the object directly
+       pickle.dumps(object_to_pickle)
+   except pickle.PicklingError as e:
+       # If pickling fails, initiate a diagnostic process
+       print(f"Pickling error encountered: {e}")
+
+       # Gather information about the object's attributes
+       object_attributes = [attr for attr in dir(object_to_pickle) if not attr.startswith("__")]
+
+       # Isolate problematic attributes through iterative testing
+       #    problematic_attribute = None
+       problematic_attributes = {}
+    
+       for attribute in object_attributes:
+           try:
+               pickle.dumps(getattr(object_to_pickle, attribute))
+           except pickle.PicklingError:
+            #    problematic_attribute = attribute
+               problematic_attributes[attribute] = True
+               if stop_after_first_problemmatic_attribute:
+                   break
+
+       # Provide informative output
+       if problematic_attributes:
+           print(f"Identified problematic attribute: {problematic_attributes}")
+           print("Potential causes:")
+           print("- Attribute contains unpicklable data types (e.g., lambda functions, file objects).")
+           print("- Attribute refers to external resources (e.g., database connections).")
+           print("- Attribute has circular references within the object's structure.")
+       else:
+           print("Unable to isolate the specific attribute causing the pickling error.")
+           print("Consider:")
+           print("- Examining the object's structure and dependencies for potential conflicts.")
+           print("- Providing a minimal reproducible example for further analysis.")
+
+   else:
+       # If pickling succeeds, indicate no issues found
+       print("No pickling issues detected.")
+
+
+
+def save_split_pickled_obj(obj_to_split, save_root_path: Path, include_includelist=None, debug_print = True):
+    """ 
+    param_typed_parameters: object to be pickled
+    
+    Usage:
+        from pyphocorehelpers.Filesystem.pickling_helpers import save_split_pickled_obj
+        
+        save_root_path = Path(r"C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/output").resolve()
+        Assert.path_exists(save_root_path)
+        split_save_folder, (split_save_paths, split_save_output_types), (succeeded_keys, failed_keys, skipped_keys) = save_split_pickled_obj(param_typed_parameters, save_root_path=save_root_path)
+            
+    """
+    if include_includelist is None:
+        ## include all keys if none are specified
+        include_includelist = list(obj_to_split.__dict__.keys())
+        
+    if debug_print:
+        print(f'include_includelist: {include_includelist}')
+
+    ## In split save, we save each result separately in a folder
+    split_save_folder: Path = save_root_path.joinpath(f'split').resolve()
+    if debug_print:
+        print(f'split_save_folder: {split_save_folder}')
+    # make if doesn't exist
+    split_save_folder.mkdir(exist_ok=True)
+
+    ## only saves out the `global_computation_results` data:
+    computed_data = obj_to_split.__dict__ # param_typed_parameters.to_dict()
+    split_save_paths = {}
+    split_save_output_types = {}
+    failed_keys = []
+    skipped_keys = []
+    for k, v in computed_data.items():
+        if k in include_includelist:
+            curr_split_result_pickle_path = split_save_folder.joinpath(f'Split_{k}.pkl').resolve()
+            if debug_print:
+                print(f'curr_split_result_pickle_path: {curr_split_result_pickle_path}')
+            was_save_success = False
+            curr_item_type = type(v)
+            try:
+                ## try get as dict                
+                v_dict = v.__dict__ #__getstate__()
+                db = (v_dict, str(curr_item_type.__module__), str(curr_item_type.__name__))                
+                with open(curr_split_result_pickle_path, 'w+b') as dbfile: 
+                    # source, destination
+                    # pickle.dump(db, dbfile)
+                    custom_dump(db, dbfile) # ModuleExcludesPickler
+
+                    dbfile.close()
+                    
+                was_save_success = True
+            except KeyError as e:
+                print(f'{k} encountered {e} while trying to save {k}. Skipping')
+                pass
+            if was_save_success:
+                split_save_paths[k] = curr_split_result_pickle_path
+                split_save_output_types[k] = curr_item_type
+            else:
+                failed_keys.append(k)
+        else:
+            if debug_print:
+                print(f'skipping key "{k}" because it is not included in include_includelist: {include_includelist}')
+            skipped_keys.append(k)
+            
+    if len(failed_keys) > 0:
+        print(f'WARNING: failed_keys: {failed_keys} did not save for global results! They HAVE NOT BEEN SAVED!')
+    succeeded_keys = list(split_save_paths.keys())
+    return split_save_folder, (split_save_paths, split_save_output_types), (succeeded_keys, failed_keys, skipped_keys)

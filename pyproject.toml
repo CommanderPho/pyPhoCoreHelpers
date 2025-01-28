@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyphocorehelpers"
-version = "0.2.0"
+version = "0.3.2"
 description = "A collection of generally useful python code by Pho Hale"
 authors = ["Pho Hale <CommanderPho@users.noreply.github.com>"]
 readme = "README.md"
@@ -14,6 +14,14 @@ numpy = "^1.23.2"
 pandas = "1.5.3"
 ansi2html = "^1.8.0"
 numba = "^0.56.4"
+mkdocs-gen-files = "^0.5.0"
+mkdocs-literate-nav = "^0.6.1"
+mkdocs-section-index = "^0.3.8"
+mkdocs-matplotlib = "^0.10.1"
+mkdocs-jupyter = "^0.24.6"
+mkdocstrings = {extras = ["python"], version = "^0.24"}
+mkdocstrings-python = "^1.9"
+cairosvg = "^2.7.1"
 
 [tool.poetry.group.dev.dependencies]
 importlib-metadata = "^6.0.0"
@@ -33,6 +41,20 @@ handsdown = "^2.0.1"
 
 [tool.poetry.group.remote.dependencies]
 neuropy = {git = "https://github.com/CommanderPho/NeuroPy.git"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

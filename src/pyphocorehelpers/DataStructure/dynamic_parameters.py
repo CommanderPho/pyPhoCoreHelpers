@@ -18,6 +18,8 @@ class DynamicParameters(DiffableObject, MutableMapping):
     2. pickling sometimes fails, KeyError: 'mro' - SOLUTION: Interestingly this only seems to happen if the top-level item to pickle is a DynamicParameters. Calling .to_dict() and then pickling works even if it has many nested children that are DynamicParameters
         FAILS with KeyError 'mro': `saveData(global_computation_results_pickle_path, (curr_active_pipeline.global_computation_results))`
         WORKS: `saveData(global_computation_results_pickle_path, (curr_active_pipeline.global_computation_results.to_dict()))`
+    3. hasattr(plots, 'key') does not work correctly: WORKAROUND: instead of `hasattr(plots, 'root_plot')`, use `plots.has_attr('root_plot')` to avoid unhandled `KeyError: 'root_plot'`
+    
     """
     debug_enabled = False
     outcome_on_item_not_found = None
@@ -87,6 +89,10 @@ class DynamicParameters(DiffableObject, MutableMapping):
         return DynamicParameters.init_from_dict(dict_or)
         
     def __getattr__(self, item):
+        """
+            NOTE: instead of `hasattr(plots, 'root_plot')`, use `plots.has_attr('root_plot')` to avoid unhandled `KeyError: 'root_plot'`
+            
+        """
         # Gets called when the item is not found via __getattribute__
         if DynamicParameters.debug_enabled:
             print(f'DynamicParameters.__getattr__(self, item): item {item}')
@@ -106,7 +112,7 @@ class DynamicParameters(DiffableObject, MutableMapping):
         # except AttributeError as err:
         #     print(f"AttributeError: {err}")
         #     return super(DynamicParameters, self).__setattr__(item, 'orphan')
-        except BaseException as err:
+        except Exception as err:
             print(f"Unexpected {err=}, {type(err)=}")
             raise
 

@@ -29,6 +29,54 @@ class Assert:
         
 
     @classmethod
+    def all_equal(cls, *args):
+        """ Ensures all passed *args are equal in value, if it fails, it prints the actual values of each arg.
+        """
+        import inspect
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        
+        var_name_dict = {}
+        var_names_list = [name for name, val in frame.f_locals.items()]
+            
+        for a_equal_checkable_var in args:
+            # Extract the variable name from the caller's local variables
+            var_name = [name for name, val in frame.f_locals.items() if val is a_equal_checkable_var]
+            # Use the first matched variable name or 'unknown' if not found
+            var_name = var_name[0] if var_name else 'unknown'
+            if var_name not in var_name_dict:
+                var_name_dict[var_name] = a_equal_checkable_var ## turn into dictionary
+            
+            # assert var_name not in var_name_dict, f"var_name: {var_name} already exists in var_name_dict: {var_name_dict}"            
+            # ## could append suffix like "f{var_name}[1]"
+            # var_name_dict[var_name] = a_equal_checkable_var ## turn into dictionary
+            
+        if len(var_name_dict) == 0:
+            # return True # empty arrays are all equal
+            pass
+        elif len(var_name_dict) == 1:
+            # if only a single array, make sure it's not accidentally passed in incorrect
+            reference_var = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
+            # assert isinstance(reference_array, (np.ndarray))
+            # assert hasattr(reference_var, 'len')
+            # return True # as long as imput is intended, always True
+            pass
+        else:
+            ## It has more than two elements:
+            reference_var = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
+            reference_val: Any = reference_var
+            values_dict = {k:v for k, v in var_name_dict.items()}
+            for var_name, a_val in values_dict.items():
+                if a_val != reference_val:
+                    assert (a_val == reference_val), f"{var_name} must be == {reference_val} but instead {var_name}: {a_val}.\nvalues_dict: {values_dict}\n{var_name}: {a_equal_checkable_var}\n" # Perform the assertion with detailed error message
+            # Check equivalence for each array in the list
+            # return np.all([pairwise_numpy_fn(reference_array, an_arr, **kwargs) for an_arr in list_of_arrays[1:]]) # can be used without the list comprehension just as a generator if you use all(...) instead.
+            # return all(np.all(np.array_equiv(reference_array, an_arr) for an_arr in list_of_arrays[1:])) # the outer 'all(...)' is required, otherwise it returns a generator object like: `<generator object NumpyHelpers.all_array_equiv.<locals>.<genexpr> at 0x00000128E0482AC0>`
+
+
+            
+            
+    @classmethod
     def len_equals(cls, arr_or_list, required_length: int):
         """ Ensures the length is equal to the required_length, if it fails, it prints the actual length
         """

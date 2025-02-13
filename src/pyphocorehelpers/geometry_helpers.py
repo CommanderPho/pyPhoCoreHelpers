@@ -217,6 +217,16 @@ class BoundsRect(UnpackableMixin):
     def center_point(self):
         return tuple(np.array(self.relative_midpoint) + np.array([self.xmin, self.ymin])) 
 
+    @property
+    def aspect_ratio(self) -> float:
+        width = self.xmax - self.xmin
+        height = self.ymax - self.ymin
+        aspect_ratio = float(width) / float(height)
+        return aspect_ratio
+    
+    
+    
+        
     @classmethod
     def init_from_grid_bin_bounds(cls, grid_bin_bounds):
         assert len(grid_bin_bounds) == 2

@@ -130,6 +130,7 @@ def chunks(iterable, size=10):
         size (int, optional): [description]. Defaults to 10.
 
     Usage:
+        from pyphocorehelpers.indexing_helpers import chunks
         laps_pages = [list(chunk) for chunk in _chunks(sess.laps.lap_id, curr_num_subplots)]
     """
     iterator = iter(iterable)

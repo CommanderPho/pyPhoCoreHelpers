@@ -18,7 +18,7 @@ def debug_print_color(color: QColor):
     print(f'rgbaF: {color.getRgbF()}, HexARgb: {color.name(color_hex_format)}')
     
 
-def build_adjusted_color(color: QColor, hue_shift:float=0.0, saturation_scale:float=1.0, value_scale:float=1.0, alpha_scale: float=1.0):
+def build_adjusted_color(color: QColor, hue_shift:float=0.0, saturation_scale:float=1.0, value_scale:float=1.0, alpha_scale: float=1.0, wants_return_as_hex_string:bool=False, wants_hex_string_include_alpha: bool=True):
     """ Builds a copy of the color QColor with optionally modified HSV properties
     Example:
         from pyphocorehelpers.gui.Qt.color_helpers import build_adjusted_color
@@ -28,6 +28,9 @@ def build_adjusted_color(color: QColor, hue_shift:float=0.0, saturation_scale:fl
         debug_print_color(curr_color_copy)
 
     """
+    if isinstance(color, str):
+        color = QtGui.QColor(color) ## convert to QColor if needed
+    
     curr_color_copy = color.convertTo(QColor.Hsv) # makes a copy of color
     # curr_color_copy.setHsv(curr_color_copy.hue(),curr_color_copy.saturation(), curr_color_copy.value())
     # np.clip(v, 0.0, 1.0) ensures the values are between 0.0 and 1.0
@@ -37,9 +40,55 @@ def build_adjusted_color(color: QColor, hue_shift:float=0.0, saturation_scale:fl
     curr_color_copy.setAlphaF(np.clip((alpha_scale*curr_color_copy.alphaF()), 0.0, 1.0))
     # curr_color_copy.setAlphaF(color.alphaF())
     assert curr_color_copy.isValid(), "Constructed color is invalid!"
-    return curr_color_copy
+    
+    if not wants_return_as_hex_string:
+        # return QColor
+        return curr_color_copy
+    else:
+        ## convert to a hex string to return
+        return ColorFormatConverter.qColor_to_hexstring(curr_color_copy, include_alpha=wants_hex_string_include_alpha)
 
 
+# @function_attributes(short_name=None, tags=['color', 'HSV', 'conversion'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-01-29 13:53', related_items=[])
+def calculate_hsv_shift(colorA: Union[str, QColor], colorB: Union[str, QColor], debug_print=False) -> Dict[str, float]:
+    """ Computes the HSV shift/scale factors between two colors
+    from pyphocorehelpers.gui.Qt.color_helpers import calculate_hsv_shift
+            
+    NOTE: outputs are suitable for direct input into `build_adjusted_color(...)`
+
+    Usage:    
+    
+        from pyphocorehelpers.gui.Qt.color_helpers import calculate_hsv_shift
+        
+        hsv_diff = calculate_hsv_shift(colorA='#1f02c2' , colorB='#13007f', debug_print=True) # hsvB - hsvA
+        hsv_diff # {'hue_shift': -0.00022222222222223476, 'saturation_scale': 1.0104226090442343, 'value_scale': 0.654639175257732, 'alpha_scale': 1.0}
+                
+    """
+    if isinstance(colorA, str):
+        colorA = QtGui.QColor(colorA)
+    if isinstance(colorB, str):
+        colorB = QtGui.QColor(colorB)
+        
+    if debug_print:
+        debug_print_color(colorA)
+        debug_print_color(colorB)
+    
+    hsvA = np.array(colorA.getHsvF()) # (0.6918333333333333, 0.9896849011978333, 0.7607843137254902, 1.0)
+    hsvB = np.array(colorB.getHsvF()) # (0.6918333333333333, 0.9896849011978333, 0.7607843137254902, 1.0)
+    assert len(hsvA) == 4
+    assert len(hsvB) == 4
+    if debug_print:
+        print(f'hsvA: {hsvA}\nhsvB: {hsvB}')
+    # hsv_diff: NDArray = (hsvB - hsvA)
+    
+    # saturation_diff = max(hsvB[1], hsvB[0])
+    
+    hsv_diff = np.array([(hsvB[0] - hsvA[0]), np.nan_to_num((hsvB[1] / hsvA[1]), nan=1.0), np.nan_to_num((hsvB[2] / hsvA[2]), nan=1.0), np.nan_to_num((hsvB[3] / hsvA[3]), nan=1.0)])  
+    
+    assert len(hsv_diff) == 4
+    return dict(zip(['hue_shift', 'saturation_scale', 'value_scale', 'alpha_scale'], hsv_diff)) # dict(hue_shift=0.0, saturation_scale=1.0, value_scale=1.0, alpha_scale=1.0)
+
+    
 
 
 def adjust_saturation(rgb, saturation_factor: float):
@@ -459,11 +508,6 @@ class ColorFormatConverter:
             qcolors_list.append(curr_color)
             
         return qcolors_list
-
-
-
-
-
 
 
     @classmethod

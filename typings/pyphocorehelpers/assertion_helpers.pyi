@@ -19,6 +19,12 @@ class Assert:
         ...
     
     @classmethod
+    def all_equal(cls, *args): # -> None:
+        """ Ensures all passed *args are equal in value, if it fails, it prints the actual values of each arg.
+        """
+        ...
+    
+    @classmethod
     def len_equals(cls, arr_or_list, required_length: int): # -> None:
         """ Ensures the length is equal to the required_length, if it fails, it prints the actual length
         """

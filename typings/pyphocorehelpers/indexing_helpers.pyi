@@ -79,6 +79,7 @@ def chunks(iterable, size=...): # -> Generator[Generator[Any, Any, None], Any, N
         size (int, optional): [description]. Defaults to 10.
 
     Usage:
+        from pyphocorehelpers.indexing_helpers import chunks
         laps_pages = [list(chunk) for chunk in _chunks(sess.laps.lap_id, curr_num_subplots)]
     """
     ...
@@ -382,6 +383,8 @@ def partition_df(df: pd.DataFrame, partitionColumn: str) -> Tuple[NDArray, List[
         
         partitioned_dfs = dict(zip(*partition_df(spikes_df, partitionColumn='new_epoch_IDX')))
 
+        
+        unique_values, partitioned_dfs_list = partition_df(spikes_df, partitionColumn='new_epoch_IDX')
 
     History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
     """

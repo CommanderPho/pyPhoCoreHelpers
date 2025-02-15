@@ -188,7 +188,7 @@ class BoundsRect(UnpackableMixin):
     """
     xmin: float = field()
     xmax: float = field()
-    ymin:float = field()
+    ymin: float = field()
     ymax: float = field()
     
     @property
@@ -223,10 +223,7 @@ class BoundsRect(UnpackableMixin):
         height = self.ymax - self.ymin
         aspect_ratio = float(width) / float(height)
         return aspect_ratio
-    
-    
-    
-        
+  
     @classmethod
     def init_from_grid_bin_bounds(cls, grid_bin_bounds):
         assert len(grid_bin_bounds) == 2

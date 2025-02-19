@@ -658,6 +658,24 @@ def discover_data_files(basedir: Path, glob_pattern='*.mat', recursive=True):
     return found_files # 'RatS-Day5TwoNovel-2020-12-04_07-55-09'
 
 
+
+# @function_attributes(short_name=None, tags=['filesystem', 'file', 'Path'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-02-19 07:42', related_items=[])    
+def ensure_pathlib_Path(a_path: Union[str, Path]) -> Path:
+    """ ensures that the passed path is a pathlib.Path, converting it to one if needed.
+     Makes no checks about file existance or path validity.
+        
+    Usage:
+    
+        from pyphocorehelpers.Filesystem.path_helpers import ensure_pathlib_Path
+        
+    """
+    if isinstance(a_path, str):
+        return Path(a_path).resolve()
+    else:
+        assert isinstance(a_path, Path)
+        return a_path ## return unmodified
+
+
 def file_uri_from_path(a_path: Union[Path, str]) -> str:
     """ returns a path as a escaped, cross-platform, and hopefully clickable uri/url string.
     Usage:

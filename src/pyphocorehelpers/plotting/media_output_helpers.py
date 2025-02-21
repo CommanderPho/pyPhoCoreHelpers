@@ -469,6 +469,13 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
     height = np.shape(array)[1]
     width = np.shape(array)[2]
 
+    ## Check the path exists first:
+    video_filepath: Path = Path(video_filename).resolve()
+    video_parent_path = video_filepath.exists()
+    if (not video_parent_path.exists()):
+        print(f'target output directory (video_parent_path: "{video_parent_path}") does not exist. Creating it.')
+        video_parent_path.mkdir(exist_ok=True)
+
     # initialize video writer
     fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
     out = cv2.VideoWriter(str(video_filename), fourcc, fps, (width, height))
@@ -492,6 +499,7 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
     if progress_print:
         print(f'done! video saved to {video_filename}')
     return Path(video_filename).resolve()
+
 
 @function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=[], creation_date='2024-09-06 11:33', related_items=[])
 def colormap_and_save_as_video(array, video_filename='output.avi', fps=30.0, colormap=None):

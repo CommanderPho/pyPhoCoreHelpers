@@ -428,7 +428,7 @@ def save_array_as_image_stack(images: List[Path], offset=10, single_image_alpha_
 
 
 #TODO 2023-09-27 19:54: - [ ] saving
-@function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=[], creation_date='2024-09-06 11:34', related_items=[])
+@function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=['PosteriorExporting.save_posterior_to_video'], creation_date='2024-09-06 11:34', related_items=[])
 def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr_curves_frames.mp4', fps=30.0, isColor=False, colormap=None, skip_img_normalization=False, debug_print=False, progress_print=True):
     """
     Save a 3D numpy array as a grayscale video.

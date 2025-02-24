@@ -471,7 +471,8 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
 
     ## Check the path exists first:
     video_filepath: Path = Path(video_filename).resolve()
-    video_parent_path = video_filepath.exists()
+    video_parent_path = video_filepath.parent
+    # assert video_parent_path
     if (not video_parent_path.exists()):
         print(f'target output directory (video_parent_path: "{video_parent_path}") does not exist. Creating it.')
         video_parent_path.mkdir(exist_ok=True)

@@ -408,7 +408,7 @@ class GlobalConnectionManagerAccessingMixin:
         ._connection_man
     """
     @property
-    def connection_man(self):
+    def connection_man(self) -> GlobalConnectionManager:
         """The connection_man property."""
         return self._connection_man
     

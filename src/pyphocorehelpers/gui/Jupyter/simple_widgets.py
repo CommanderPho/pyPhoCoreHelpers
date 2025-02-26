@@ -435,6 +435,7 @@ def create_file_browser(directory, patterns, page_size:int=25, widget_height:int
                     
     # Function to get file information
     def get_file_info(directory, patterns):
+        """ subfunction to locate files and their metadata """
         files_data = []
         for pattern in patterns:
             for file_path in Path(directory).glob(pattern):
@@ -448,8 +449,18 @@ def create_file_browser(directory, patterns, page_size:int=25, widget_height:int
                         "Rel Path": str(file_path.relative_to(directory)),  # Relative path
                         "File Path": str(file_path),  # abs path
                     })
-        return pd.DataFrame(files_data).sort_values(by=['Modification Date', "Creation Date", "Size (KB)", "File Name"], axis='index', ascending=False).reset_index(drop=True)
-    
+        # return pd.DataFrame(files_data).sort_values(by=['Modification Date', "Creation Date", "Size (KB)", "File Name"], axis='index', ascending=False).reset_index(drop=True)
+        # Create DataFrame
+        df = pd.DataFrame(files_data)
+        
+        # Only sort if DataFrame is not empty
+        if not df.empty:
+            return df.sort_values(by=['Modification Date', "Creation Date", "Size (KB)", "File Name"], 
+                                axis='index', ascending=False).reset_index(drop=True)
+        else:
+            return df  # Return empty DataFrame without sorting
+                
+
 
     # Fetch file data
     file_info_df = get_file_info(directory, patterns)
@@ -502,7 +513,7 @@ def create_file_browser(directory, patterns, page_size:int=25, widget_height:int
     file_table.param.watch(on_selection, 'selection')
     return file_table
     
-    
+
 
 def create_tab_widget(display_dict: Dict[str, Any], **tab_kwargs) -> widgets.Tab:
     """

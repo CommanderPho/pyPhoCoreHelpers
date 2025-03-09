@@ -482,9 +482,9 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
     out = cv2.VideoWriter(str(video_filename), fourcc, fps, (width, height))
 
     # new frame after each addition of water
-
+    progress_print_every_n_frames: int = 15 # print progress only once every 15 frames so it doesn't spam the output log
     for i in np.arange(n_frames):
-        if progress_print:
+        if progress_print and (i % 15 == 0):
             print(f'saving frame {i}/{n_frames}')
         gray = np.squeeze(gray_frames[i,:,:]) # single frame
         gray_3c = cv2.merge([gray, gray, gray])

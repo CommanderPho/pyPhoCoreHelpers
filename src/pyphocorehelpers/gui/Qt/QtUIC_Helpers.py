@@ -15,7 +15,7 @@ from qtpy import QtCore, QtWidgets, uic
 #                 setattr(ui_object, spacer_name, layout_item.spacerItem())
 
 
-@function_attributes(short_name=None, tags=['uic', 'qt-creator', 'pyqt5', 'spacers', 'workaround'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-03-11 03:45', related_items=[])
+# @function_attributes(short_name=None, tags=['uic', 'qt-creator', 'pyqt5', 'spacers', 'workaround'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-03-11 03:45', related_items=[])
 def load_ui_with_named_spacers(ui_file, base_instance=None):
     """Loads a UI file and makes spacers accessible by name.
     

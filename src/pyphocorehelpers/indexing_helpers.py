@@ -1,6 +1,7 @@
 from collections import namedtuple
 from itertools import islice
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+import nptyping as ND
 from nptyping import NDArray
 import numpy as np
 import pandas as pd

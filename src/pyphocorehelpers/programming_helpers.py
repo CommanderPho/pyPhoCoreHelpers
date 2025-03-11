@@ -11,6 +11,7 @@ from functools import wraps
 import numpy as np
 import pandas as pd
 import inspect # for IPythonHelpers
+import psutil # For MemoryManagement
 from enum import Enum, unique
 import re
 import ast
@@ -1037,6 +1038,29 @@ class MemoryManagement:
         else:
             return args
         
+
+    @classmethod
+    def get_available_system_memory_MB(cls) -> int:
+        """
+        Returns available system memory in MegaBytes (MB) in a cross-platform manner.
+        Requires psutil library: pip install psutil
+        
+        Returns:
+            int: Available memory in MB
+
+        Usage:        
+            from pyphocorehelpers.programming_helpers import MemoryManagement
+
+            available_MB: int = MemoryManagement.get_available_system_memory_MB() # Get available memory in MegaBytes
+            available_GB: int = available_MB / 1024  # Gigabytes
+            print(f'available RAM: {available_GB} GB')
+        
+        """
+        available_bytes = psutil.virtual_memory().available
+        # Convert to more readable formats
+        available_mb = available_bytes / (1024 * 1024)  # Megabytes
+        return available_mb
+
 
 FunctionInspectionTuple = namedtuple('FunctionInspectionTuple', ['full_fn_spec', 'positional_args_names', 'kwargs_names', 'default_kwargs_dict'])
 

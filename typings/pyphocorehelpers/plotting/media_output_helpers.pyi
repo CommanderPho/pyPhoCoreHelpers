@@ -145,7 +145,7 @@ def save_array_as_image_stack(images: List[Path], offset=..., single_image_alpha
     """
     ...
 
-@function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=[], creation_date='2024-09-06 11:34', related_items=[])
+@function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=['PosteriorExporting.save_posterior_to_video'], creation_date='2024-09-06 11:34', related_items=[])
 def save_array_as_video(array, video_filename=..., fps=..., isColor=..., colormap=..., skip_img_normalization=..., debug_print=..., progress_print=...): # -> Path:
     """
     Save a 3D numpy array as a grayscale video.

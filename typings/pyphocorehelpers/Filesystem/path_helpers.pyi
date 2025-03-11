@@ -252,6 +252,17 @@ def discover_data_files(basedir: Path, glob_pattern=..., recursive=...): # -> li
     """
     ...
 
+def ensure_pathlib_Path(a_path: Union[str, Path]) -> Path:
+    """ ensures that the passed path is a pathlib.Path, converting it to one if needed.
+     Makes no checks about file existance or path validity.
+        
+    Usage:
+    
+        from pyphocorehelpers.Filesystem.path_helpers import ensure_pathlib_Path
+        
+    """
+    ...
+
 def file_uri_from_path(a_path: Union[Path, str]) -> str:
     """ returns a path as a escaped, cross-platform, and hopefully clickable uri/url string.
     Usage:

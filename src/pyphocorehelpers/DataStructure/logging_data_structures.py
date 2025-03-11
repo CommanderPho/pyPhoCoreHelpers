@@ -9,7 +9,7 @@ from pyphocorehelpers.function_helpers import function_attributes
 
 # from pyphoplacecellanalysis.External.pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 # from qtpy import QtCore, QtWidgets
-from pyphoplacecellanalysis.External.pyqtgraph.Qt import QtCore
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 
 @define(repr=False, slots=False)
@@ -111,7 +111,10 @@ class LoggingBaseClassLoggerOwningMixin:
     @property
     def debug_print(self) -> bool:
         """`LoggingBaseClassLoggerOwningMixin`-conformance required property."""
-        return self.params.get('debug_print', False)
+        return self.params.get('debug_print', False)    
+    @debug_print.setter
+    def debug_print(self, value: bool):
+        self.params.debug_print = value
     
     # @logger.setter
     # def logger(self, value: LoggingBaseClass):
@@ -163,4 +166,47 @@ class LoggingBaseClassLoggerOwningMixin:
         print(*args)
         self.add_log_lines(new_lines=args, defer_log_changed_event=False)
 
+
+class LoggingConsoleWidget(QtWidgets.QWidget):
+    """A simple ready-to-use pyqt5-based logging console widget that I can log my application out to as it runs, preferably asynchronously
+    
+    
+    """
+    def __init__(self, logger: Optional[LoggingBaseClass]=None, parent=None):
+        super().__init__(parent=parent)
+        self.logger = logger or LoggingBaseClass(log_records=[])
+        self.initUI()
+        self.logger.sigLogUpdated.connect(self.on_log_updated)
+        self.logger.sigLogUpdateFinished.connect(self.on_log_update_finished)
+
+    def initUI(self):
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.textEdit = QtWidgets.QTextEdit()
+        self.textEdit.setReadOnly(True)
+        self.layout.addWidget(self.textEdit)
+        self.setLayout(self.layout)
+
+    @QtCore.pyqtSlot(object)
+    def on_log_updated(self, logger):
+        # print(f'LoggingConsoleWidget.on_log_updated(logger: {logger})')
+        # logger: LoggingBaseClass
+        # target_text: str = self.logger.get_flattened_log_text(flattening_delimiter='\n', limit_to_n_most_recent=None)
+        # self.textEdit.setText(target_text)
+        # self.textEdit.repaint()
+        pass
+
+    @QtCore.pyqtSlot()
+    def on_log_update_finished(self):
+        # print(f'LoggingConsoleWidget.on_log_update_finished()')
+        target_text: str = self.logger.get_flattened_log_text(flattening_delimiter='\n', limit_to_n_most_recent=None)
+        self.textEdit.setText(target_text)
+        self.textEdit.repaint()
+        
+    def add_log_line(self, new_line: str, allow_split_newlines: bool = True, defer_log_changed_event:bool=False):
+        """ adds an additional entry to the log """
+        self.logger.add_log_line(new_line=new_line, allow_split_newlines=allow_split_newlines, defer_log_changed_event=defer_log_changed_event)
+            
+    def add_log_lines(self, new_lines: List[str], allow_split_newlines: bool = True, defer_log_changed_event:bool=False):
+        """ adds an additional entries to the log """
+        self.logger.add_log_lines(new_lines=new_lines, allow_split_newlines=allow_split_newlines, defer_log_changed_event=defer_log_changed_event)
 

@@ -323,7 +323,7 @@ class IPythonHelpers:
         ...
     
     @classmethod
-    def extract_cells(cls, notebook_path: Union[Path, str]):
+    def extract_cells(cls, notebook_path: Union[Path, str]): # -> Any:
         """ extracts the cells from the provided notebook.
         # Example usage
         notebook_path = '../BatchGenerateOutputs_2023-11-13.ipynb'
@@ -482,6 +482,25 @@ class MemoryManagement:
 
             args = MemoryManagement.deduplicate_memory_references(args)
 
+        """
+        ...
+    
+    @classmethod
+    def get_available_system_memory_MB(cls) -> int:
+        """
+        Returns available system memory in MegaBytes (MB) in a cross-platform manner.
+        Requires psutil library: pip install psutil
+        
+        Returns:
+            int: Available memory in MB
+
+        Usage:        
+            from pyphocorehelpers.programming_helpers import MemoryManagement
+
+            available_MB: int = MemoryManagement.get_available_system_memory_MB() # Get available memory in MegaBytes
+            available_GB: int = available_MB / 1024  # Gigabytes
+            print(f'available RAM: {available_GB} GB')
+        
         """
         ...
     

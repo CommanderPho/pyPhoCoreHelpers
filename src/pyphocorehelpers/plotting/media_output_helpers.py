@@ -428,7 +428,7 @@ def save_array_as_image_stack(images: List[Path], offset=10, single_image_alpha_
 
 
 #TODO 2023-09-27 19:54: - [ ] saving
-@function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=[], creation_date='2024-09-06 11:34', related_items=[])
+@function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=['PosteriorExporting.save_posterior_to_video'], creation_date='2024-09-06 11:34', related_items=[])
 def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr_curves_frames.mp4', fps=30.0, isColor=False, colormap=None, skip_img_normalization=False, debug_print=False, progress_print=True):
     """
     Save a 3D numpy array as a grayscale video.
@@ -469,14 +469,22 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
     height = np.shape(array)[1]
     width = np.shape(array)[2]
 
+    ## Check the path exists first:
+    video_filepath: Path = Path(video_filename).resolve()
+    video_parent_path = video_filepath.parent
+    # assert video_parent_path
+    if (not video_parent_path.exists()):
+        print(f'target output directory (video_parent_path: "{video_parent_path}") does not exist. Creating it.')
+        video_parent_path.mkdir(exist_ok=True)
+
     # initialize video writer
     fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
     out = cv2.VideoWriter(str(video_filename), fourcc, fps, (width, height))
 
     # new frame after each addition of water
-
+    progress_print_every_n_frames: int = 15 # print progress only once every 15 frames so it doesn't spam the output log
     for i in np.arange(n_frames):
-        if progress_print:
+        if progress_print and (i % 15 == 0):
             print(f'saving frame {i}/{n_frames}')
         gray = np.squeeze(gray_frames[i,:,:]) # single frame
         gray_3c = cv2.merge([gray, gray, gray])
@@ -492,6 +500,7 @@ def save_array_as_video(array, video_filename='output/videos/long_short_rel_entr
     if progress_print:
         print(f'done! video saved to {video_filename}')
     return Path(video_filename).resolve()
+
 
 @function_attributes(short_name=None, tags=['cv2'], input_requires=[], output_provides=[], uses=['cv2'], used_by=[], creation_date='2024-09-06 11:33', related_items=[])
 def colormap_and_save_as_video(array, video_filename='output.avi', fps=30.0, colormap=None):

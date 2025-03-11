@@ -2,6 +2,7 @@ from copy import deepcopy
 from functools import partial
 import socket # for getting hostname
 from typing import Union, List, Dict, Tuple, Set, Any, Optional, OrderedDict, Callable  # for OrderedMeta
+import nptyping as ND
 from nptyping import NDArray
 
 from datetime import datetime, date, timedelta # for `get_now_day_str`

@@ -152,6 +152,10 @@ class BoundsRect(UnpackableMixin):
     def center_point(self): # -> tuple[Any, ...]:
         ...
     
+    @property
+    def aspect_ratio(self) -> float:
+        ...
+    
     @classmethod
     def init_from_grid_bin_bounds(cls, grid_bin_bounds): # -> Self:
         ...

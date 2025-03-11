@@ -51,10 +51,13 @@ def load_ui_with_named_spacers(ui_file, base_instance=None):
     def process_layout(layout):
         for i in range(layout.count()):
             item = layout.itemAt(i)
-            if item.spacerItem() and hasattr(item.spacerItem(), 'objectName'):
-                name = item.spacerItem().objectName()
-                if name:
-                    setattr(ui, name, item.spacerItem())
+            if item.spacerItem():
+                if hasattr(item.spacerItem(), 'objectName'):
+                    name = item.spacerItem().objectName()
+                    if name:
+                        setattr(ui, name, item.spacerItem())
+                else:
+                    print(f'error, un-named spacer object: {item}, {item.spacerItem()}')
             elif item.layout():
                 process_layout(item.layout())
             elif item.widget() and item.widget().layout():

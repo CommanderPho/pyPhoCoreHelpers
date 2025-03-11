@@ -111,7 +111,10 @@ class LoggingBaseClassLoggerOwningMixin:
     @property
     def debug_print(self) -> bool:
         """`LoggingBaseClassLoggerOwningMixin`-conformance required property."""
-        return self.params.get('debug_print', False)
+        return self.params.get('debug_print', False)    
+    @debug_print.setter
+    def debug_print(self, value: bool):
+        self.params.debug_print = value
     
     # @logger.setter
     # def logger(self, value: LoggingBaseClass):

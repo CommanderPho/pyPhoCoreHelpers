@@ -36,7 +36,7 @@ def load_ui_with_named_spacers(ui_file, base_instance=None):
     class Spike3DRasterLeftSidebarControlBar(QWidget):
         def __init__(self, parent=None):
 			super().__init__(parent=parent) # Call the inherited classes __init__ method
-			self.ui = load_ui_with_spacers(uiFile, self) # Load the .ui file
+			self.ui = load_ui_with_named_spacers(uiFile, self) # Load the .ui file
 			self.initUI()
 			self.show() # Show the GUI
 	```

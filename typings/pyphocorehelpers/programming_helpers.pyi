@@ -323,7 +323,7 @@ class IPythonHelpers:
         ...
     
     @classmethod
-    def extract_cells(cls, notebook_path: Union[Path, str]): # -> Any:
+    def extract_cells(cls, notebook_path: Union[Path, str]):
         """ extracts the cells from the provided notebook.
         # Example usage
         notebook_path = '../BatchGenerateOutputs_2023-11-13.ipynb'

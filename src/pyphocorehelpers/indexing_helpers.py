@@ -916,6 +916,75 @@ def reorder_columns_relative(df: pd.DataFrame, column_names: list[str], relative
         raise NotImplementedError
     
     
+# ==================================================================================================================== #
+# 2024-11-15 - `neuropy` dataframe helper                                                              #
+# ==================================================================================================================== #
+
+@pd.api.extensions.register_dataframe_accessor("pho")
+class PhoDataframeAccessor:
+    """ Describes a dataframe with at least a neuron_id (aclu) column. Provides functionality regarding building globally (across-sessions) unique neuron identifiers.
+    
+
+    from pyphoplacecellanalysis.SpecificResults.AcrossSessionResults import AcrossSessionIdentityDataframeAccessor
+    from neuropy.utils.indexing_helpers import NeuroPyDataframeAccessor
+    from pyphocorehelpers.indexing_helpers import PhoDataframeAccessor
+    
+    
+    """
+   
+    def __init__(self, pandas_obj: pd.DataFrame):
+        self._validate(pandas_obj)
+        self._df = pandas_obj
+
+    @staticmethod
+    def _validate(obj):
+        """ verify there is a column that identifies the spike's neuron, the type of cell of this neuron ('neuron_type'), and the timestamp at which each spike occured ('t'||'t_rel_seconds') """
+        if not isinstance(obj, pd.DataFrame):
+            raise ValueError(f"object must be a pandas Dataframe but is of type: {type(obj)}!\nobj: {obj}")
+
+
+    def constrain_df_cols(self, should_drop_constrained_columns: bool=True, **constraining_kwargs) -> pd.DataFrame:
+        """ 
+        from neuropy.utils.indexing_helpers import NeuroPyDataframeAccessor
+        
+        filtered_single_FAT_df: pd.DataFrame = single_FAT_df.pho.constrain_df_cols(data_grain='per_time_bin', decoder_identifier='pseudo2D', masked_time_bin_fill_type=['ignore'], trained_compute_epochs='laps', known_named_decoding_epochs_type=['laps']) # long_RL=0, short_LR=0, short_RL=0
+        filtered_single_FAT_df
+
+        """
+        _out_df: pd.DataFrame = deepcopy(self._df)
+        for col_name, val in constraining_kwargs.items():
+            if isinstance(val, (list, tuple, set)):
+                _out_df = _out_df[_out_df[col_name].isin(val)]
+            else:
+                _out_df = _out_df[_out_df[col_name] == val]
+                if should_drop_constrained_columns:
+                    ## only drop columns when the value was constrained to a single value
+                    _out_df.drop(columns=[col_name], inplace=True)
+                    
+        # END for col_...
+        return _out_df
+
+
+    ## Pandas DataFrame helpers:
+    def partition(self, partitionColumn: str) -> Tuple[NDArray, NDArray]:
+        """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
+        """
+        return partition(df=self._df, partitionColumn=partitionColumn) 
+
+
+    def partition_df(self, partitionColumn: str) -> Tuple[NDArray, List[pd.DataFrame]]:
+        """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
+        USEFUL NOTE: to get a dict, do `partitioned_dfs = dict(zip(*partition_df(spikes_df, partitionColumn='new_epoch_IDX')))`
+        """
+        return partition_df(df=self._df, partitionColumn=partitionColumn) 
+
+
+    def partition_df_dict(self, partitionColumn: str) -> Dict[Any, pd.DataFrame]:
+        """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
+        """
+        return partition_df_dict(df=self._df, partitionColumn=partitionColumn) 
+
+
 
             
 

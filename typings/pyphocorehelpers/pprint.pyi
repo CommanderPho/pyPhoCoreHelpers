@@ -208,7 +208,7 @@ class RepresentationPrinter(PrettyPrinter):
     def __init__(self, output, verbose=..., max_width=..., newline=..., singleton_pprinters=..., type_pprinters=..., deferred_pprinters=..., max_seq_length=..., compact=...) -> None:
         ...
     
-    def pretty(self, obj): # -> Any | None:
+    def pretty(self, obj): # -> object | None:
         """Pretty print the given object."""
         ...
     

@@ -167,7 +167,7 @@ class DocumentationFilePrinter:
     def reveal_output_files_in_system_file_manager(self): # -> None:
         ...
     
-    def display_widget(self): # -> VBox:
+    def display_widget(self): # -> Any:
         """ Display an interactive jupyter-widget that allows you to open/reveal the generated files in the fileystem or default system display program. 
         
         Usage:

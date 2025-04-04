@@ -485,6 +485,138 @@ class NotebookProcessor:
         return None
 
 
+
+    @classmethod
+    def get_running_vscode_jupyter_server_info(cls, debug_print=True):
+        """ gets the connection information for the current notebook
+        
+        Usage:
+        
+            from pyphocorehelpers.notebook_helpers import NotebookProcessor
+
+            latest_connection_file, connection_info = NotebookProcessor.get_running_vscode_jupyter_server_info()
+            connection_info
+
+        
+        Outputs:
+        
+        Connection info: {
+            "key": "8d669f8c-24d6-4d50-b32c-d3cae7ae7b0d",
+            "signature_scheme": "hmac-sha256",
+            "transport": "tcp",
+            "ip": "127.0.0.1",
+            "hb_port": 9005,
+            "control_port": 9006,
+            "shell_port": 9007,
+            "stdin_port": 9008,
+            "iopub_port": 9009,
+            "kernel_name": "spike3d-2025"
+        }
+
+
+        """
+        import json
+        from jupyter_core.paths import jupyter_runtime_dir
+        import os
+        import glob
+
+        # Find the most recent connection file
+        connection_files = glob.glob(os.path.join(jupyter_runtime_dir(), 'kernel-*.json'))
+        if debug_print:
+            print(f'connection_files: {connection_files}')
+            
+        latest_connection_file = max(connection_files, key=os.path.getctime)
+
+        # Display the connection information
+        with open(latest_connection_file, 'r') as f:
+            connection_info = json.load(f)
+            
+        if debug_print:
+            print(f"Connection file: {latest_connection_file}")
+            print(f"Connection info: {json.dumps(connection_info, indent=4)}")
+            
+        return latest_connection_file, connection_info
+    
+
+
+    @classmethod
+    def launch_standalone_qtconsole_connected_to_existing_kernel(cls, connection_info: Optional[Path]=None, latest_connection_file: Optional[Path]=None, debug_print=True):
+        """ gets the connection information for the current notebook
+        
+        Usage:
+        
+            from pyphocorehelpers.notebook_helpers import NotebookProcessor
+
+            latest_connection_file, connection_info = NotebookProcessor.get_running_vscode_jupyter_server_info()
+            
+            NotebookProcessor.launch_standalone_qtconsole_connected_to_existing_kernel(latest_connection_file=latest_connection_file)
+            
+
+        
+        Outputs:
+        
+        Connection info: {
+            "key": "8d669f8c-24d6-4d50-b32c-d3cae7ae7b0d",
+            "signature_scheme": "hmac-sha256",
+            "transport": "tcp",
+            "ip": "127.0.0.1",
+            "hb_port": 9005,
+            "control_port": 9006,
+            "shell_port": 9007,
+            "stdin_port": 9008,
+            "iopub_port": 9009,
+            "kernel_name": "spike3d-2025"
+        }
+
+
+        """
+        import subprocess
+        if (connection_info is None) and (latest_connection_file is None):
+            if debug_print:
+                print(f'getting via get_running_vscode_jupyter_server_info()...')
+            latest_connection_file, connection_info = cls.get_running_vscode_jupyter_server_info(debug_print=debug_print)
+            assert Path(latest_connection_file).exists()
+            command_args = ["jupyter", "qtconsole", "--existing", latest_connection_file]
+            command_str = ' '.join(command_args)
+            print(f'command: `{command_str}`')
+            subprocess.Popen(command_args)
+            return True    
+        elif (latest_connection_file is not None):
+            ## just use the existing file
+            # Launch QTConsole with the existing kernel
+            assert Path(latest_connection_file).exists()
+            command_args = ["jupyter", "qtconsole", "--existing", latest_connection_file]
+            command_str = ' '.join(command_args)
+            print(f'command: `{command_str}`')
+            subprocess.Popen(command_args)
+            return True
+        
+        elif (latest_connection_file is None) and (connection_info is not None):
+            import json
+            import tempfile
+            ## write out to a temp file            
+            # Create a temporary connection file
+            temp_file = tempfile.NamedTemporaryFile(suffix='.json', delete=False)
+            temp_file_path = temp_file.name
+            with open(temp_file_path, 'w') as f:
+                json.dump(connection_info, f)
+
+            # Launch QTConsole with the existing kernel
+            command_args = ["jupyter", "qtconsole", "--existing", temp_file_path]
+            command_str = ' '.join(command_args)
+            print(f'command: `{command_str}`')
+            subprocess.Popen(command_args)
+            
+            # Optional: Set up cleanup for the temp file
+            # import atexit
+            # atexit.register(lambda: os.unlink(temp_file_path))
+            return True
+        else:
+            raise NotImplementedError(f'latest_connection_file: "{latest_connection_file}", connection_info: {connection_info}')
+            return False
+    
+
+
     # from IPython.display import display, Javascript
 
     # def add_cell_below():

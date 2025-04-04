@@ -3,7 +3,7 @@ import os
 import shutil # used in `restore_symlink_folder`
 from shutil import copytree # used in `make_specific_items_local`
 from pathlib import Path
-from typing import Optional, Dict, Optional, Tuple, List
+from typing import Optional, Dict, Optional, Tuple, List, Union
 from datetime import datetime, timedelta
 import numpy as np
 from pyphocorehelpers.Filesystem.metadata_helpers import FilesystemMetadata, get_file_metadata
@@ -25,7 +25,7 @@ make_specific_items_local
 """
 
 
-def nearest_symlink_ancestor_path(path: Path) -> Path or None:
+def nearest_symlink_ancestor_path(path: Path) -> Union[Path, None]:
     """Returns the path of the nearest parent directory of 'path' that is a symbolic link.
     If no parent directories are symbolic links, returns None.
     

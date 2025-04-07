@@ -40,7 +40,8 @@ PyQt5-sip = { version = "^12.11.1", optional = true}
 handsdown = "^2.0.1"
 
 [tool.poetry.group.remote.dependencies]
-neuropy = {git = "https://github.com/CommanderPho/NeuroPy.git"}
+neuropy = {path = "../NeuroPy", develop=true}
+
 
 
 

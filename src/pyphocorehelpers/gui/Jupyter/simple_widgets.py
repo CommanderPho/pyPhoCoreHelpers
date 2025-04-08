@@ -598,7 +598,20 @@ class CheckBoxListWidget(widgets.VBox):
     
     _widgets = None
     
-    def __init__(self, options_list, **kwargs):
+
+    @property
+    def options_dict(self) -> Dict[str, bool]:
+        """The options_list property."""
+        return {k:v.value for k, v in self._widgets.items()}
+    @options_dict.setter
+    def options_dict(self, value: Dict[str, bool]):
+        for k, v in value.items():
+            assert k in self._widgets, f"k: {k} is not in self._widgets: {list(self._widgets.keys())}"
+            a_widget = self._widgets.get(k, None)
+            a_widget.value = v
+
+    
+    def __init__(self, options_list: Union[List[str], Dict[str, bool]], **kwargs):
         # Set the layout for the VBox to have a black border
         layout = kwargs.pop('layout', widgets.Layout(
             border='1px solid black',
@@ -617,9 +630,13 @@ class CheckBoxListWidget(widgets.VBox):
             # line_height='normal'
         )
 
+        if not isinstance(options_list, dict):
+            options_list = {k:False for k in options_list} ## turn into a dict with default False (unchecked/disabled) values
+            
         # Initialize child widgets
-        for k in options_list:
-            self._widgets[k] = widgets.Checkbox(description=k, layout=checkbox_layout)
+        # for k in options_list:
+        for k, is_checked in options_list.items():
+            self._widgets[k] = widgets.Checkbox(description=k, layout=checkbox_layout, value=is_checked)
             
         # Set the initial value
         # self.value = tuple([v.value for k, v in self._widgets.items()])
@@ -644,8 +661,31 @@ class CheckBoxListWidget(widgets.VBox):
         # Callback when value changes
         print(f'Value changed to: {self.value}')
 
+
+    # def update_options_list(options_list: List):
+    #     """ updates the existing options list """
+    #     # Remove previous children ___________________________________________________________________________________________ #
+    #     # Observe changes in child widgets
+    #     for child_widget in self.children:
+    #         child_widget.observe(self._on_widget_change, names='value')
+    #         child_widget.remove()
             
+    #     # Initialize child widgets
+    #     for k in options_list:
+    #         self._widgets[k] = widgets.Checkbox(description=k, layout=checkbox_layout)
             
+    #     # Set the initial value
+    #     # self.value = tuple([v.value for k, v in self._widgets.items()])
+    #     self.value = tuple([k for k, v in self._widgets.items() if v.value]) # return the key for each checkbox that is checked.
+        
+    #     # Set the children of the HBox
+    #     self.children = list(self._widgets.values())
+        
+    #     # Observe changes in child widgets
+    #     for child_widget in self.children:
+    #         child_widget.observe(self._on_widget_change, names='value')
+            
+
 
 # @function_attributes(short_name=None, tags=['widget', 'jupyter', 'ipywidgets'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-11-22 09:14', related_items=[])
 class MultiCheckboxWidget(widgets.VBox):

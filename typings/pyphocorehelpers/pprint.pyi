@@ -303,13 +303,13 @@ _env_type = ...
 if _env_type is not dict:
     ...
 _deferred_type_pprinters = ...
-def for_type(typ, func):
+def for_type(typ, func): # -> None:
     """
     Add a pretty printer for a given type.
     """
     ...
 
-def for_type_by_name(type_module, type_name, func):
+def for_type_by_name(type_module, type_name, func): # -> None:
     """
     Add a pretty printer for a type specified by the module and name of a type
     rather than the type object itself.

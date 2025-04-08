@@ -1,4 +1,43 @@
 from qtpy import QtCore, QtWidgets, uic
+from PyQt5.QtCore import Qt
+
+def get_spacer_at(layout, row, column):
+    item = layout.itemAtPosition(row, column)
+    if item and item.spacerItem():
+        return item.spacerItem()
+    return None
+
+
+def get_all_spacer_items(widget):
+    """
+    Returns a flat list of all QSpacerItems in the widget.
+    
+    Args:
+        widget: A QWidget instance to search for spacers
+        
+    Returns:
+        list: All QSpacerItems found in the widget's layouts
+    """
+    spacers = []
+    
+    def process_layout(layout):
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            # Check if this item is a spacer
+            if item.spacerItem():
+                spacers.append(item.spacerItem())
+            # If it's a layout, process it recursively
+            elif item.layout():
+                process_layout(item.layout())
+            # If it's a widget with a layout, process that layout
+            elif item.widget() and item.widget().layout():
+                process_layout(item.widget().layout())
+    
+    # Start with the widget's main layout
+    if widget.layout():
+        process_layout(widget.layout())
+    
+    return spacers
 
 
 # @function_attributes(short_name=None, tags=['UNUSED', 'UNTESTED', 'alternative', 'post-hoc', 'qt-creator', 'pyqt5', 'spacers', 'workaround'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-03-11 03:45', related_items=['load_ui_with_named_spacers'])
@@ -15,7 +54,9 @@ from qtpy import QtCore, QtWidgets, uic
 #                 setattr(ui_object, spacer_name, layout_item.spacerItem())
 
 
-@function_attributes(short_name=None, tags=['uic', 'qt-creator', 'pyqt5', 'spacers', 'workaround'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-03-11 03:45', related_items=[])
+
+
+# @function_attributes(short_name=None, tags=['uic', 'qt-creator', 'pyqt5', 'spacers', 'workaround'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-03-11 03:45', related_items=[])
 def load_ui_with_named_spacers(ui_file, base_instance=None):
     """Loads a UI file and makes spacers accessible by name.
     
@@ -36,7 +77,7 @@ def load_ui_with_named_spacers(ui_file, base_instance=None):
     class Spike3DRasterLeftSidebarControlBar(QWidget):
         def __init__(self, parent=None):
 			super().__init__(parent=parent) # Call the inherited classes __init__ method
-			self.ui = load_ui_with_spacers(uiFile, self) # Load the .ui file
+			self.ui = load_ui_with_named_spacers(uiFile, self) # Load the .ui file
 			self.initUI()
 			self.show() # Show the GUI
 	```
@@ -47,22 +88,33 @@ def load_ui_with_named_spacers(ui_file, base_instance=None):
     else:
         ui = uic.loadUi(ui_file, base_instance)
     
-    # Process all layouts in the UI to find spacers
-    def process_layout(layout):
-        for i in range(layout.count()):
-            item = layout.itemAt(i)
-            if item.spacerItem() and hasattr(item.spacerItem(), 'objectName'):
-                name = item.spacerItem().objectName()
-                if name:
-                    setattr(ui, name, item.spacerItem())
-            elif item.layout():
-                process_layout(item.layout())
-            elif item.widget() and item.widget().layout():
-                process_layout(item.widget().layout())
-    
-    # Start with the main layout
-    if hasattr(ui, 'layout'):
-        process_layout(ui.layout())
-    
+    # Get all spacers in your widget
+    horizontal_spacers = []
+    vertical_spacers = []
+    all_spacers = get_all_spacer_items(ui)
+    for i, a_spacer in enumerate(all_spacers):
+        # Identify horizontal spacers by checking size hints
+        # Horizontal spacers have fixed height and variable width
+        size_hint = a_spacer.sizeHint()
+        size_policy = a_spacer.sizePolicy()
+        h_policy = size_policy.horizontalStretch()
+        v_policy = size_policy.verticalStretch()
+        expanding_dir = a_spacer.expandingDirections()
+        # if expanding_dir == Qt.Horizontal
+        # Check if it's a horizontal spacer (fixed height, variable width)
+        is_horizontal: bool = (h_policy > 0 or size_hint.width() > size_hint.height() or (size_hint.width() > 0 and size_hint.height() == 0))
+        if is_horizontal:
+            spacer_orientation_rel_index: int = len(horizontal_spacers)
+            spacer_orientation_prefix: str = f"horizontalSpacer"
+            horizontal_spacers.append(a_spacer)
+        else:
+            ## otherwise must be vertical
+            spacer_orientation_rel_index: int = len(vertical_spacers)
+            spacer_orientation_prefix: str = f"verticalSpacer"        
+            vertical_spacers.append(a_spacer)
+
+        spacer_name: str = f"{spacer_orientation_prefix}_{spacer_orientation_rel_index}" # horizontalSpacer_6
+        setattr(ui, spacer_name, a_spacer.spacerItem())
+            
     return ui
 

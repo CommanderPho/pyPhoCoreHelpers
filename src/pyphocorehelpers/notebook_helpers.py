@@ -485,6 +485,186 @@ class NotebookProcessor:
         return None
 
 
+
+    @classmethod
+    def get_running_vscode_jupyter_server_info(cls, debug_print=True):
+        """ gets the connection information for the current notebook
+        
+        Usage:
+        
+            from pyphocorehelpers.notebook_helpers import NotebookProcessor
+
+            latest_connection_file, connection_info = NotebookProcessor.get_running_vscode_jupyter_server_info()
+            connection_info
+
+        
+        Outputs:
+        
+        Connection info: {
+            "key": "8d669f8c-24d6-4d50-b32c-d3cae7ae7b0d",
+            "signature_scheme": "hmac-sha256",
+            "transport": "tcp",
+            "ip": "127.0.0.1",
+            "hb_port": 9005,
+            "control_port": 9006,
+            "shell_port": 9007,
+            "stdin_port": 9008,
+            "iopub_port": 9009,
+            "kernel_name": "spike3d-2025"
+        }
+
+
+        """
+        import json
+        from jupyter_core.paths import jupyter_runtime_dir
+        import os
+        import glob
+        
+        # Get the ID of the current kernel
+        import IPython
+        ipython = IPython.get_ipython()
+        connection_file = ipython.kernel.config.get('IPKernelApp', {}).get('connection_file', None) ## get directly from config - 'c:\\Users\\pho\\AppData\\Roaming\\jupyter\\runtime\\kernel-v3c54b3d2299720ec05d3bff91d2d179ae240ad212.json'
+        if (connection_file is not None) and os.path.exists(connection_file):
+            ## good connection file, continue
+            pass
+        else:
+            ## try to build the path:
+            current_kernel_id = ipython.kernel.session.key # ipython.kernel.session.msg_id            
+            # ipython.kernel.ident
+            # 'a681b47c-ef8c-4619-8316-2d129842ed4e'
+
+            if debug_print:
+                print(f"Current kernel ID: {current_kernel_id}")
+            
+            # Find the connection file for this specific kernel
+            connection_file = os.path.join(jupyter_runtime_dir(), f'kernel-{current_kernel_id}.json')
+            
+            if not os.path.exists(connection_file):
+                # Fallback to searching
+                connection_files = glob.glob(os.path.join(jupyter_runtime_dir(), 'kernel-*.json'))
+                if debug_print:
+                    print(f'Falling back to search. Available files: {connection_files}')
+                
+                # Look through each file to find a matching kernel
+                for file in connection_files:
+                    with open(file, 'r') as f:
+                        try:
+                            info = json.load(f)
+                            # Some connection files might have a kernel_id field
+                            if 'kernel_id' in info and info['kernel_id'] == current_kernel_id:
+                                connection_file = file
+                                break
+                        except:
+                            continue
+                
+                # If still not found, use the original method as last resort
+                if not os.path.exists(connection_file):
+                    if debug_print:
+                        print("Couldn't find exact kernel match, using most recent connection file")
+                    connection_file = max(connection_files, key=os.path.getctime)
+        
+
+        assert (connection_file is not None)
+        assert os.path.exists(connection_file)
+        
+        # Display the connection information
+        with open(connection_file, 'r') as f:
+            connection_info = json.load(f)
+            
+        if debug_print:
+            print(f"Connection file: {connection_file}")
+            print(f"Connection info: {json.dumps(connection_info, indent=4)}")
+            
+        return connection_file, connection_info
+    
+
+
+    @classmethod
+    def launch_standalone_qtconsole_connected_to_existing_kernel(cls, connection_info: Optional[Path]=None, latest_connection_file: Optional[Path]=None, run_in_poetry_env:bool=True, debug_print=True, start_new_session:bool=False, **kwargs):
+        """ gets the connection information for the current notebook
+        
+        Usage:
+        
+            from pyphocorehelpers.notebook_helpers import NotebookProcessor
+
+            latest_connection_file, connection_info = NotebookProcessor.get_running_vscode_jupyter_server_info()
+            
+            NotebookProcessor.launch_standalone_qtconsole_connected_to_existing_kernel(latest_connection_file=latest_connection_file)
+            
+
+        
+        Outputs:
+        
+        Connection info: {
+            "key": "8d669f8c-24d6-4d50-b32c-d3cae7ae7b0d",
+            "signature_scheme": "hmac-sha256",
+            "transport": "tcp",
+            "ip": "127.0.0.1",
+            "hb_port": 9005,
+            "control_port": 9006,
+            "shell_port": 9007,
+            "stdin_port": 9008,
+            "iopub_port": 9009,
+            "kernel_name": "spike3d-2025"
+        }
+
+
+        """
+        
+        if run_in_poetry_env:
+            command_args = ["poetry", "run"] ## run in poetry env
+        else:
+            command_args = [] ## empty list to start
+        
+        command_args = [*command_args, "jupyter", "qtconsole", "--existing"] ## add common args
+        
+        import subprocess
+        if (connection_info is None) and (latest_connection_file is None):
+            if debug_print:
+                print(f'getting via get_running_vscode_jupyter_server_info()...')
+            latest_connection_file, connection_info = cls.get_running_vscode_jupyter_server_info(debug_print=debug_print)
+            assert Path(latest_connection_file).exists()
+            command_args = [*command_args, latest_connection_file]
+            command_str = ' '.join(command_args)
+            print(f'command: `{command_str}`')
+            subprocess.Popen(command_args, start_new_session=start_new_session, **kwargs)
+            return True    
+        elif (latest_connection_file is not None):
+            ## just use the existing file
+            # Launch QTConsole with the existing kernel
+            assert Path(latest_connection_file).exists()
+            command_args = [*command_args, latest_connection_file]
+            command_str = ' '.join(command_args)
+            print(f'command: `{command_str}`')
+            subprocess.Popen(command_args, start_new_session=start_new_session, **kwargs)
+            return True
+        
+        elif (latest_connection_file is None) and (connection_info is not None):
+            import json
+            import tempfile
+            ## write out to a temp file            
+            # Create a temporary connection file
+            temp_file = tempfile.NamedTemporaryFile(suffix='.json', delete=False)
+            temp_file_path = temp_file.name
+            with open(temp_file_path, 'w') as f:
+                json.dump(connection_info, f)
+
+            # Launch QTConsole with the existing kernel
+            command_args = [*command_args, temp_file_path]
+            command_str = ' '.join(command_args)
+            print(f'command: `{command_str}`')
+            subprocess.Popen(command_args, start_new_session=start_new_session, **kwargs)
+            
+            # Optional: Set up cleanup for the temp file
+            # import atexit
+            # atexit.register(lambda: os.unlink(temp_file_path))
+            return True
+        else:
+            raise NotImplementedError(f'latest_connection_file: "{latest_connection_file}", connection_info: {connection_info}')
+            return False
+    
+
+
     # from IPython.display import display, Javascript
 
     # def add_cell_below():

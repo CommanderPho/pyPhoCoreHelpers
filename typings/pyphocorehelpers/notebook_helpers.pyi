@@ -174,5 +174,69 @@ class NotebookProcessor:
         """
         ...
     
+    @classmethod
+    def get_running_vscode_jupyter_server_info(cls, debug_print=...): # -> tuple[Any | str, Any]:
+        """ gets the connection information for the current notebook
+        
+        Usage:
+        
+            from pyphocorehelpers.notebook_helpers import NotebookProcessor
+
+            latest_connection_file, connection_info = NotebookProcessor.get_running_vscode_jupyter_server_info()
+            connection_info
+
+        
+        Outputs:
+        
+        Connection info: {
+            "key": "8d669f8c-24d6-4d50-b32c-d3cae7ae7b0d",
+            "signature_scheme": "hmac-sha256",
+            "transport": "tcp",
+            "ip": "127.0.0.1",
+            "hb_port": 9005,
+            "control_port": 9006,
+            "shell_port": 9007,
+            "stdin_port": 9008,
+            "iopub_port": 9009,
+            "kernel_name": "spike3d-2025"
+        }
+
+
+        """
+        ...
+    
+    @classmethod
+    def launch_standalone_qtconsole_connected_to_existing_kernel(cls, connection_info: Optional[Path] = ..., latest_connection_file: Optional[Path] = ..., run_in_poetry_env: bool = ..., debug_print=..., start_new_session: bool = ..., **kwargs): # -> Literal[True]:
+        """ gets the connection information for the current notebook
+        
+        Usage:
+        
+            from pyphocorehelpers.notebook_helpers import NotebookProcessor
+
+            latest_connection_file, connection_info = NotebookProcessor.get_running_vscode_jupyter_server_info()
+            
+            NotebookProcessor.launch_standalone_qtconsole_connected_to_existing_kernel(latest_connection_file=latest_connection_file)
+            
+
+        
+        Outputs:
+        
+        Connection info: {
+            "key": "8d669f8c-24d6-4d50-b32c-d3cae7ae7b0d",
+            "signature_scheme": "hmac-sha256",
+            "transport": "tcp",
+            "ip": "127.0.0.1",
+            "hb_port": 9005,
+            "control_port": 9006,
+            "shell_port": 9007,
+            "stdin_port": 9008,
+            "iopub_port": 9009,
+            "kernel_name": "spike3d-2025"
+        }
+
+
+        """
+        ...
+    
 
 

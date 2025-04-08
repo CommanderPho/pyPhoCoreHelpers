@@ -18,6 +18,7 @@ move_modules_list = {'pyphoplacecellanalysis.SpecificResults.PhoDiba2023Paper.Si
     'pyphocorehelpers.indexing_helpers.BinningInfo':'neuropy.utils.mixins.binning_helpers.BinningInfo',
     'pyphoplacecellanalysis.General.Model.Configs.DynamicConfigs.BaseConfig':'neuropy.core.parameters.BaseConfig',
     'neuropy.core.session.Formats.BaseDataSessionFormats.ParametersContainer':'neuropy.core.parameters.ParametersContainer',
+    'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions.GeneralDecoderDictDecodedEpochsDictResult': "pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions._DEP_GeneralDecoderDictDecodedEpochsDictResult" # AttributeError: Can't get attribute 'GeneralDecoderDictDecodedEpochsDictResult' on <module 'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions' from 'C:\\Users\\pho\\repos\\Spike3DWorkEnv\\pyPhoPlaceCellAnalysis\\src\\pyphoplacecellanalysis\\General\\Pipeline\\Stages\\ComputationFunctions\\EpochComputationFunctions.py'>
     }
 
 

@@ -656,7 +656,6 @@ def fig_to_clipboard(a_fig: Union[PlotlyFigure, FigureBase], format="png", **kwa
         buf.close()
             
 
-
 def figure_to_pil_image(a_fig: Union[PlotlyFigure, FigureBase], format="png", **kwargs) -> Optional[Image.Image]:
     """ Convert a Matplotlib Figure to a PIL Image.
 

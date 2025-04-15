@@ -70,7 +70,7 @@ def get_array_as_image_stack(imgs: List[Image.Image], offset=..., single_image_a
 
         # Let's assume you have a list of images
         images = ['image1.png', 'image2.png', 'image3.png']  # replace this with actual paths to your images
-        output_img, output_path = render_image_stack(out_figs_paths, offset=55, single_image_alpha_level=0.85)
+        output_img, output_path = get_array_as_image_stack(out_figs_paths, offset=55, single_image_alpha_level=0.85)
 
     """
     ...

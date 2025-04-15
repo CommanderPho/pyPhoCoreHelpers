@@ -100,7 +100,7 @@ def build_fn_properties_df(a_fn_dict, included_attribute_names_list: Optional[Li
     """
     ...
 
-def discover_classes_and_functions_with_custom_metadata(module_name: str = ..., debug_print=...): # -> tuple[Dict[PythonPathStr, Dict[Any, Any]], Dict[str, List[Any]]]:
+def discover_classes_and_functions_with_custom_metadata(module_name: str = ..., debug_print=...): # -> tuple[dict[PythonPathStr, Dict[Any, Any]], dict[str, List[Any]]]:
     """ Discovers the classes and functions in the module
     
     inspect.getmembers(...)

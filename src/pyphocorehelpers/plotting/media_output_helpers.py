@@ -81,14 +81,20 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
         if skip_img_normalization:
             norm_array = img_data
         else:
-            # Normalize your array to 0-1
-            norm_array = (img_data - np.min(img_data)) / np.ptp(img_data)
+            # Normalize your array to 0-1 using nan-aware functions
+            min_val = np.nanmin(img_data)
+            max_val = np.nanmax(img_data)
+            ptp_val = max_val - min_val
+            norm_array = (img_data - min_val) / ptp_val
+            # Replace any remaining NaNs with a default value (e.g., 0)
+            # norm_array = np.nan_to_num(norm_array, nan=0.0)            
+            # norm_array = (img_data - np.min(img_data)) / np.ptp(img_data)
 
         # Apply colormap
         image_array = colormap(norm_array)
 
         # Convert to PIL image and remove alpha channel
-        image = Image.fromarray((image_array[:, :, :3] * 255).astype(np.uint8))
+        image = Image.fromarray((image_array[:, :, :3] * 255).astype(np.uint8)) # TypeError: Cannot handle this data type: (1, 1, 3, 4), |u1
 
 
     # Optionally flip the image vertically

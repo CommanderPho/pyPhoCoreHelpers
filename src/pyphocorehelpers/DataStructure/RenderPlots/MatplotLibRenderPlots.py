@@ -354,7 +354,7 @@ class FigureCollector:
         ax_dict = fig.subplot_mosaic(*args, **kwargs) # dict[label, Axes]
         assert len(self.figures) == 1, f"requires only one figure because self.axes_dict is flat"
         self.axes_dict = ax_dict
-        self.axes = [v for k, v in self.axes_dict if isinstance(v, Axes)] # flat axes
+        self.axes = [v for k, v in self.axes_dict.items() if isinstance(v, Axes)] # flat axes
         assert len(self.axes) == len(self.axes_dict), f"all axes_dict entries should be of type Axes, so should be added to the flat self.axes."
         return fig, ax_dict
 

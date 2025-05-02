@@ -3,6 +3,8 @@ from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 import nptyping as ND
 from nptyping import NDArray
 import numpy as np
+import pandas as pd
+
 
 class Assert:
     """ Convenince assertion helpers that print out the value that causes the assertion along with a reasonable message instead of showing nothing
@@ -133,6 +135,34 @@ class Assert:
 
 
 
+    @classmethod
+    def require_columns(cls, dfs: Union[pd.DataFrame, List[pd.DataFrame], Dict[Any, pd.DataFrame]], required_columns: List[str]) -> bool:
+        """
+        Check if all DataFrames in the given container have the required columns.
+        
+        Parameters:
+            dfs: A container that may be a single DataFrame, a list/tuple of DataFrames, or a dictionary with DataFrames as values.
+            required_columns: A list of column names that are required to be present in each DataFrame.
+            print_changes: If True, prints the columns that are missing from each DataFrame.
+        
+        Returns:
+            True if all DataFrames contain all the required columns, otherwise False.
+
+        Usage:
+
+            required_cols = ['missing_column', 'congruent_dir_bins_ratio', 'coverage', 'direction_change_bin_ratio', 'jump', 'laplacian_smoothness', 'longest_sequence_length', 'longest_sequence_length_ratio', 'monotonicity_score', 'sequential_correlation', 'total_congruent_direction_change', 'travel'] # Replace with actual column names you require
+            has_required_columns = PandasHelpers.require_columns({a_name:a_result.filter_epochs for a_name, a_result in filtered_decoder_filter_epochs_decoder_result_dict.items()}, required_cols, print_missing_columns=True)
+            has_required_columns
+            
+
+
+        """
+        from neuropy.utils.indexing_helpers import PandasHelpers
+
+        has_all_columns: bool = PandasHelpers.require_columns(dfs=dfs, required_columns=required_columns, print_missing_columns=True)
+        assert has_all_columns
+        
+             
 
     # @classmethod
     # def _helper_all_array_generic(cls, pairwise_numpy_fn, list_of_arrays: List[NDArray], **kwargs) -> bool:

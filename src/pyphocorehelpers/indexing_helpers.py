@@ -69,11 +69,11 @@ def safe_len(v):
         return None
     
 
-def safe_get_variable_shape(a_value) -> Union[Tuple[int], int]:
+def get_variable_shape(a_value, should_fail_when_cannot_determine:bool=True) -> Union[Tuple[int], int]:
     """ generally and safely tries several methods of determining a_value's shape 
     
     
-    from pyphocorehelpers.indexing_helpers import safe_get_variable_shape
+    from pyphocorehelpers.indexing_helpers import get_variable_shape
     
     assert safe_get_variable_shape(active_one_step_decoder.time_bin_size) is None
     assert isinstance(safe_get_variable_shape(active_one_step_decoder.spikes_df), tuple)
@@ -102,12 +102,29 @@ def safe_get_variable_shape(a_value) -> Union[Tuple[int], int]:
                 value_shape = len(a_value)
             except TypeError as e:
                 # no length, no way to get shape
-                value_shape = None
-                return value_shape # value_shape = 'scalar'
+                if should_fail_when_cannot_determine:
+                    raise ValueError(f'get_variable_shape(...): all methods for determining the shape of a_value failed! type(a_value): {type(a_value)}, a_value: {a_value}')
+                else:
+                    value_shape = None
+                    return value_shape # value_shape = 'scalar'
+                
             except Exception as e:
                 raise
 
     return value_shape
+
+
+def safe_get_variable_shape(a_value) -> Optional[Union[Tuple[int], int]]:
+    """ generally and safely tries several methods of determining a_value's shape 
+    
+    
+    from pyphocorehelpers.indexing_helpers import safe_get_variable_shape
+    
+    assert safe_get_variable_shape(active_one_step_decoder.time_bin_size) is None
+    assert isinstance(safe_get_variable_shape(active_one_step_decoder.spikes_df), tuple)
+    assert isinstance(safe_get_variable_shape(active_one_step_decoder.F), tuple)
+    """
+    return get_variable_shape(a_value=a_value, should_fail_when_cannot_determine=False)
 
 
 def safe_find_index_in_list(a_list, a_search_obj):

@@ -4,7 +4,7 @@ import nptyping as ND
 from nptyping import NDArray
 import numpy as np
 import pandas as pd
-
+from pyphocorehelpers.indexing_helpers import get_variable_shape, safe_get_variable_shape
 
 class Assert:
     """ Convenince assertion helpers that print out the value that causes the assertion along with a reasonable message instead of showing nothing
@@ -81,7 +81,7 @@ class Assert:
             
     @classmethod
     def len_equals(cls, arr_or_list, required_length: int):
-        """ Ensures the length is equal to the required_length, if it fails, it prints the actual length
+        """ Ensures the length is equal to the required_length (a specific length), if it fails, it prints the actual length
         """
         import inspect
         # Get the caller's frame
@@ -132,6 +132,65 @@ class Assert:
             # Check equivalence for each array in the list
             # return np.all([pairwise_numpy_fn(reference_array, an_arr, **kwargs) for an_arr in list_of_arrays[1:]]) # can be used without the list comprehension just as a generator if you use all(...) instead.
             # return all(np.all(np.array_equiv(reference_array, an_arr) for an_arr in list_of_arrays[1:])) # the outer 'all(...)' is required, otherwise it returns a generator object like: `<generator object NumpyHelpers.all_array_equiv.<locals>.<genexpr> at 0x00000128E0482AC0>`
+
+
+    @classmethod
+    def shape_equals(cls, arr_or_list, required_shape: Union[Tuple[int], int]):
+        """ Ensures the length is equal to the required_length, if it fails, it prints the actual length
+        """
+        import inspect
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        # Extract the variable name from the caller's local variables
+        var_name = [name for name, val in frame.f_locals.items() if val is arr_or_list]
+        # Use the first matched variable name or 'unknown' if not found
+        var_name = var_name[0] if var_name else 'unknown'
+        assert np.alltrue(get_variable_shape(arr_or_list) == required_shape), f"{var_name} must be of length {required_shape} but instead len({var_name}): {len(arr_or_list)}.\n{var_name}: {arr_or_list}\n" # Perform the assertion with detailed error message
+
+    @classmethod
+    def same_shape(cls, *args):
+        """ Ensures all passed *args are the same length (according to len(...), if it fails, it prints the actual length of each arg.
+        """
+        import inspect
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        
+        var_name_dict = {}
+        for arr_or_list in args:
+            # Extract the variable name from the caller's local variables
+            var_name = [name for name, val in frame.f_locals.items() if val is arr_or_list]
+            # Use the first matched variable name or 'unknown' if not found
+            var_name = var_name[0] if var_name else 'unknown'
+            assert var_name not in var_name_dict, f"var_name: {var_name} already exists in var_name_dict: {var_name_dict}"
+            ## could append suffix like "f{var_name}[1]"
+            var_name_dict[var_name] = arr_or_list ## turn into dictionary
+            
+        if len(var_name_dict) == 0:
+            # return True # empty arrays are all equal
+            pass
+        elif len(var_name_dict) == 1:
+            # if only a single array, make sure it's not accidentally passed in incorrect
+            reference_array = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
+            # assert isinstance(reference_array, (np.ndarray))
+            a_shape = get_variable_shape(reference_array, should_fail_when_cannot_determine=True)
+            assert a_shape is not None
+            # return True # as long as imput is intended, always True
+            pass        
+        else:
+            ## It has more than two elements:
+            reference_array = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
+            reference_shape: int = get_variable_shape(reference_array, should_fail_when_cannot_determine=True)
+            shapes_dict = {k:get_variable_shape(v, should_fail_when_cannot_determine=True) for k, v in var_name_dict.items()}
+            for var_name, a_shape in shapes_dict.items():
+                if np.alltrue(a_shape == reference_shape):
+                # if a_shape != reference_shape:
+                    assert (a_shape == reference_shape), f"{var_name} must be of shape {reference_shape} but instead shape({var_name}): {a_shape}.\nreference_lengths: {shapes_dict}\n{var_name}: {arr_or_list}\n" # Perform the assertion with detailed error message
+            # Check equivalence for each array in the list
+            # return np.all([pairwise_numpy_fn(reference_array, an_arr, **kwargs) for an_arr in list_of_arrays[1:]]) # can be used without the list comprehension just as a generator if you use all(...) instead.
+            # return all(np.all(np.array_equiv(reference_array, an_arr) for an_arr in list_of_arrays[1:])) # the outer 'all(...)' is required, otherwise it returns a generator object like: `<generator object NumpyHelpers.all_array_equiv.<locals>.<genexpr> at 0x00000128E0482AC0>`
+
+
+
 
 
 

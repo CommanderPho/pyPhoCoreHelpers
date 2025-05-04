@@ -1,4 +1,13 @@
-from typing import Any, Dict, List, Optional,  OrderedDict, Union
+ from __future__ import annotations # prevents having to specify types for typehinting as strings
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    ## typehinting only imports here
+    from matplotlib.colors import LinearSegmentedColormap
+
+
+from typing import Dict, List, Tuple, Optional, Callable, Union, Any
+from nptyping import NDArray
 from copy import deepcopy
 import numpy as np
 import pandas as pd
@@ -8,6 +17,7 @@ from pyphocorehelpers.function_helpers import function_attributes
 import pyphoplacecellanalysis.External.pyqtgraph as pg
 from qtpy import QtGui # for QColor
 from qtpy.QtGui import QColor, QBrush, QPen
+
 
 
 def debug_print_color(color: QColor):
@@ -127,7 +137,7 @@ class ColormapHelpers:
     """
     # Create a function to modify the colormap's alpha channel
     @classmethod
-    def create_transparent_colormap(cls, cmap_name: Optional[str]=None, color_literal_name: Optional[str]=None, lower_bound_alpha=0.1):
+    def create_transparent_colormap(cls, cmap_name: Optional[str]=None, color_literal_name: Optional[str]=None, lower_bound_alpha=0.1) -> NDArray:
         """ 
         Usage:
             additional_cmap_names = dict(zip(TrackTemplates.get_decoder_names(), ['red', 'purple', 'green', 'orange'])) # {'long_LR': 'red', 'long_RL': 'purple', 'short_LR': 'green', 'short_RL': 'orange'}
@@ -215,7 +225,7 @@ class ColormapHelpers:
 
 
     @classmethod
-    def make_saturating_red_cmap(cls, time: float, N_colors:int=256, min_alpha: float=0.0, max_alpha: float=0.82, debug_print:bool=False):
+    def make_saturating_red_cmap(cls, time: float, N_colors:int=256, min_alpha: float=0.0, max_alpha: float=0.82, debug_print:bool=False) -> LinearSegmentedColormap:
         """ time is between 0.0 and 1.0 
 
         Usage: Test Example:
@@ -264,7 +274,7 @@ class ColormapHelpers:
 
     # Convert to LinearSegmentedColormap
     @classmethod
-    def colormap_to_linear_segmented(cls, cmap, n_samples=256):
+    def colormap_to_linear_segmented(cls, cmap, n_samples=256) -> LinearSegmentedColormap:
         """
         Converts a Colormap to a LinearSegmentedColormap.
 

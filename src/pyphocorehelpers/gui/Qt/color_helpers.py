@@ -137,7 +137,7 @@ class ColormapHelpers:
     """
     # Create a function to modify the colormap's alpha channel
     @classmethod
-    def create_transparent_colormap(cls, cmap_name: Optional[str]=None, color_literal_name: Optional[str]=None, lower_bound_alpha=0.1) -> NDArray:
+    def create_transparent_colormap(cls, cmap_name: Optional[str]=None, color_literal_name: Optional[str]=None, lower_bound_alpha=0.1, should_return_LinearSegmentedColormap:bool=True) -> NDArray:
         """ 
         Usage:
             additional_cmap_names = dict(zip(TrackTemplates.get_decoder_names(), ['red', 'purple', 'green', 'orange'])) # {'long_LR': 'red', 'long_RL': 'purple', 'short_LR': 'green', 'short_RL': 'orange'}
@@ -164,14 +164,25 @@ class ColormapHelpers:
             cmap = pg.colormap.get(cmap_name, source='matplotlib')
 
         # Create a lookup table with the desired number of points (default 256)
-        lut = cmap.getLookupTable(alpha=True, mode=ColorMap.BYTE)
-        
+        if should_return_LinearSegmentedColormap:    
+            lut = cmap.getLookupTable(alpha=True, mode=ColorMap.FLOAT)
+        else:
+            lut = cmap.getLookupTable(alpha=True, mode=ColorMap.BYTE)        
         # `ColorMap.BYTE` (0 to 255), `ColorMap.FLOAT` (0.0 to 1.0) or `ColorMap.QColor`.
         
         # Modify the alpha values
         alpha_channel = lut[:, 3]  # Extract the alpha channel (4th column)
         alpha_channel = np.linspace(lower_bound_alpha, 1, len(alpha_channel))  # Linear alpha gradient from lower_bound_alpha to 1
-        lut[:, 3] = (alpha_channel * 255).astype(np.uint8)  # Convert to 0-255 range
+        if should_return_LinearSegmentedColormap:
+            n_colors = np.shape(lut)[0]
+            cmap = LinearSegmentedColormap.from_list('CustomMap', lut, N=n_colors)
+            cmap.set_bad(color=(0,0,0,0))        # NaNs→fully transparent
+            return cmap
+        
+        else:
+            # return NDArray
+            lut[:, 3] = (alpha_channel * 255).astype(np.uint8)  # Convert to 0-255 range
+            
         
         return lut
         

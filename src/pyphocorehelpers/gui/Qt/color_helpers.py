@@ -1,4 +1,4 @@
- from __future__ import annotations # prevents having to specify types for typehinting as strings
+from __future__ import annotations # prevents having to specify types for typehinting as strings
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

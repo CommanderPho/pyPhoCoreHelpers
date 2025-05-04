@@ -153,6 +153,7 @@ class ColormapHelpers:
         
         """
         from pyphoplacecellanalysis.External.pyqtgraph.colormap import ColorMap
+        from matplotlib.colors import LinearSegmentedColormap
         
         # Get the base colormap
         assert (cmap_name is not None) or (color_literal_name is not None)

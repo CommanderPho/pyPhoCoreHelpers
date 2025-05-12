@@ -20,6 +20,10 @@ class MatplotlibRenderPlots(RenderPlots):
     
     2023-05-30 - Updated to replace subplots.
     
+    
+    Also see `pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.ContainerBased.PhoContainerTool.PhoBaseContainerTool` for higher-level usage
+    
+    
     """
     _display_library:str = 'matplotlib'
     

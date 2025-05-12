@@ -13,12 +13,15 @@ class DebugHelper(iPythonKeyCompletingMixin, DynamicParameters):
     def __init__(self, name, **kwargs) -> None:
         super(DebugHelper, self).__init__(name=name, **kwargs)
 
+
 #TODO 2023-06-13 10:59: - [ ] Convert to an attrs-based class instead of inheriting from DynamicParameters
 # @attrs.define(slots=False)
 class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
     """
     from pyphocorehelpers.DataStructure.general_parameter_containers import RenderPlots
 
+    Also see `pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.ContainerBased.PhoContainerTool.PhoBaseContainerTool` for higher-level usage
+    
     """
     _display_library:str = 'unknown'
     def __init__(self, name, context=None, **kwargs) -> None:
@@ -75,6 +78,11 @@ class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
 
 
 class RenderPlotsData(iPythonKeyCompletingMixin, DynamicParameters):
+    """
+    from pyphocorehelpers.DataStructure.general_parameter_containers import RenderPlotsData
+    
+    
+    """
     def __init__(self, name, **kwargs) -> None:
         super(RenderPlotsData, self).__init__(name=name, **kwargs)
 

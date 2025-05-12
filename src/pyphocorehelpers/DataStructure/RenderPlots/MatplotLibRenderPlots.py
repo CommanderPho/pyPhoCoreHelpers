@@ -10,7 +10,8 @@ from matplotlib.axes import Axes
 from pyphocorehelpers.DataStructure.general_parameter_containers import RenderPlots
 from pyphocorehelpers.programming_helpers import metadata_attributes
 from pyphocorehelpers.function_helpers import function_attributes
-from neuropy.utils.indexing_helpers import flatten_dict
+from neuropy.utils.indexing_helpers import wrap_in_container_if_needed, unwrap_single_item, flatten_dict
+
 
 class MatplotlibRenderPlots(RenderPlots):
     """Container for holding and accessing Matplotlib-based figures for MatplotlibRenderPlots.
@@ -23,8 +24,54 @@ class MatplotlibRenderPlots(RenderPlots):
     _display_library:str = 'matplotlib'
     
     def __init__(self, name='MatplotlibRenderPlots', figures=[], axes=[], context=None, **kwargs):
+        figures = wrap_in_container_if_needed(figures)
+        axes = wrap_in_container_if_needed(axes)
         super(MatplotlibRenderPlots, self).__init__(name, figures = figures, axes=axes, context=context, **kwargs)
         
+
+    @property
+    def num_figures(self) -> int:
+        """The num_figures property."""
+        return len(self.figures)
+
+    @property
+    def num_axes(self) -> int:
+        """The num_axes property."""
+        return len(self.axes)
+    
+    # Singular Accessors _________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________ #
+    @property
+    def fig(self):
+        """The fig property."""
+        if self.num_figures > 1:
+            print(f'WARN: getting figure with the `a_fig = MatplotlibRenderPlots.fig` shortcut, but container has num_figures: {self.num_figures} figures; WARN: ONLY THE FIRST WILL BE RETURNED!')
+        return unwrap_single_item(self.figures)
+    @fig.setter
+    def fig(self, value):
+        num_curr_figures: int = len(self.figures)
+        wrapped_fig = wrap_in_container_if_needed(value)
+        num_proposed_figures: int = len(wrapped_fig)
+        if num_curr_figures > num_proposed_figures:
+            raise ValueError(f'tried to set figures with the `MatplotlibRenderPlots.fig = a_fig` shortcut, but already had num_curr_figures: {num_curr_figures} figures, which is longer than num_proposed_figures: {num_proposed_figures}!')
+        self.figures = wrapped_fig
+
+
+    @property
+    def ax(self):
+        """The ax property."""
+        if self.num_axes > 1:
+            print(f'WARN: getting axes with the `an_ax = MatplotlibRenderPlots.ax` shortcut, but container has num_axes: {self.num_axes} axes; WARN: ONLY THE FIRST WILL BE RETURNED!')
+        return unwrap_single_item(self.axes)
+    @ax.setter
+    def ax(self, value):
+        num_curr_axes: int = self.num_axes
+        wrapped_ax = wrap_in_container_if_needed(value)
+        num_proposed_axes: int = len(wrapped_ax)
+        if num_curr_axes > num_proposed_axes:
+            raise ValueError(f'tried to set axes with the `MatplotlibRenderPlots.ax = an_ax` shortcut, but already had num_curr_axes: {num_curr_axes} axes, which is longer than num_proposed_axes: {num_proposed_axes}!')
+        self.axes = wrapped_ax
+
+
 
     @classmethod
     def init_from_any_objects(cls, *args, name: Optional[str] = None, **kwargs):

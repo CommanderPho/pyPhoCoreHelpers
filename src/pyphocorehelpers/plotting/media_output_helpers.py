@@ -62,8 +62,95 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
     return (norm_array * 255).astype(np.uint8)
 
 
+def add_bottom_label(image: Image.Image, label_text: str, padding: int = 10, font_size: int = 12,  text_color: tuple = (0, 0, 0), background_color: tuple = (255, 255, 255, 255), with_border: bool = True) -> Image.Image:
+    """Adds a horizontally centered label underneath the bottom of an image.
     
-def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.floating], desired_width: Optional[int] = None, desired_height: Optional[int] = None, export_kind: Optional[HeatmapExportKind] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False, debug_print=False) -> Image.Image:
+    Parameters:
+    -----------
+    image : Image.Image
+        The PIL Image to add a label to
+    label_text : str
+        The text to display as the label
+    padding : int, optional
+        Vertical padding between image and label, by default 10
+    font_size : int, optional
+        Font size for the label text, by default 12
+    text_color : tuple, optional
+        RGB color for the text, by default (0, 0, 0) (black)
+    background_color : tuple, optional
+        RGBA color for the label background, by default (255, 255, 255, 255) (white)
+    with_border : bool, optional
+        Whether to add a border around the text, by default True
+        
+    Returns:
+    --------
+    Image.Image
+        A new image with the label added below the original image
+        
+    Usage:
+    ------
+    from pyphocorehelpers.plotting.media_output_helpers import add_bottom_label
+    
+    # Create an image with a label
+    labeled_image = add_bottom_label(original_image, "Time (seconds)", font_size=14)
+    labeled_image
+    """
+    # Try to load a nicer font if available, otherwise use default
+    try:
+        # Try to use a common font that should be available on most systems
+        font = ImageFont.truetype("Arial", font_size)
+    except IOError:
+        # Fall back to default font
+        font = ImageFont.load_default()
+    
+    # Create a temporary drawing context to measure text dimensions
+    temp_img = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
+    temp_draw = ImageDraw.Draw(temp_img)
+    text_width, text_height = temp_draw.textsize(label_text, font=font)
+    
+    # Create a new image with space for the label
+    new_width = image.width
+    new_height = image.height + padding + text_height + padding
+    
+    # Create the new image with the background color
+    if image.mode == 'RGBA':
+        new_image = Image.new('RGBA', (new_width, new_height), background_color)
+    else:
+        # Convert background_color to RGB if the image is not RGBA
+        new_image = Image.new(image.mode, (new_width, new_height), background_color[:3])
+    
+    # Paste the original image at the top
+    new_image.paste(image, (0, 0))
+    
+    # Create a drawing context for the new image
+    draw = ImageDraw.Draw(new_image)
+    
+    # Calculate the position to center the text horizontally
+    text_x = (new_width - text_width) // 2
+    text_y = image.height + padding
+    
+    # Draw the text with or without border
+    if with_border:
+        def draw_text_with_border(draw, x, y, text, font, fill):
+            # Draw shadow/border (using black color)
+            shadow_color = (0, 0, 0)
+            draw.text((x - 1, y - 1), text, font=font, fill=shadow_color)
+            draw.text((x + 1, y - 1), text, font=font, fill=shadow_color)
+            draw.text((x - 1, y + 1), text, font=font, fill=shadow_color)
+            draw.text((x + 1, y + 1), text, font=font, fill=shadow_color)
+            # Draw text itself
+            draw.text((x, y), text, font=font, fill=fill)
+            
+        draw_text_with_border(draw, text_x, text_y, label_text, font, fill=text_color)
+    else:
+        # Draw text without border
+        draw.text((text_x, text_y), label_text, font=font, fill=text_color)
+    
+    return new_image
+
+
+    
+def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.floating], desired_width: Optional[int] = None, desired_height: Optional[int] = None, export_kind: Optional[HeatmapExportKind] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False, debug_print=False, **kwargs) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
     
     # Usage:
@@ -205,10 +292,19 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
                 # text_image = text_image.rotate(45, expand=1)
                 image.paste(text_image, (0, 0), text_image)
 
+
+    # ==================================================================================================================================================================================================================================================================================== #
+    # Add bottom time label                                                                                                                                                                                                                                                                #
+    # ==================================================================================================================================================================================================================================================================================== #    
+    post_render_image_functions = kwargs.pop('post_render_image_functions', {})
+    for a_render_fn_name, a_render_fn in post_render_image_functions.items():
+        print(f'\tperforming: {a_render_fn_name}')
+        image = a_render_fn(image)
+
     return image
 
 
-def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, export_kind: Optional[HeatmapExportKind] = None, out_path='output/numpy_array_as_image.png', colormap:str='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False) -> Tuple[Image.Image, Path]:
+def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, export_kind: Optional[HeatmapExportKind] = None, out_path='output/numpy_array_as_image.png', colormap:str='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False, **kwargs) -> Tuple[Image.Image, Path]:
     """ Exports a numpy array to file as a colormapped image
     
     # Usage:
@@ -221,7 +317,7 @@ def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_h
         
                 
     """
-    image: Image.Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, export_kind=export_kind, colormap=colormap, skip_img_normalization=skip_img_normalization, export_grayscale=export_grayscale, include_value_labels=include_value_labels, allow_override_aspect_ratio=allow_override_aspect_ratio, flip_vertical_axis=flip_vertical_axis)
+    image: Image.Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, export_kind=export_kind, colormap=colormap, skip_img_normalization=skip_img_normalization, export_grayscale=export_grayscale, include_value_labels=include_value_labels, allow_override_aspect_ratio=allow_override_aspect_ratio, flip_vertical_axis=flip_vertical_axis, **kwargs)
     out_path = Path(out_path).resolve()
     # Save image to file
     image.save(out_path)

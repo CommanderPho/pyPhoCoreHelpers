@@ -63,7 +63,7 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
 
 
     
-def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.floating], desired_width: Optional[int] = None, desired_height: Optional[int] = None, export_kind: Optional[HeatmapExportKind] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False) -> Image.Image:
+def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.floating], desired_width: Optional[int] = None, desired_height: Optional[int] = None, export_kind: Optional[HeatmapExportKind] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False, debug_print=False) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
     
     # Usage:
@@ -93,7 +93,8 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
         else:
             export_kind = HeatmapExportKind.COLORMAPPED
     else:
-        print(f'export_kind: {export_kind} explicitly provided, so ignoring export_grayscale: {export_grayscale}')
+        if debug_print:
+            print(f'export_kind: {export_kind} explicitly provided, so ignoring export_grayscale: {export_grayscale}')
 
 
     # Assuming `your_array` is your numpy array

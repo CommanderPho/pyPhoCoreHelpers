@@ -62,7 +62,9 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
     return (norm_array * 255).astype(np.uint8)
 
 
-def add_bottom_label(image: Image.Image, label_text: str, padding: int = 10, font_size: int = 12,  text_color: tuple = (0, 0, 0), background_color: tuple = (255, 255, 255, 255), with_border: bool = True) -> Image.Image:
+def add_bottom_label(image: Image.Image, label_text: str, padding: int = 12, font_size: int = 12,  
+                    text_color: tuple = (0, 0, 0), background_color: tuple = (255, 255, 255, 255), 
+                    with_border: bool = False, border_thickness: int = 0, bottom_margin: int = 5) -> Image.Image:
     """Adds a horizontally centered label underneath the bottom of an image.
     
     Parameters:
@@ -81,19 +83,15 @@ def add_bottom_label(image: Image.Image, label_text: str, padding: int = 10, fon
         RGBA color for the label background, by default (255, 255, 255, 255) (white)
     with_border : bool, optional
         Whether to add a border around the text, by default True
+    border_thickness : int, optional
+        Thickness of the text border, by default 1
+    bottom_margin : int, optional
+        Extra margin to add below the text, by default 5
         
     Returns:
     --------
     Image.Image
         A new image with the label added below the original image
-        
-    Usage:
-    ------
-    from pyphocorehelpers.plotting.media_output_helpers import add_bottom_label
-    
-    # Create an image with a label
-    labeled_image = add_bottom_label(original_image, "Time (seconds)", font_size=14)
-    labeled_image
     """
     # Try to load a nicer font if available, otherwise use default
     try:
@@ -106,11 +104,25 @@ def add_bottom_label(image: Image.Image, label_text: str, padding: int = 10, fon
     # Create a temporary drawing context to measure text dimensions
     temp_img = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
     temp_draw = ImageDraw.Draw(temp_img)
-    text_width, text_height = temp_draw.textsize(label_text, font=font)
+    
+    # Use getbbox() for newer Pillow versions, fallback to textsize()
+    try:
+        # For newer Pillow versions
+        bbox = temp_draw.textbbox((0, 0), label_text, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+    except AttributeError:
+        # For older Pillow versions
+        text_width, text_height = temp_draw.textsize(label_text, font=font)
+    
+    # Add extra space for border if needed
+    if with_border:
+        text_width += 2 * border_thickness
+        text_height += 2 * border_thickness
     
     # Create a new image with space for the label
     new_width = image.width
-    new_height = image.height + padding + text_height + padding
+    new_height = image.height + padding + text_height + bottom_margin
     
     # Create the new image with the background color
     if image.mode == 'RGBA':
@@ -131,17 +143,17 @@ def add_bottom_label(image: Image.Image, label_text: str, padding: int = 10, fon
     
     # Draw the text with or without border
     if with_border:
-        def draw_text_with_border(draw, x, y, text, font, fill):
+        def draw_text_with_border(draw, x, y, text, font, fill, border_thickness=1):
             # Draw shadow/border (using black color)
             shadow_color = (0, 0, 0)
-            draw.text((x - 1, y - 1), text, font=font, fill=shadow_color)
-            draw.text((x + 1, y - 1), text, font=font, fill=shadow_color)
-            draw.text((x - 1, y + 1), text, font=font, fill=shadow_color)
-            draw.text((x + 1, y + 1), text, font=font, fill=shadow_color)
+            for dx in range(-border_thickness, border_thickness + 1):
+                for dy in range(-border_thickness, border_thickness + 1):
+                    if dx != 0 or dy != 0:  # Skip the center position
+                        draw.text((x + dx, y + dy), text, font=font, fill=shadow_color)
             # Draw text itself
             draw.text((x, y), text, font=font, fill=fill)
             
-        draw_text_with_border(draw, text_x, text_y, label_text, font, fill=text_color)
+        draw_text_with_border(draw, text_x, text_y, label_text, font, fill=text_color, border_thickness=border_thickness)
     else:
         # Draw text without border
         draw.text((text_x, text_y), label_text, font=font, fill=text_color)

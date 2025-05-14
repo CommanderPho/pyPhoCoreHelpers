@@ -1,7 +1,16 @@
+ 
+from __future__ import annotations # prevents having to specify types for typehinting as strings
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    ## typehinting only imports here
+    from pyphoplacecellanalysis.Pho2D.data_exporting import HeatmapExportKind
+
 import os
 import io
-from typing import Optional, Union, List, Dict, Tuple
-from numpy.typing import NDArray
+from typing import Dict, List, Tuple, Optional, Callable, Union, Any
+import nptyping as ND
+from nptyping import NDArray
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -18,6 +27,9 @@ from matplotlib.figure import FigureBase
 
 from pyphocorehelpers.function_helpers import function_attributes
 from pyphocorehelpers.programming_helpers import copy_image_to_clipboard
+
+from pyphoplacecellanalysis.Pho2D.data_exporting import HeatmapExportKind
+
 
 def add_border(image: Image.Image, border_size: int = 5, border_color: tuple = (0, 0, 0)) -> Image.Image:
     return ImageOps.expand(image, border=border_size, fill=border_color)
@@ -50,7 +62,8 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
     return (norm_array * 255).astype(np.uint8)
 
 
-def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False) -> Image.Image:
+    
+def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.floating], desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, export_kind: Optional[HeatmapExportKind] = None, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
     
     # Usage:
@@ -59,10 +72,33 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
     
         image = get_array_as_image(img_data, desired_height=100, desired_width=None, skip_img_normalization=True)
         image
+        
+    # Usage 2:
+    
+        img_data = np.transpose(img_data, axes=(1, 0, 2)) # Convert to (H, W, 4)
+        kwargs = {}
+        desired_height = 400
+        desired_width = None
+        skip_img_normalization = True
+        _out_img = get_array_as_image(img_data, desired_height=desired_height, desired_width=desired_width, skip_img_normalization=skip_img_normalization, export_kind=HeatmapExportKind.RAW_RGBA, **kwargs)
+        _out_img
+
                 
     """
+    from pyphoplacecellanalysis.Pho2D.data_exporting import HeatmapExportKind
+
+    if export_kind is None:
+        if export_grayscale:
+            export_kind = HeatmapExportKind.GREYSCALE
+        else:
+            export_kind = HeatmapExportKind.COLORMAPPED
+    else:
+        print(f'export_kind: {export_kind} explicitly provided, so ignoring export_grayscale: {export_grayscale}')
+
+
     # Assuming `your_array` is your numpy array
-    if export_grayscale:
+    if export_kind.value == HeatmapExportKind.GREYSCALE.value:
+    # if export_grayscale:
         # Convert to grayscale (normalize if needed)
         assert (colormap is None) or (colormap == 'viridis'), f"colormap should not be specified when export_grayscale=True" # (default 'viridis' is safely ignored)
         
@@ -72,7 +108,9 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
         norm_array = img_data_to_greyscale(img_data)
         # Scale to 0-255 and convert to uint8
         image = Image.fromarray(norm_array, mode='L')
-    else:
+        
+
+    elif export_kind.value == HeatmapExportKind.COLORMAPPED.value:
         ## Color export mode!
         assert (colormap is not None)
         # Get the specified colormap
@@ -95,7 +133,23 @@ def get_array_as_image(img_data, desired_width: Optional[int] = None, desired_he
 
         # Convert to PIL image and remove alpha channel
         image = Image.fromarray((image_array[:, :, :3] * 255).astype(np.uint8)) # TypeError: Cannot handle this data type: (1, 1, 3, 4), |u1
+        
 
+    elif export_kind.value == HeatmapExportKind.RAW_RGBA.value:
+        ## Raw ready to use RGBA image is passed in:
+        # Convert to PIL image and remove alpha channel
+        image = Image.fromarray((img_data * 255).astype(np.uint8)) # TypeError: Cannot handle this data type: (1, 1, 3, 4), |u1
+        assert skip_img_normalization == True, f"it does not make sense to re-normalize the RGBA image"
+        norm_array = img_data
+        
+
+    else:
+        raise NotImplementedError(f"export_kind: {export_kind}")    
+    
+
+
+
+    ## OUTPUT: image: Image
 
     # Optionally flip the image vertically
     if flip_vertical_axis:

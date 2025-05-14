@@ -191,7 +191,7 @@ def add_bottom_label(image: Image.Image, label_text: str, padding: int = None, f
     return new_image
 
 def add_half_width_rectangle(image: Image.Image, side: str = 'left', 
-                            color: tuple = (200, 200, 255, 255),
+                            color: tuple = (200, 200, 255, 255), background_color: tuple = (255, 255, 255, 255),
                             height_fraction: float = 0.1) -> Image.Image:
     """Adds a rectangle that fills half the width of the image.
     
@@ -244,7 +244,7 @@ def add_half_width_rectangle(image: Image.Image, side: str = 'left',
     new_width = image.width
 
     # Get image dimensions
-    width, height = new_image.size
+    width, height = image.size
     half_width = width // 2
     rect_height = int(height * height_fraction)
     new_height = image.height + rect_height

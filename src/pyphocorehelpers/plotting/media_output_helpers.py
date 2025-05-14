@@ -63,7 +63,7 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
 
 
     
-def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.floating], desired_width: Optional[int] = None, desired_height: Optional[int] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, export_kind: Optional[HeatmapExportKind] = None, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False) -> Image.Image:
+def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.floating], desired_width: Optional[int] = None, desired_height: Optional[int] = None, export_kind: Optional[HeatmapExportKind] = None, colormap='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False) -> Image.Image:
     """ Like `save_array_as_image` except it skips the saving to disk. Converts a numpy array to file as a colormapped image
     
     # Usage:
@@ -124,9 +124,6 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
             max_val = np.nanmax(img_data)
             ptp_val = max_val - min_val
             norm_array = (img_data - min_val) / ptp_val
-            # Replace any remaining NaNs with a default value (e.g., 0)
-            # norm_array = np.nan_to_num(norm_array, nan=0.0)            
-            # norm_array = (img_data - np.min(img_data)) / np.ptp(img_data)
 
         # Apply colormap
         image_array = colormap(norm_array)
@@ -146,9 +143,6 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
     else:
         raise NotImplementedError(f"export_kind: {export_kind}")    
     
-
-
-
     ## OUTPUT: image: Image
 
     # Optionally flip the image vertically
@@ -212,7 +206,8 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
 
     return image
 
-def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, colormap:str='viridis', skip_img_normalization:bool=False, out_path='output/numpy_array_as_image.png', export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False) -> Tuple[Image.Image, Path]:
+
+def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_height: Optional[int] = None, export_kind: Optional[HeatmapExportKind] = None, out_path='output/numpy_array_as_image.png', colormap:str='viridis', skip_img_normalization:bool=False, export_grayscale:bool=False, include_value_labels: bool = False, allow_override_aspect_ratio:bool=False, flip_vertical_axis: bool = False) -> Tuple[Image.Image, Path]:
     """ Exports a numpy array to file as a colormapped image
     
     # Usage:
@@ -225,7 +220,7 @@ def save_array_as_image(img_data, desired_width: Optional[int] = 1024, desired_h
         
                 
     """
-    image: Image.Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, colormap=colormap, skip_img_normalization=skip_img_normalization, export_grayscale=export_grayscale, include_value_labels=include_value_labels, allow_override_aspect_ratio=allow_override_aspect_ratio, flip_vertical_axis=flip_vertical_axis)
+    image: Image.Image = get_array_as_image(img_data=img_data, desired_width=desired_width, desired_height=desired_height, export_kind=export_kind, colormap=colormap, skip_img_normalization=skip_img_normalization, export_grayscale=export_grayscale, include_value_labels=include_value_labels, allow_override_aspect_ratio=allow_override_aspect_ratio, flip_vertical_axis=flip_vertical_axis)
     out_path = Path(out_path).resolve()
     # Save image to file
     image.save(out_path)

@@ -62,9 +62,10 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
     return (norm_array * 255).astype(np.uint8)
 
 
-def add_bottom_label(image: Image.Image, label_text: str, padding: int = 12, font_size: int = 12,  
+def add_bottom_label(image: Image.Image, label_text: str, padding: int = None, font_size: int = None,  
                     text_color: tuple = (0, 0, 0), background_color: tuple = (255, 255, 255, 255), 
-                    with_border: bool = False, border_thickness: int = 0, bottom_margin: int = 5) -> Image.Image:
+                    with_border: bool = False, relative_font_size: float = 0.10, 
+                    relative_padding: float = 0.025) -> Image.Image:
     """Adds a horizontally centered label underneath the bottom of an image.
     
     Parameters:
@@ -74,33 +75,64 @@ def add_bottom_label(image: Image.Image, label_text: str, padding: int = 12, fon
     label_text : str
         The text to display as the label
     padding : int, optional
-        Vertical padding between image and label, by default 10
+        Vertical padding between image and label. If None, calculated from relative_padding.
     font_size : int, optional
-        Font size for the label text, by default 12
+        Font size for the label text. If None, calculated from relative_font_size.
     text_color : tuple, optional
         RGB color for the text, by default (0, 0, 0) (black)
     background_color : tuple, optional
         RGBA color for the label background, by default (255, 255, 255, 255) (white)
     with_border : bool, optional
         Whether to add a border around the text, by default True
-    border_thickness : int, optional
-        Thickness of the text border, by default 1
-    bottom_margin : int, optional
-        Extra margin to add below the text, by default 5
+    relative_font_size : float, optional
+        Font size as a proportion of image height, by default 0.03 (3% of image height)
+    relative_padding : float, optional
+        Padding as a proportion of image height, by default 0.02 (2% of image height)
         
     Returns:
     --------
     Image.Image
         A new image with the label added below the original image
+        
+    Usage:
+    ------
+    from pyphocorehelpers.plotting.media_output_helpers import add_bottom_label
+    
+    # Create an image with a label that scales with image size
+    labeled_image = add_bottom_label(original_image, "Time (seconds)", relative_font_size=0.04)
+    labeled_image
     """
+    # Calculate font size and padding based on image height if not provided
+    img_height = image.height
+    
+    if font_size is None:
+        font_size = max(int(img_height * relative_font_size), 20)  # Minimum font size of 8
+    
+    if padding is None:
+        padding = max(int(img_height * relative_padding), 10)  # Minimum padding of 5
+    
+    # Try to load a nicer font if available, otherwise use default
     # Try to load a nicer font if available, otherwise use default
     try:
         # Try to use a common font that should be available on most systems
         font = ImageFont.truetype("Arial", font_size)
     except IOError:
-        # Fall back to default font
-        font = ImageFont.load_default()
-    
+        # Fall back to default font with specified size
+        try:
+            # For newer Pillow versions that support size in load_default
+            font = ImageFont.load_default(size=font_size)
+        except TypeError:
+            # For older Pillow versions that don't support size parameter
+            default_font = ImageFont.load_default()
+            # Try to find a bitmap font of appropriate size as alternative
+            try:
+                font = ImageFont.truetype("DejaVuSans.ttf", font_size)
+            except IOError:
+                # If all else fails, use the default font
+                font = default_font
+                print(f"Warning: Could not load font with specified size {font_size}. Text may appear smaller than expected.")
+
+
     # Create a temporary drawing context to measure text dimensions
     temp_img = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
     temp_draw = ImageDraw.Draw(temp_img)
@@ -115,14 +147,9 @@ def add_bottom_label(image: Image.Image, label_text: str, padding: int = 12, fon
         # For older Pillow versions
         text_width, text_height = temp_draw.textsize(label_text, font=font)
     
-    # Add extra space for border if needed
-    if with_border:
-        text_width += 2 * border_thickness
-        text_height += 2 * border_thickness
-    
     # Create a new image with space for the label
     new_width = image.width
-    new_height = image.height + padding + text_height + bottom_margin
+    new_height = image.height + padding + text_height + padding
     
     # Create the new image with the background color
     if image.mode == 'RGBA':
@@ -143,22 +170,112 @@ def add_bottom_label(image: Image.Image, label_text: str, padding: int = 12, fon
     
     # Draw the text with or without border
     if with_border:
-        def draw_text_with_border(draw, x, y, text, font, fill, border_thickness=1):
+        # Calculate border thickness based on font size
+        border_thickness = max(1, int(font_size * 0.05))  # 5% of font size, minimum 1px
+        
+        def draw_text_with_border(draw, x, y, text, font, fill, thickness=1):
             # Draw shadow/border (using black color)
             shadow_color = (0, 0, 0)
-            for dx in range(-border_thickness, border_thickness + 1):
-                for dy in range(-border_thickness, border_thickness + 1):
+            for dx in range(-thickness, thickness + 1):
+                for dy in range(-thickness, thickness + 1):
                     if dx != 0 or dy != 0:  # Skip the center position
                         draw.text((x + dx, y + dy), text, font=font, fill=shadow_color)
             # Draw text itself
             draw.text((x, y), text, font=font, fill=fill)
             
-        draw_text_with_border(draw, text_x, text_y, label_text, font, fill=text_color, border_thickness=border_thickness)
+        draw_text_with_border(draw, text_x, text_y, label_text, font, fill=text_color, thickness=border_thickness)
     else:
         # Draw text without border
         draw.text((text_x, text_y), label_text, font=font, fill=text_color)
     
     return new_image
+
+def add_half_width_rectangle(image: Image.Image, side: str = 'left', 
+                            color: tuple = (200, 200, 255, 255),
+                            height_fraction: float = 0.1) -> Image.Image:
+    """Adds a rectangle that fills half the width of the image.
+    
+    Parameters:
+    -----------
+    image : Image.Image
+        The PIL Image to add the rectangle to
+    side : str, optional
+        Which side to place the rectangle, either 'left' or 'right', by default 'left'
+    color : tuple, optional
+        RGBA color for the rectangle, by default (200, 200, 255, 255) (light blue)
+    vertical_position : str, optional
+        Where to place the rectangle vertically, either 'top', 'middle', 'bottom', or 'full',
+        by default 'bottom'
+    height_fraction : float, optional
+        What fraction of the image height the rectangle should occupy (when not 'full'),
+        by default 0.1 (10% of image height)
+        
+    Returns:
+    --------
+    Image.Image
+        A new image with the rectangle added
+        
+    Usage:
+    ------
+    from pyphocorehelpers.plotting.media_output_helpers import add_half_width_rectangle
+    
+    # Add a blue rectangle to the left half of the bottom of the image
+    modified_image = add_half_width_rectangle(
+        original_image, 
+        side='left',
+        color=(100, 100, 255, 200),  # Semi-transparent blue
+        vertical_position='bottom',
+        height_fraction=0.15  # 15% of image height
+    )
+    
+    # Add a red rectangle covering the entire right half
+    modified_image = add_half_width_rectangle(
+        original_image, 
+        side='right',
+        color=(255, 100, 100, 255),  # Red
+        vertical_position='full'
+    )
+    """
+    # Validate parameters
+    if side not in ['left', 'right']:
+        raise ValueError("side must be either 'left' or 'right'")
+    
+    # Create a new image with space for the rectangle
+    new_width = image.width
+
+    # Get image dimensions
+    width, height = new_image.size
+    half_width = width // 2
+    rect_height = int(height * height_fraction)
+    new_height = image.height + rect_height
+    
+    # Create the new image with the background color
+    if image.mode == 'RGBA':
+        new_image = Image.new('RGBA', (new_width, new_height), background_color)
+    else:
+        # Convert background_color to RGB if the image is not RGBA
+        new_image = Image.new(image.mode, (new_width, new_height), background_color[:3])
+    
+    # Paste the original image at the top
+    new_image.paste(image, (0, 0))
+    
+    # Create a drawing context
+    draw = ImageDraw.Draw(new_image)
+    
+    # Calculate rectangle coordinates
+    half_width = new_width // 2
+    rect_top = image.height
+    rect_bottom = new_height
+    
+    # Draw the rectangle on the specified half
+    if side == 'left':
+        draw.rectangle([(0, rect_top), (half_width, rect_bottom)], fill=color)
+    else:  # right
+        draw.rectangle([(half_width, rect_top), (new_width, rect_bottom)], fill=color)
+    
+    return new_image
+
+
 
 
     

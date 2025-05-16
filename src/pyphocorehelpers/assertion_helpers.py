@@ -40,7 +40,7 @@ class Assert:
         frame = inspect.currentframe().f_back
         
         var_name_dict = {}
-        var_names_list = [name for name, val in frame.f_locals.items()]
+        # var_names_list = [name for name, val in frame.f_locals.items()]
             
         for a_equal_checkable_var in args:
             # Extract the variable name from the caller's local variables

@@ -498,7 +498,8 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
     # ==================================================================================================================================================================================================================================================================================== #    
     post_render_image_functions = kwargs.pop('post_render_image_functions', {})
     for a_render_fn_name, a_render_fn in post_render_image_functions.items():
-        print(f'\tperforming: {a_render_fn_name}')
+        if debug_print:
+            print(f'\tperforming: {a_render_fn_name}')
         image = a_render_fn(image)
 
     return image

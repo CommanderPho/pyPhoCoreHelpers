@@ -27,6 +27,7 @@ from matplotlib.figure import FigureBase
 
 from pyphocorehelpers.function_helpers import function_attributes
 from pyphocorehelpers.programming_helpers import copy_image_to_clipboard
+from pyphocorehelpers.image_helpers import ImageHelpers
 
 from pyphoplacecellanalysis.Pho2D.data_exporting import HeatmapExportKind
 
@@ -133,7 +134,9 @@ class ImageOperationsAndEffects:
         # Try to load a nicer font if available, otherwise use default
         try:
             # Try to use a common font that should be available on most systems
-            font = ImageFont.truetype("Arial", font_size)
+            # get a font
+            font = ImageHelpers.get_font('FreeMono.ttf', size=font_size)
+            # font = ImageFont.truetype("Arial", font_size)
         except IOError:
             # Fall back to default font with specified size
             try:

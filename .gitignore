@@ -60,3 +60,4 @@ src/myproject.db
 .sourcery.yaml
 **/.venv*
 
+typings

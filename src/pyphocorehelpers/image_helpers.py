@@ -1,9 +1,13 @@
-#Evan Russenberger-Rosica
-#Create a Grid/Matrix of Images
+from typing import Dict, List, Tuple, Optional, Callable, Union, Any
+from typing_extensions import TypeAlias
+from nptyping import NDArray
 import PIL, os, glob
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from math import ceil, floor
+from pyphocorehelpers.assertion_helpers import Assert
+import importlib.resources as resources
+
 
 # PATH = r"C:\Users\path\to\images"
 
@@ -99,6 +103,147 @@ def build_icon_example_grid(icons_path=Path(r"C:\Users\path\to\images"), should_
         new_im.save("out.jpg", "JPEG", quality=80, optimize=True, progressive=True)
         
     return new_im
+
+
+
+class ImageHelpers:
+    """ 
+    from pyphocorehelpers.image_helpers import ImageHelpers
+    
+    """
+    @classmethod
+    def get_font_path(cls, *args) -> Path:
+        """ 
+        from pyphocorehelpers.image_helpers import ImageHelpers
+        
+        
+        fonts_folder_path: Path = ImageHelpers.get_font_path()
+        Assert.path_exists(fonts_folder_path)
+
+        a_font_path: Path = ImageHelpers.get_font_path('FreeMono.ttf')
+        Assert.path_exists(a_font_path)
+
+        
+        """
+        fonts_folder_path = resources.files('pyphocorehelpers.Resources').joinpath('fonts')
+        Assert.path_exists(fonts_folder_path)
+        final_font_path: Path = fonts_folder_path
+        for a_path_part in args:
+            final_font_path = final_font_path.joinpath(a_path_part)
+        Assert.path_exists(final_font_path)  
+        return final_font_path
+    
+
+    @classmethod
+    def get_font(cls, *args, size:int=40) -> ImageFont:
+        """ gets the actual font
+
+        Usage:         
+            from pyphocorehelpers.image_helpers import ImageHelpers
+            # get a font
+            fnt = ImageHelpers.get_font('FreeMono.ttf', size=88)
+            fnt
+            ## OUTPUTS: a_font_path
+
+        """
+        a_font_path = cls.get_font_path(*args)
+        # get a font
+        return ImageFont.truetype(a_font_path.as_posix(), size)
+
+    
+
+    @classmethod
+    def empty_image(cls, width: int=800, height: int=600, background_color = (255, 255, 255, 0)) -> PIL.Image.Image:
+        """ Creates an empty/blank image with specified dimensions and the optional background_color
+        Usage:
+            from pyphocorehelpers.image_helpers import ImageHelpers
+            
+            empty_image = ImageHelpers.empty_image(width=800, height=200)
+            empty_image
+
+        """
+        # Create a new empty image
+        # Parameters: mode (RGB, RGBA, etc.), size (width, height), color (default is black)
+
+        if len(background_color) > 3:
+            # Create a solid background image
+            img_type: str = 'RGB'
+        else:
+            # Create a transparent image (with alpha channel)
+            assert len(background_color) == 4, f"length of background_color should be 3 or 4, but it was: {background_color}"
+            img_type: str = 'RGBA'
+            
+        
+        return Image.new(img_type, (width, height), background_color)
+
+
+    @classmethod
+    def load_png_images_pathlib(cls, directory_path: Path, debug_print:bool=False) -> Dict:
+        """ For the specified directory, loads (non-recurrsively) all the .png images present in the folder as PIL.Image objects
+        
+        Expects images with names like: 'p_x_given_n[5].png'
+        
+        
+        # Example usage:
+            a_path = flat_img_out_paths[0].joinpath('raw_rgba').resolve()
+            Assert.path_exists(a_path)
+            print(f'a_path: {a_path}')
+            # parent_output_folder = Path('output/array_to_images').resolve()
+            images_dict = load_png_images_pathlib(a_path)
+
+            # Print the loaded images
+            print(f"Loaded {len(images_dict)} PNG images:")
+            # for name, img in images_dict.items():
+            #     print(f"{name}: {img.format}, {img.size}, {img.mode}")
+
+        """
+        
+        # Sort the images by their numeric index
+        def extract_index(key):
+            # Extract the number between '[' and ']'
+            import re
+            match = re.search(r'\[(\d+)\]', key)
+            if match:
+                return int(match.group(1))
+            return 0
+
+
+        # ==================================================================================================================================================================================================================================================================================== #
+        # begin function body                                                                                                                                                                                                                                                                  #
+        # ==================================================================================================================================================================================================================================================================================== #
+
+        # Convert to Path object if it's a string
+        directory = Path(directory_path)
+        
+        # Get all PNG files in the directory
+        png_files = list(directory.glob("*.png"))
+        
+        # Load each image as a PIL Image object
+        images = {}
+        for file_path in png_files:
+            try:
+                img = Image.open(file_path)
+                # Use the filename (without extension) as the key
+                filename = file_path.stem
+                images[filename] = img
+            except Exception as e:
+                print(f"Error loading {file_path}: {e}")
+        
+        # Get the sorted keys
+        sorted_keys = sorted(images.keys(), key=extract_index)
+
+        # Create a dictionary with sorted images
+        sorted_images_dict = {key: images[key] for key in sorted_keys}
+
+        if debug_print:
+            # Display the sorted order
+            for key in sorted_keys:
+                print(f"{key}: {images[key].size}")
+
+        # Return the sorted dictionary
+        return sorted_images_dict
+        
+
 
 
 # def _main():

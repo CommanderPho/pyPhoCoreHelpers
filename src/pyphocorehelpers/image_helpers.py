@@ -244,6 +244,30 @@ class ImageHelpers:
         return sorted_images_dict
         
 
+    @classmethod
+    def build_img_html_tag(cls, img):
+        """ used for building Obsidian Canvas nodes 
+        
+        Usage:
+        
+            html_img_tag = build_img_html_tag(img)
+            create_text_node(html_img_tag, script_data["x"], script_data["y"]+script_data["height"]+120, 400, 400)
+
+        """
+        # Convert the image to bytes
+        img_byte_array = io.BytesIO()
+        img.save(img_byte_array, format=img.format)
+        img_byte_array = img_byte_array.getvalue()
+
+        # Convert the bytes to base64
+        base64_str = base64.b64encode(img_byte_array).decode('utf-8')
+
+        # Create HTML image tag
+        html_img_tag = f'<img src="data:image/png;base64,{base64_str}" alt="Image">'
+        return html_img_tag
+
+
+
 
 
 # def _main():

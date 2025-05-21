@@ -219,6 +219,7 @@ class ImageOperationsAndEffects:
                         with_text_outline: bool = False, relative_font_size: float = 0.10, 
                         relative_padding: float = 0.025) -> Image.Image:
         """Adds a vertically oriented label at the bottom of an image."""
+
         # Calculate font size and padding based on image height if not provided
         img_height = deepcopy(image.height)
         img_width = deepcopy(image.width) 
@@ -231,7 +232,7 @@ class ImageOperationsAndEffects:
         
         # Try to load a nicer font if available, otherwise use default
         try:
-            font = ImageHelpers.get_font('FreeMono.ttf', size=font_size)
+            font = ImageHelpers.get_font('OpenSansCondensed-LightItalic.ttf', size=font_size) # 'FreeMono.ttf'
         except IOError:
             # Fall back to default font with specified size
             try:
@@ -244,17 +245,23 @@ class ImageOperationsAndEffects:
                     font = default_font
                     print(f"Warning: Could not load font with specified size {font_size}. Text may appear smaller than expected.")
 
+
+        # label_kwargs = dict(font=font, align='center', anchor="mm") ## WORKS!
+        label_kwargs = dict(font=font, align='center', anchor="ms") ## 
+        
+
+
         # Create a temporary drawing context to measure text dimensions
         temp_img = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
         temp_draw = ImageDraw.Draw(temp_img)
         
         # Use getbbox() for newer Pillow versions, fallback to textsize()
         try:
-            bbox = temp_draw.textbbox((0, 0), label_text, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
+            bbox = temp_draw.textbbox((0, 0), label_text, **label_kwargs)
+            text_width = int(round(bbox[2] - bbox[0]))
+            text_height = int(round(bbox[3] - bbox[1]))
         except AttributeError:
-            text_width, text_height = temp_draw.textsize(label_text, font=font)
+            text_width, text_height = temp_draw.textsize(label_text, font=font, spacing=0) # , direction=None
         
         # For vertical text, we need to swap width and height
         rotated_text_width = text_height  # After 90 degree rotation
@@ -262,7 +269,7 @@ class ImageOperationsAndEffects:
         
         # Create a new image with space for the label
         new_width = image.width
-        new_height = image.height + padding + rotated_text_height
+        new_height: int = int(image.height + padding + rotated_text_height)
         
         # Create the new image with the background color
         if image.mode == 'RGBA':
@@ -278,9 +285,33 @@ class ImageOperationsAndEffects:
         _temp_label_image = Image.new('RGBA', (text_width, text_height), _debug_red_color)
         draw_label_temp = ImageDraw.Draw(_temp_label_image)
         
-        _internal_temp_box_text_x = text_width // 2
-        _internal_temp_box_text_y = (text_height // 2)
+        # _internal_temp_box_text_x = text_width // 2
+        # _internal_temp_box_text_y = (text_height // 2)
         
+
+        # ## works, bottom-baseline, inset by a lil' bit
+        # _internal_temp_box_text_x = (text_height // 2)
+        # _internal_temp_box_text_y = 0 # (text_width // 2)
+        
+        # ## doesn't work at all, completely shifted off the bottom (too far right)
+        # _internal_temp_box_text_x = 0
+        # _internal_temp_box_text_y = (text_height // 2) # (text_width // 2)
+
+        # ## doesn't work at all again, completely shifted off the bottom (too far right)
+        # _internal_temp_box_text_x = 0
+        # _internal_temp_box_text_y = (text_width // 2) # (text_width // 2)
+        # text_width: 576, text_height: 198, _internal_temp_box_text_x: 0, _internal_temp_box_text_y: 288
+        
+
+        _internal_temp_box_text_x = (text_width // 2)
+        _internal_temp_box_text_y = 0 # (font_size // 2)        
+
+        # ## doesn't work at all again, completely shifted off the bottom (too far right)
+        # _internal_temp_box_text_x = (text_width // 2)
+        # _internal_temp_box_text_y = (text_height // 2) # (text_width // 2)
+        # # _internal_temp_box_text_y = 0 # (font_size // 2)
+        
+        print(f'text_width: {text_width}, text_height: {text_height}, _internal_temp_box_text_x: {_internal_temp_box_text_x}, _internal_temp_box_text_y: {_internal_temp_box_text_y}')
 
         # Draw the text
         if with_text_outline:
@@ -298,8 +329,24 @@ class ImageOperationsAndEffects:
             draw_label_temp.text((0, 0), label_text, font=font, fill=text_color)
         else:
             # Draw text without border
-            draw_label_temp.text((_internal_temp_box_text_x, _internal_temp_box_text_y), label_text, font=font, fill=text_color)
+            draw_label_temp.text((_internal_temp_box_text_x, _internal_temp_box_text_y), label_text, fill=text_color, **label_kwargs) # , direction=''
         
+        _temp_label_image
+        # # Get the actual bounding box of the text
+        # bbox = _temp_label_image.getbbox()
+        # draw_label_temp.textbbox((_internal_temp_box_text_x, _internal_temp_box_text_y), label_text, font=font)
+        
+        # if bbox:
+        #     # Crop to just the text (with a small margin)
+        #     margin = max(2, int(font_size * 0.05))  # 5% of font size as margin, minimum 2px
+        #     crop_bbox = (
+        #         max(0, bbox[0] - margin),
+        #         max(0, bbox[1] - margin),
+        #         min(_temp_label_image.width, bbox[2] + margin),
+        #         min(_temp_label_image.height, bbox[3] + margin)
+        #     )
+        #     _temp_label_image = _temp_label_image.crop(crop_bbox)
+
         # Rotate the text 270 degrees (so it reads from bottom to top)
         _temp_label_image = _temp_label_image.rotate(270, expand=1)
 

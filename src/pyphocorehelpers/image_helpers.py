@@ -1,6 +1,7 @@
 from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 from typing_extensions import TypeAlias
 from nptyping import NDArray
+from copy import deepcopy
 import PIL, os, glob
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
@@ -111,8 +112,11 @@ class ImageHelpers:
     from pyphocorehelpers.image_helpers import ImageHelpers
     
     """
+    _fonts_folder_path: Path = resources.files('pyphocorehelpers.Resources').joinpath('fonts')
+    _font_cache: Dict[str, Path] = dict()
+    
     @classmethod
-    def get_font_path(cls, *args) -> Path:
+    def rebuild_font_cache(cls) -> Dict:
         """ 
         from pyphocorehelpers.image_helpers import ImageHelpers
         
@@ -127,11 +131,63 @@ class ImageHelpers:
         """
         fonts_folder_path = resources.files('pyphocorehelpers.Resources').joinpath('fonts')
         Assert.path_exists(fonts_folder_path)
-        final_font_path: Path = fonts_folder_path
-        for a_path_part in args:
-            final_font_path = final_font_path.joinpath(a_path_part)
-        Assert.path_exists(final_font_path)  
-        return final_font_path
+        
+        # fonts_dict = {}
+        cls._font_cache = {} # empty the cache
+
+
+        # Search recursively for the font
+        # Search recursively for all .ttf files using pathlib's glob
+        for font_path in fonts_folder_path.glob('**/*.ttf'):
+            # fonts_dict[font_path.name] = font_path
+            cls._font_cache[font_path.name] = font_path
+
+        for font_path in fonts_folder_path.glob('**/*.otf'):
+            # fonts_dict[font_path.name] = font_path
+            cls._font_cache[font_path.name] = font_path ## okay to replace any ttf versions with the otf
+
+        return cls._font_cache
+    
+    @classmethod
+    def get_font_path(cls, *args) -> Path:
+        """
+        from pyphocorehelpers.image_helpers import ImageHelpers
+                
+        fonts_folder_path: Path = ImageHelpers.get_font_path()
+        Assert.path_exists(fonts_folder_path)
+
+        a_font_path: Path = ImageHelpers.get_font_path('FreeMono.ttf')
+        Assert.path_exists(a_font_path)
+
+        """
+        if len(args) == 0:
+            return cls._fonts_folder_path
+
+        font_search_path: Path = Path(*args)
+        font_name: str = font_search_path.name
+        
+        if len(cls._font_cache) == 0:
+            ## rebuild cache
+            font_cache = cls.rebuild_font_cache()
+        else:
+            font_cache = cls._font_cache
+        
+        final_font_path = font_cache.get(font_name, None)
+        if final_font_path is None:
+            ## try to rebuild once more
+            print(f'\tfont {final_font_path} with name "{font_name}" not found in cache, rebuilding')
+            font_cache = cls.rebuild_font_cache()
+            final_font_path = font_cache.get(font_name, None)
+    
+        if (final_font_path is not None) and final_font_path.exists():
+            ## return path        
+            return final_font_path
+        
+        # If font not found, raise an error
+        raise FileNotFoundError(f"Font '{font_name}' (font_search_path: '{font_search_path}') not found in '{cls._fonts_folder_path.as_posix()}' or its subdirectories")
+
+            
+        
     
 
     @classmethod
@@ -148,8 +204,12 @@ class ImageHelpers:
         """
         a_font_path = cls.get_font_path(*args)
         # get a font
-        return ImageFont.truetype(a_font_path.as_posix(), size)
-
+        # if a_font_path.suffixes[-1].lower() == 'otf':        
+        #     return ImageFont.FreeTypeFont(a_font_path.as_posix(), size)  #  truetype(a_font_path.as_posix(), size)
+        if a_font_path.suffixes[-1].lower() in ('.otf','.ttf'):
+            return ImageFont.truetype(a_font_path.as_posix(), size)
+        else:
+            raise NotImplementedError(f'Unknown font type a_font_path.suffixes[-1].lower(): "{a_font_path.suffixes[-1].lower()}" for a_font_path: "{a_font_path}". Expected TTF or OTF.')
     
 
     @classmethod

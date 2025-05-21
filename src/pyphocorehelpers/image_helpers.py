@@ -223,8 +223,8 @@ class ImageHelpers:
         if loaded_font is not None:
             was_loaded_from_cache = True
             return deepcopy(loaded_font)
-        
-       a_font_path = cls.get_font_path(*args)
+
+        a_font_path = cls.get_font_path(*args)
 
         # get the font
         loaded_font = None

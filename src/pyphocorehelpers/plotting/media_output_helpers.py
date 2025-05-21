@@ -81,9 +81,10 @@ class ImageOperationsAndEffects:
         return _create_new_img_operation_function
 
 
-    def add_bottom_label(image: Image.Image, label_text: str, padding: int = None, font_size: int = None,  
+    @classmethod
+    def add_simple_bottom_label(cls, image: Image.Image, label_text: str, padding: int = None, font_size: int = None,  
                         text_color: tuple = (0, 0, 0), background_color: tuple = (255, 255, 255, 255), 
-                        with_border: bool = False, relative_font_size: float = 0.10, 
+                        with_text_outline: bool = False, relative_font_size: float = 0.10, 
                         relative_padding: float = 0.025) -> Image.Image:
         """Adds a horizontally centered label underneath the bottom of an image.
         
@@ -130,7 +131,6 @@ class ImageOperationsAndEffects:
         if padding is None:
             padding = max(int(img_height * relative_padding), 10)  # Minimum padding of 5
         
-        # Try to load a nicer font if available, otherwise use default
         # Try to load a nicer font if available, otherwise use default
         try:
             # Try to use a common font that should be available on most systems
@@ -190,7 +190,7 @@ class ImageOperationsAndEffects:
         text_y = image.height + padding
         
         # Draw the text with or without border
-        if with_border:
+        if with_text_outline:
             # Calculate border thickness based on font size
             border_thickness = max(1, int(font_size * 0.05))  # 5% of font size, minimum 1px
             
@@ -212,7 +212,163 @@ class ImageOperationsAndEffects:
         return new_image
 
 
+    @classmethod
+    def add_bottom_label(cls, image: Image.Image, label_text: str, padding: int = None, font_size: int = None,  
+                        text_color: tuple = (0, 0, 0), background_color: tuple = (255, 255, 255, 255), 
+                        with_text_outline: bool = False, relative_font_size: float = 0.10, 
+                        relative_padding: float = 0.025) -> Image.Image:
+        """Adds a horizontally centered label underneath the bottom of an image.
+        
+        Parameters:
+        -----------
+        image : Image.Image
+            The PIL Image to add a label to
+        label_text : str
+            The text to display as the label
+        padding : int, optional
+            Vertical padding between image and label. If None, calculated from relative_padding.
+        font_size : int, optional
+            Font size for the label text. If None, calculated from relative_font_size.
+        text_color : tuple, optional
+            RGB color for the text, by default (0, 0, 0) (black)
+        background_color : tuple, optional
+            RGBA color for the label background, by default (255, 255, 255, 255) (white)
+        with_border : bool, optional
+            Whether to add a border around the text, by default True
+        relative_font_size : float, optional
+            Font size as a proportion of image height, by default 0.03 (3% of image height)
+        relative_padding : float, optional
+            Padding as a proportion of image height, by default 0.02 (2% of image height)
+            
+        Returns:
+        --------
+        Image.Image
+            A new image with the label added below the original image
+            
+        Usage:
+        ------
+        from pyphocorehelpers.plotting.media_output_helpers import add_bottom_label
+        
+        # Create an image with a label that scales with image size
+        labeled_image = add_bottom_label(original_image, "Time (seconds)", relative_font_size=0.04)
+        labeled_image
+        """
+        # Calculate font size and padding based on image height if not provided
+        img_height = deepcopy(image.height)
+        img_width = deepcopy(image.width) 
+               
+
+        label_text_lines: List[str] = label_text.split('\n')
+        n_lines: int = len(label_text_lines)
+
+        if font_size is None:
+            font_size = max(int(img_height * relative_font_size), 20)  # Minimum font size of 8
+        
+        if padding is None:
+            padding = max(int(img_height * relative_padding), 10)  # Minimum padding of 5
+        
+        # Try to load a nicer font if available, otherwise use default
+        try:
+            # Try to use a common font that should be available on most systems
+            # get a font
+            font = ImageHelpers.get_font('FreeMono.ttf', size=font_size)
+            # font = ImageFont.truetype("Arial", font_size)
+        except IOError:
+            # Fall back to default font with specified size
+            try:
+                # For newer Pillow versions that support size in load_default
+                font = ImageFont.load_default(size=font_size)
+            except TypeError:
+                # For older Pillow versions that don't support size parameter
+                default_font = ImageFont.load_default()
+                # Try to find a bitmap font of appropriate size as alternative
+                try:
+                    font = ImageFont.truetype("DejaVuSans.ttf", font_size)
+                except IOError:
+                    # If all else fails, use the default font
+                    font = default_font
+                    print(f"Warning: Could not load font with specified size {font_size}. Text may appear smaller than expected.")
+
+
+        # Create a temporary drawing context to measure text dimensions
+        temp_img = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
+        temp_draw = ImageDraw.Draw(temp_img)
+        
+        # Use getbbox() for newer Pillow versions, fallback to textsize()
+        try:
+            # For newer Pillow versions
+            bbox = temp_draw.textbbox((0, 0), label_text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+        except AttributeError:
+            # For older Pillow versions
+            text_width, text_height = temp_draw.textsize(label_text, font=font)
+        
+        # Create a new image with space for the label
+        new_width = image.width
+        new_height = image.height + padding + text_height + padding
+        
+        # Create the new image with the background color
+        if image.mode == 'RGBA':
+            new_image = Image.new('RGBA', (new_width, new_height), background_color)
+        else:
+            # Convert background_color to RGB if the image is not RGBA
+            new_image = Image.new(image.mode, (new_width, new_height), background_color[:3])
+        
+        # Paste the original image at the top
+        new_image.paste(image, (0, 0))
+        
+        # Create a drawing context for the new image
+        draw = ImageDraw.Draw(new_image)
+        
+        # Calculate the position to center the text horizontally
+        text_x = (new_width - text_width) // 2
+        text_y = image.height + padding
+        
+        # Draw the text with or without border
+        if with_text_outline:
+            # Calculate border thickness based on font size
+            border_thickness = max(1, int(font_size * 0.05))  # 5% of font size, minimum 1px
+            
+            def draw_text_with_border(draw, x, y, text, font, fill, thickness=1):
+                # Draw shadow/border (using black color)
+                shadow_color = (0, 0, 0)
+                for dx in range(-thickness, thickness + 1):
+                    for dy in range(-thickness, thickness + 1):
+                        if dx != 0 or dy != 0:  # Skip the center position
+                            draw.text((x + dx, y + dy), text, font=font, fill=shadow_color)
+                # Draw text itself
+                draw.text((x, y), text, font=font, fill=fill)
+                
+            draw_text_with_border(draw, text_x, text_y, label_text, font, fill=text_color, thickness=border_thickness)
+        else:
+            # Draw text without border
+            draw.text((text_x, text_y), label_text, font=font, fill=text_color)
+        
+
+
+        # # Draw rotated text into the context _________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________ #
+        
+        # text_width, text_height = font.getsize(text)
+
+        # image1 = Image.new('RGBA', (200, 150), (0, 128, 0, 92))
+        # draw1 = ImageDraw.Draw(image1)
+        # draw1.text((0, 0), text=text, font=font, fill=(255, 128, 0))
+
+        # _temp_label_image = Image.new('RGBA', (text_width, text_height), (0, 0, 128, 92))
+        # draw2 = ImageDraw.Draw(_temp_label_image)
+        # draw2.text((0, 0), text=text, font=font, fill=(0, 255, 128))
+
+        # _temp_label_image = _temp_label_image.rotate(270, expand=1)
+
+        # px, py = 10, 10
+        # sx, sy = _temp_label_image.size
+        # image1.paste(_temp_label_image, (px, py, px + sx, py + sy), _temp_label_image)
+
+
         return new_image
+
+
 
     def add_half_width_rectangle(image: Image.Image, side: str = 'left', 
                                 color: tuple = (200, 200, 255, 255), background_color: tuple = (255, 255, 255, 255),

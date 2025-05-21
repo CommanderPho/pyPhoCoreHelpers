@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 # import cv2
+from copy import deepcopy
 from glob import glob
 
 import matplotlib.pyplot as plt # for export_array_as_image
@@ -258,8 +259,8 @@ class ImageOperationsAndEffects:
         img_width = deepcopy(image.width) 
                
 
-        label_text_lines: List[str] = label_text.split('\n')
-        n_lines: int = len(label_text_lines)
+        # label_text_lines: List[str] = label_text.split('\n')
+        # n_lines: int = len(label_text_lines)
 
         if font_size is None:
             font_size = max(int(img_height * relative_font_size), 20)  # Minimum font size of 8
@@ -310,63 +311,78 @@ class ImageOperationsAndEffects:
         
         # Create the new image with the background color
         if image.mode == 'RGBA':
-            new_image = Image.new('RGBA', (new_width, new_height), background_color)
+            new_larger_image = Image.new('RGBA', (new_width, new_height), background_color)
         else:
             # Convert background_color to RGB if the image is not RGBA
-            new_image = Image.new(image.mode, (new_width, new_height), background_color[:3])
+            new_larger_image = Image.new(image.mode, (new_width, new_height), background_color[:3])
         
         # Paste the original image at the top
-        new_image.paste(image, (0, 0))
+        new_larger_image.paste(image, (0, 0))
         
         # Create a drawing context for the new image
-        draw = ImageDraw.Draw(new_image)
+        # draw = ImageDraw.Draw(new_larger_image)
         
         # Calculate the position to center the text horizontally
         text_x = (new_width - text_width) // 2
-        text_y = image.height + padding
-        
-        # Draw the text with or without border
-        if with_text_outline:
-            # Calculate border thickness based on font size
-            border_thickness = max(1, int(font_size * 0.05))  # 5% of font size, minimum 1px
-            
-            def draw_text_with_border(draw, x, y, text, font, fill, thickness=1):
-                # Draw shadow/border (using black color)
-                shadow_color = (0, 0, 0)
-                for dx in range(-thickness, thickness + 1):
-                    for dy in range(-thickness, thickness + 1):
-                        if dx != 0 or dy != 0:  # Skip the center position
-                            draw.text((x + dx, y + dy), text, font=font, fill=shadow_color)
-                # Draw text itself
-                draw.text((x, y), text, font=font, fill=fill)
-                
-            draw_text_with_border(draw, text_x, text_y, label_text, font, fill=text_color, thickness=border_thickness)
-        else:
-            # Draw text without border
-            draw.text((text_x, text_y), label_text, font=font, fill=text_color)
+        text_y = image.height + padding # for some reason this means at the bottom, I guess indexing is from the top-left
         
 
 
-        # # Draw rotated text into the context _________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________ #
-        
-        # text_width, text_height = font.getsize(text)
-
+        # Draw rotated text into the context _________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________ #
+        text_width, text_height = font.getsize(label_text)
         # image1 = Image.new('RGBA', (200, 150), (0, 128, 0, 92))
         # draw1 = ImageDraw.Draw(image1)
         # draw1.text((0, 0), text=text, font=font, fill=(255, 128, 0))
-
-        # _temp_label_image = Image.new('RGBA', (text_width, text_height), (0, 0, 128, 92))
-        # draw2 = ImageDraw.Draw(_temp_label_image)
-        # draw2.text((0, 0), text=text, font=font, fill=(0, 255, 128))
-
-        # _temp_label_image = _temp_label_image.rotate(270, expand=1)
-
-        # px, py = 10, 10
-        # sx, sy = _temp_label_image.size
-        # image1.paste(_temp_label_image, (px, py, px + sx, py + sy), _temp_label_image)
+        _temp_label_image = Image.new('RGBA', (text_width, text_height), (0, 0, 128, 92))
+        draw_label_temp = ImageDraw.Draw(_temp_label_image)
+        # draw_label_temp.text((0, 0), text=label_text, font=font, fill=text_color)
 
 
-        return new_image
+
+
+
+        # Draw the text with or without border
+        if with_text_outline:
+            raise NotImplementedError(f'Not updated to work with rotated labels!')
+            # # Calculate border thickness based on font size
+            # border_thickness = max(1, int(font_size * 0.05))  # 5% of font size, minimum 1px
+            
+            # def draw_text_with_border(draw, x, y, text, font, fill, thickness=1):
+            #     # Draw shadow/border (using black color)
+            #     shadow_color = (0, 0, 0)
+            #     for dx in range(-thickness, thickness + 1):
+            #         for dy in range(-thickness, thickness + 1):
+            #             if dx != 0 or dy != 0:  # Skip the center position
+            #                 draw.text((x + dx, y + dy), text, font=font, fill=shadow_color)
+            #                 # draw_label_temp.text((0, 0), text=label_text, font=font, fill=text_color)
+
+            #     # Draw text itself
+            #     draw.text((x, y), text, font=font, fill=fill)
+            #     draw_label_temp.text((0, 0), text=label_text, font=font, fill=text_color)
+
+
+
+            # draw_text_with_border(draw, text_x, text_y, label_text, font, fill=text_color, thickness=border_thickness)
+        else:
+            # Draw text without border
+            # draw.text((text_x, text_y), label_text, font=font, fill=text_color)
+            draw_label_temp.text((0, 0), text=label_text, font=font, fill=text_color)
+
+
+
+
+        # # Draw rotated text into the context _________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________ #
+
+        _temp_label_image = _temp_label_image.rotate(270, expand=1)
+
+        px, py = 1, 1
+        # px, py = text_x, text_y
+        # px, py = text_x, text_y
+        sx, sy = _temp_label_image.size
+        new_larger_image.paste(_temp_label_image, (px, py, (px + sx), (py + sy)), _temp_label_image)
+
+
+        return new_larger_image
 
 
 

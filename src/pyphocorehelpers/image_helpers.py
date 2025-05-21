@@ -267,7 +267,7 @@ class ImageHelpers:
 
 
     @classmethod
-    def load_png_images_pathlib(cls, directory_path: Path, debug_print:bool=False) -> Dict:
+    def load_png_images_pathlib(cls, directory_path: Path, image_glob: str = "*.png", debug_print:bool=False) -> Dict:
         """ For the specified directory, loads (non-recurrsively) all the .png images present in the folder as PIL.Image objects
         
         Expects images with names like: 'p_x_given_n[5].png'
@@ -286,6 +286,7 @@ class ImageHelpers:
             #     print(f"{name}: {img.format}, {img.size}, {img.mode}")
 
         """
+        Image.MAX_IMAGE_PIXELS = None   # disables the warning
         
         # Sort the images by their numeric index
         def extract_index(key):
@@ -296,7 +297,6 @@ class ImageHelpers:
                 return int(match.group(1))
             return 0
 
-
         # ==================================================================================================================================================================================================================================================================================== #
         # begin function body                                                                                                                                                                                                                                                                  #
         # ==================================================================================================================================================================================================================================================================================== #
@@ -305,7 +305,7 @@ class ImageHelpers:
         directory = Path(directory_path)
         
         # Get all PNG files in the directory
-        png_files = list(directory.glob("*.png"))
+        png_files = list(directory.glob(image_glob))
         
         # Load each image as a PIL Image object
         images = {}

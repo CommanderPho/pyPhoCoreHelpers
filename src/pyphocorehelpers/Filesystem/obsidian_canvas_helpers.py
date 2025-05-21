@@ -24,10 +24,22 @@ from pyphocorehelpers.image_helpers import ImageHelpers
 # @metadata_attributes(short_name=None, tags=['canvas', 'obsidian'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-05-21 15:17', related_items=[])
 class ObsidianCanvasHelper:
     """ Helps with Obsidian Canvases
-    
-    from pyphocorehelpers.Filesystem.obsidian_canvas_helpers import ObsidianCanvasHelper
-    
-    
+
+    Usage:    
+		from pyphocorehelpers.Filesystem.obsidian_canvas_helpers import ObsidianCanvasHelper
+		
+		canvas_url = Path(r"D:/PhoGlobalObsidian2022/🌐🧠 Working Memory/Pho-Kamran Paper 2024/2025-05-15 - Pho Sorted Events.canvas")
+		write_modified_canvas_path: Path = canvas_url.with_name(f'_programmatic_test.canvas')
+		loaded_canvas = ObsidianCanvasHelper.load(canvas_url=canvas_url)
+
+		# image_folder_path: Path = Path(r'C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/output/collected_outputs/2025-05-21/gor01_two_2006-6-07_16-40-19_normal_computed_[1, 2]_5.0/ripple/psuedo2D_nan_filled/raw_rgba').resolve()
+		image_folder_path: Path = Path(r'C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/output/collected_outputs/2025-05-21/gor01_two_2006-6-07_16-40-19_normal_computed_[1, 2]_5.0/laps/psuedo2D_nan_filled/raw_rgba').resolve()
+
+		target_canvas, _write_status = ObsidianCanvasHelper.add_images_to_canvas(image_folder_path=image_folder_path, image_glob="p_x_given_n*.png", target_canvas=None, write_modified_canvas_path=write_modified_canvas_path, override_write_mode='w')
+		# target_canvas, _write_status
+
+
+
     """
     
     @classmethod
@@ -60,12 +72,14 @@ class ObsidianCanvasHelper:
 
 
     @classmethod 
-    def add_images_to_canvas(cls, image_folder_path: Path, target_canvas: Optional[Canvas]=None, write_modified_canvas_path: Path=None, vault_relative_image_dir_filepath: str = 'z__META\__IMAGES', x_padding: int = 2, override_write_mode='x', debug_print = False, canvas_image_node_scale: float=0.2):
+    def add_images_to_canvas(cls, image_folder_path: Path, image_glob: str = "*.png", target_canvas: Optional[Canvas]=None, write_modified_canvas_path: Path=None, vault_relative_image_dir_filepath: str = 'z__META\__IMAGES', x_padding: int = 2, override_write_mode='x', debug_print = False, canvas_image_node_scale: float=0.2):
         """ 
         Adds the images to the canvas
         
         """
         def _subfn_get_img_obsidian_global_unique_name(an_img_path: Path) -> str:    
+            """ from my personal export path conventions, builds a globally unique image name (which has to be the case for a canvas)"""
+            
             img_path_name_parts = an_img_path.parts
             date_part_index = next((i for i, part in enumerate(img_path_name_parts) if re.match(r'^\d{4}-\d{2}-\d{2}', part)), None)
             session_part_index: int = date_part_index + 1
@@ -76,7 +90,7 @@ class ObsidianCanvasHelper:
         # ==================================================================================================================================================================================================================================================================================== #
         # BEGIN FUNCTION BODY                                                                                                                                                                                                                                                                  #
         # ==================================================================================================================================================================================================================================================================================== #
-        images_dict: Dict = ImageHelpers.load_png_images_pathlib(image_folder_path)
+        images_dict: Dict = ImageHelpers.load_png_images_pathlib(image_folder_path, image_glob=image_glob)
         # Print the loaded images
         print(f"Loaded {len(images_dict)} PNG images from '{image_folder_path}'.")
 

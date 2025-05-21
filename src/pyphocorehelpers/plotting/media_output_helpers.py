@@ -297,14 +297,17 @@ class ImageOperationsAndEffects:
         
         # Rotate the text 270 degrees (so it reads from bottom to top)
         _temp_label_image = _temp_label_image.rotate(270, expand=1)
-        
+
+        # Get the dimensions of the rotated text image
+        rotated_width, rotated_height = _temp_label_image.size
+
         # Calculate position to center the text horizontally
-        text_x = (new_width - rotated_text_width) // 2
-        text_y = image.height + padding
-        
+        text_x = (new_width - rotated_width) // 2
+        text_y = image.height + padding  # Position at the bottom of the original image plus padding
+
         # Paste the rotated text at the bottom center of the image
         new_larger_image.paste(_temp_label_image, (text_x, text_y), _temp_label_image)
-        
+
         return new_larger_image
 
 

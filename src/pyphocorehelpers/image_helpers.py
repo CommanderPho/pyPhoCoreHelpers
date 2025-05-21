@@ -5,6 +5,9 @@ from copy import deepcopy
 import PIL, os, glob
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+# from PIL.ImageFont import ImageFont, FreeTypeFont
+from PIL.ImageFont import FreeTypeFont
+
 from math import ceil, floor
 from pyphocorehelpers.assertion_helpers import Assert
 import importlib.resources as resources
@@ -114,7 +117,7 @@ class ImageHelpers:
     """
     _fonts_folder_path: Path = resources.files('pyphocorehelpers.Resources').joinpath('fonts')
     _font_paths_cache: Dict[str, Path] = dict()
-    _loaded_font_cache: Dict[Tuple[str, int], ImageFont] = dict() # font_key: Tuple[str, int] = (font_name, size)
+    _loaded_font_cache: Dict[Tuple[str, int], FreeTypeFont] = dict() # font_key: Tuple[str, int] = (font_name, size)
     
 
     @classmethod
@@ -203,7 +206,7 @@ class ImageHelpers:
 
     
     @classmethod
-    def get_font(cls, *args, size:int=40, allow_caching:bool=True) -> ImageFont:
+    def get_font(cls, *args, size:int=40, allow_caching:bool=True) -> FreeTypeFont:
         """ gets the actual font
 
         Usage:         

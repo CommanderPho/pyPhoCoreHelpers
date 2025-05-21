@@ -235,7 +235,7 @@ class ImageOperationsAndEffects:
         
         # Try to load a nicer font if available, otherwise use default
         try:
-            font = ImageHelpers.get_font(font, size=font_size) # 'FreeMono.ttf'
+            font = ImageHelpers.get_font(font, size=font_size, allow_caching=True) # 'FreeMono.ttf'
         except IOError:
             # Fall back to default font with specified size
             try:

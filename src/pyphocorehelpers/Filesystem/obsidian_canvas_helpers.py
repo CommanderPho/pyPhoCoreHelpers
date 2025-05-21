@@ -5,14 +5,15 @@ from typing_extensions import TypeAlias
 from nptyping import NDArray
 from pathlib import Path
 import shutil
+import numpy as np
 
 from pyjsoncanvas import (
     Canvas,
     TextNode,
     FileNode,
-    # LinkNode,
-    # GroupNode,
-    # GroupNodeBackgroundStyle,
+    LinkNode,
+    GroupNode,
+    GroupNodeBackgroundStyle,
     Edge,
     Color,
 )
@@ -26,17 +27,17 @@ class ObsidianCanvasHelper:
     """ Helps with Obsidian Canvases
 
     Usage:    
-		from pyphocorehelpers.Filesystem.obsidian_canvas_helpers import ObsidianCanvasHelper
-		
-		canvas_url = Path(r"D:/PhoGlobalObsidian2022/🌐🧠 Working Memory/Pho-Kamran Paper 2024/2025-05-15 - Pho Sorted Events.canvas")
-		write_modified_canvas_path: Path = canvas_url.with_name(f'_programmatic_test.canvas')
-		loaded_canvas = ObsidianCanvasHelper.load(canvas_url=canvas_url)
+        from pyphocorehelpers.Filesystem.obsidian_canvas_helpers import ObsidianCanvasHelper
+        
+        canvas_url = Path(r"D:/PhoGlobalObsidian2022/🌐🧠 Working Memory/Pho-Kamran Paper 2024/2025-05-15 - Pho Sorted Events.canvas")
+        write_modified_canvas_path: Path = canvas_url.with_name(f'_programmatic_test.canvas')
+        loaded_canvas = ObsidianCanvasHelper.load(canvas_url=canvas_url)
 
-		# image_folder_path: Path = Path(r'C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/output/collected_outputs/2025-05-21/gor01_two_2006-6-07_16-40-19_normal_computed_[1, 2]_5.0/ripple/psuedo2D_nan_filled/raw_rgba').resolve()
-		image_folder_path: Path = Path(r'C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/output/collected_outputs/2025-05-21/gor01_two_2006-6-07_16-40-19_normal_computed_[1, 2]_5.0/laps/psuedo2D_nan_filled/raw_rgba').resolve()
+        # image_folder_path: Path = Path(r'C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/output/collected_outputs/2025-05-21/gor01_two_2006-6-07_16-40-19_normal_computed_[1, 2]_5.0/ripple/psuedo2D_nan_filled/raw_rgba').resolve()
+        image_folder_path: Path = Path(r'C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/output/collected_outputs/2025-05-21/gor01_two_2006-6-07_16-40-19_normal_computed_[1, 2]_5.0/laps/psuedo2D_nan_filled/raw_rgba').resolve()
 
-		target_canvas, _write_status = ObsidianCanvasHelper.add_images_to_canvas(image_folder_path=image_folder_path, image_glob="p_x_given_n*.png", target_canvas=None, write_modified_canvas_path=write_modified_canvas_path, override_write_mode='w')
-		# target_canvas, _write_status
+        target_canvas, _write_status = ObsidianCanvasHelper.add_images_to_canvas(image_folder_path=image_folder_path, image_glob="p_x_given_n*.png", target_canvas=None, write_modified_canvas_path=write_modified_canvas_path, override_write_mode='w')
+        # target_canvas, _write_status
 
 
 
@@ -72,8 +73,13 @@ class ObsidianCanvasHelper:
 
 
     @classmethod 
-    def add_images_to_canvas(cls, image_folder_path: Path, image_glob: str = "*.png", target_canvas: Optional[Canvas]=None, write_modified_canvas_path: Path=None, vault_relative_image_dir_filepath: str = 'z__META\__IMAGES', x_padding: int = 2, override_write_mode='x', debug_print = False, canvas_image_node_scale: float=0.2):
-        """ 
+    def add_images_to_canvas(cls, image_folder_path: Path, image_glob: str = "*.png", target_canvas: Optional[Canvas]=None, write_modified_canvas_path: Path=None,
+                                    x_padding: int = 2, canvas_image_node_scale: float=0.2, image_group_name: str = 'MyGroup',
+                                    obsidian_vault_root_path: Path = Path(r'D:\PhoGlobalObsidian2022'), vault_relative_image_dir_filepath: str = 'z__META\__IMAGES',
+                                    override_write_mode='x', debug_print = False):
+        """ Adds the images matching the glob in the `image_folder_path` to the canvas, or creates a new canvas, as needed
+        
+        
         Adds the images to the canvas
         
         """
@@ -91,6 +97,7 @@ class ObsidianCanvasHelper:
         # BEGIN FUNCTION BODY                                                                                                                                                                                                                                                                  #
         # ==================================================================================================================================================================================================================================================================================== #
         images_dict: Dict = ImageHelpers.load_png_images_pathlib(image_folder_path, image_glob=image_glob)
+        n_images: int = len(images_dict)
         # Print the loaded images
         print(f"Loaded {len(images_dict)} PNG images from '{image_folder_path}'.")
 
@@ -107,7 +114,7 @@ class ObsidianCanvasHelper:
             write_mode = override_write_mode
 
         ## INPUTS: active_canvas, debug_print
-        obsidian_vault_root_path = Path(r'D:\PhoGlobalObsidian2022')
+        
         
         obsidian_canvas_image_link_path: Path = obsidian_vault_root_path.joinpath(vault_relative_image_dir_filepath) #  Path(r'D:\PhoGlobalObsidian2022\z__META\__IMAGES')
         # image path is like "collected_outputs\2025-05-21\gor01_two_2006-6-07_16-40-19_normal_computed_[1, 2]_5.0\ripple\psuedo2D_nan_filled\raw_rgba\p_x_given_n[7].png"
@@ -117,6 +124,26 @@ class ObsidianCanvasHelper:
         max_num_to_add: int = 1000
         n_added: int = 0
         
+        # text_node = TextNode(x=initial_x, y=initial_y, width=200, height=100, text=f"#{image_group_name}")
+        # target_canvas.add_node(text_node)
+
+        image_sizes = np.vstack([(int(round(canvas_image_node_scale * float(an_img.size[0]))), int(round(canvas_image_node_scale * float(an_img.size[1])))) for i, (img_name, an_img) in enumerate(images_dict.items())]) # (n_images, 2)
+        if debug_print:
+            print(f'image_sizes: {np.shape(image_sizes)}, image_sizes: {image_sizes}')
+
+        # total_grouped_image_size = np.sum(image_sizes, axis=0)       
+
+        total_grouped_image_size = (np.sum(image_sizes[:, 0], axis=0), np.max(image_sizes[:, 1], axis=0))  ## since being stacked horizontally, use the sum of the widths, but the max of the heights
+        total_grouped_images_padding = (int(round(float(x_padding)*float(n_images-1))), 0)
+
+        group_padding = np.array((50, 30))
+        total_group_size = total_grouped_image_size + np.array(total_grouped_images_padding) + (2 * group_padding)
+        group_offset = np.array((initial_x, initial_y)) - group_padding
+
+        # group_offset.tolist()
+        if debug_print:
+            print(f'total_group_size: {total_group_size},\ngroup_offset: {group_offset}')
+            
         for i, (img_name, an_img) in enumerate(images_dict.items()):
             if i < max_num_to_add:
                 an_img_path: Path = image_folder_path.joinpath(f'{img_name}.png')
@@ -148,6 +175,20 @@ class ObsidianCanvasHelper:
             
         # END for i, (img_name, an_i...
         print(f'added {n_added} images to canvas.')
+        
+        ## group all elements in a group
+        group_node = GroupNode(
+            x=group_offset[0],
+            y=group_offset[1],
+            width=total_group_size[0],
+            height=total_group_size[1],
+            label=image_group_name,
+            # background="/path/to/background.jpg",
+            # backgroundStyle=GroupNodeBackgroundStyle.COVER,
+        )
+        target_canvas.add_node(group_node)
+
+
             
         # save the canvas back to a file _____________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________ #
         if write_modified_canvas_path is not None:

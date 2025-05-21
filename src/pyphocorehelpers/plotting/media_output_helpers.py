@@ -274,9 +274,14 @@ class ImageOperationsAndEffects:
         new_larger_image.paste(image, (0, 0))
         
         # Create a transparent background for the text
-        _temp_label_image = Image.new('RGBA', (text_width, text_height), (0, 0, 0, 0))
+        _debug_red_color = (255, 0, 0, 90)
+        _temp_label_image = Image.new('RGBA', (text_width, text_height), _debug_red_color)
         draw_label_temp = ImageDraw.Draw(_temp_label_image)
         
+        _internal_temp_box_text_x = text_width // 2
+        _internal_temp_box_text_y = (text_height // 2)
+        
+
         # Draw the text
         if with_text_outline:
             # Calculate border thickness based on font size
@@ -293,7 +298,7 @@ class ImageOperationsAndEffects:
             draw_label_temp.text((0, 0), label_text, font=font, fill=text_color)
         else:
             # Draw text without border
-            draw_label_temp.text((0, 0), label_text, font=font, fill=text_color)
+            draw_label_temp.text((_internal_temp_box_text_x, _internal_temp_box_text_y), label_text, font=font, fill=text_color)
         
         # Rotate the text 270 degrees (so it reads from bottom to top)
         _temp_label_image = _temp_label_image.rotate(270, expand=1)
@@ -302,11 +307,14 @@ class ImageOperationsAndEffects:
         rotated_width, rotated_height = _temp_label_image.size
 
         # Calculate position to center the text horizontally
+        # For 270 degree rotation, we need to center based on the height of the original text
+        # because after rotation, the height becomes the width
         text_x = (new_width - rotated_width) // 2
         text_y = image.height + padding  # Position at the bottom of the original image plus padding
 
         # Paste the rotated text at the bottom center of the image
         new_larger_image.paste(_temp_label_image, (text_x, text_y), _temp_label_image)
+
 
         return new_larger_image
 

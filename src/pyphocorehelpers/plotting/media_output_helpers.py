@@ -628,6 +628,7 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
             for x in range(norm_array.shape[1]):
                 value = norm_array[y, x]
                 text = f'{value:.2f}'
+                # text = "{:07.2f}".format(value) # f'{value:.2f}'
                 text_x = x * desired_width // norm_array.shape[1]
                 text_y = y * desired_height // norm_array.shape[0]
 

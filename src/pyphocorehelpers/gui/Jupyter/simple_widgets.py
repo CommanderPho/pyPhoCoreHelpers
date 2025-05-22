@@ -659,7 +659,8 @@ class CheckBoxListWidget(widgets.VBox):
     @traitlets.observe('value')
     def _value_changed(self, change):
         # Callback when value changes
-        print(f'Value changed to: {self.value}')
+        # print(f'Value changed to: {self.value}')
+        pass
 
 
     # def update_options_list(options_list: List):

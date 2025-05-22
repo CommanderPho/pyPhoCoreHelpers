@@ -3,6 +3,8 @@ from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 import nptyping as ND
 from nptyping import NDArray
 import numpy as np
+import pandas as pd
+from pyphocorehelpers.indexing_helpers import get_variable_shape, safe_get_variable_shape
 
 class Assert:
     """ Convenince assertion helpers that print out the value that causes the assertion along with a reasonable message instead of showing nothing
@@ -29,6 +31,100 @@ class Assert:
         assert path.exists(), f"{var_name} does not exist! {var_name}: '{path}'" # Perform the assertion with detailed error message
         
 
+
+    # ==================================================================================================================================================================================================================================================================================== #
+    # Binary Comparisons                                                                                                                                                                                                                                                                   #
+    # ==================================================================================================================================================================================================================================================================================== #
+    @classmethod
+    def not_None(cls, *args):
+        """ Ensures all passed *args are non-None, if it fails, it prints the actual values of each arg.
+        """
+        import inspect
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        
+        var_name_dict = {}
+        n_unknown_variables: int = 0
+            
+        for a_equal_checkable_var in args:
+            # Extract the variable name from the caller's local variables
+            var_name = [name for name, val in frame.f_locals.items() if val is a_equal_checkable_var]
+            # Use the first matched variable name or 'unknown' if not found
+            if var_name: 
+                var_name = var_name[0] 
+            else:
+                var_name = f'unknown[{n_unknown_variables}]' # var_name = var_name[0] if var_name else 'unknown'
+                n_unknown_variables += 1 ## increment    
+                
+            if var_name not in var_name_dict:
+                var_name_dict[var_name] = a_equal_checkable_var ## turn into dictionary
+            else:
+                raise NotImplementedError(f'have same name! var_name: "{var_name}", var_name_dict: {var_name_dict}')            
+
+        ## END for a_equal_checkab...
+            
+        if len(var_name_dict) == 0:
+            # return True # empty arrays are all equal
+            pass
+        elif len(var_name_dict) == 1:
+            # if only a single array, make sure it's not accidentally passed in incorrect
+            reference_var = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
+            return (reference_var is not None)
+        else:
+            ## It has more than two elements:
+            values_dict = {k:v for k, v in var_name_dict.items()}
+            for var_name, a_val in values_dict.items():
+                if a_val is None:
+                    assert (a_val is None), f"{var_name} must be non-None but instead {var_name}: {a_val}.\nvalues_dict: {values_dict}\n{var_name}: {a_val}\n" # Perform the assertion with detailed error message
+
+
+    @classmethod
+    def is_None(cls, *args):
+        """ Ensures all passed *args are equal in value, if it fails, it prints the actual values of each arg.
+        """
+        import inspect
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        
+        var_name_dict = {}
+        n_unknown_variables: int = 0
+            
+        for a_equal_checkable_var in args:
+            # Extract the variable name from the caller's local variables
+            var_name = [name for name, val in frame.f_locals.items() if val is a_equal_checkable_var]
+            # Use the first matched variable name or 'unknown' if not found
+            if var_name: 
+                var_name = var_name[0] 
+            else:
+                var_name = f'unknown[{n_unknown_variables}]' # var_name = var_name[0] if var_name else 'unknown'
+                n_unknown_variables += 1 ## increment    
+                
+            if var_name not in var_name_dict:
+                var_name_dict[var_name] = a_equal_checkable_var ## turn into dictionary
+            else:
+                raise NotImplementedError(f'have same name! var_name: "{var_name}", var_name_dict: {var_name_dict}')            
+
+        ## END for a_equal_checkab...
+            
+        if len(var_name_dict) == 0:
+            # return True # empty arrays are all equal
+            pass
+        elif len(var_name_dict) == 1:
+            # if only a single array, make sure it's not accidentally passed in incorrect
+            reference_var = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
+            return (reference_var is not None)
+        else:
+            ## It has more than two elements:
+            values_dict = {k:v for k, v in var_name_dict.items()}
+            for var_name, a_val in values_dict.items():
+                if a_val is not None:
+                    assert (a_val is not None), f"{var_name} must be None but instead {var_name}: {a_val}.\nvalues_dict: {values_dict}\n{var_name}: {a_val}\n" # Perform the assertion with detailed error message
+
+
+
+    # ==================================================================================================================================================================================================================================================================================== #
+    # Iterables                                                                                                                                                                                                                                                                            #
+    # ==================================================================================================================================================================================================================================================================================== #
     @classmethod
     def all_equal(cls, *args):
         """ Ensures all passed *args are equal in value, if it fails, it prints the actual values of each arg.
@@ -38,20 +134,28 @@ class Assert:
         frame = inspect.currentframe().f_back
         
         var_name_dict = {}
-        var_names_list = [name for name, val in frame.f_locals.items()]
+        # var_names_list = [name for name, val in frame.f_locals.items()]
+        
+        n_unknown_variables: int = 0
             
         for a_equal_checkable_var in args:
             # Extract the variable name from the caller's local variables
             var_name = [name for name, val in frame.f_locals.items() if val is a_equal_checkable_var]
             # Use the first matched variable name or 'unknown' if not found
-            var_name = var_name[0] if var_name else 'unknown'
+            if var_name: 
+                var_name = var_name[0] 
+            else:
+                var_name = f'unknown[{n_unknown_variables}]' # var_name = var_name[0] if var_name else 'unknown'
+                n_unknown_variables += 1 ## increment
+                
             if var_name not in var_name_dict:
                 var_name_dict[var_name] = a_equal_checkable_var ## turn into dictionary
             
             # assert var_name not in var_name_dict, f"var_name: {var_name} already exists in var_name_dict: {var_name_dict}"            
             # ## could append suffix like "f{var_name}[1]"
             # var_name_dict[var_name] = a_equal_checkable_var ## turn into dictionary
-            
+        ## END for a_equal_checkab...
+        
         if len(var_name_dict) == 0:
             # return True # empty arrays are all equal
             pass
@@ -69,17 +173,15 @@ class Assert:
             values_dict = {k:v for k, v in var_name_dict.items()}
             for var_name, a_val in values_dict.items():
                 if a_val != reference_val:
-                    assert (a_val == reference_val), f"{var_name} must be == {reference_val} but instead {var_name}: {a_val}.\nvalues_dict: {values_dict}\n{var_name}: {a_equal_checkable_var}\n" # Perform the assertion with detailed error message
+                    assert (a_val == reference_val), f"{var_name} must be == {reference_val} but instead {var_name}: {a_val}.\nvalues_dict: {values_dict}\n{var_name}: {a_val}\n" # Perform the assertion with detailed error message
             # Check equivalence for each array in the list
             # return np.all([pairwise_numpy_fn(reference_array, an_arr, **kwargs) for an_arr in list_of_arrays[1:]]) # can be used without the list comprehension just as a generator if you use all(...) instead.
             # return all(np.all(np.array_equiv(reference_array, an_arr) for an_arr in list_of_arrays[1:])) # the outer 'all(...)' is required, otherwise it returns a generator object like: `<generator object NumpyHelpers.all_array_equiv.<locals>.<genexpr> at 0x00000128E0482AC0>`
 
 
-            
-            
     @classmethod
     def len_equals(cls, arr_or_list, required_length: int):
-        """ Ensures the length is equal to the required_length, if it fails, it prints the actual length
+        """ Ensures the length is equal to the required_length (a specific length), if it fails, it prints the actual length
         """
         import inspect
         # Get the caller's frame
@@ -131,8 +233,181 @@ class Assert:
             # return np.all([pairwise_numpy_fn(reference_array, an_arr, **kwargs) for an_arr in list_of_arrays[1:]]) # can be used without the list comprehension just as a generator if you use all(...) instead.
             # return all(np.all(np.array_equiv(reference_array, an_arr) for an_arr in list_of_arrays[1:])) # the outer 'all(...)' is required, otherwise it returns a generator object like: `<generator object NumpyHelpers.all_array_equiv.<locals>.<genexpr> at 0x00000128E0482AC0>`
 
+    @classmethod
+    def shape_equals(cls, arr_or_list, required_shape: Union[Tuple[int], int]):
+        """ Ensures the length is equal to the required_length, if it fails, it prints the actual length
+        """
+        import inspect
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        # Extract the variable name from the caller's local variables
+        var_name = [name for name, val in frame.f_locals.items() if val is arr_or_list]
+        # Use the first matched variable name or 'unknown' if not found
+        var_name = var_name[0] if var_name else 'unknown'
+        assert np.alltrue(get_variable_shape(arr_or_list) == required_shape), f"{var_name} must be of length {required_shape} but instead len({var_name}): {len(arr_or_list)}.\n{var_name}: {arr_or_list}\n" # Perform the assertion with detailed error message
+
+    @classmethod
+    def same_shape(cls, *args):
+        """ Ensures all passed *args are the same length (according to len(...), if it fails, it prints the actual length of each arg.
+        """
+        import inspect
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        
+        var_name_dict = {}
+        for arr_or_list in args:
+            # Extract the variable name from the caller's local variables
+            var_name = [name for name, val in frame.f_locals.items() if val is arr_or_list]
+            # Use the first matched variable name or 'unknown' if not found
+            var_name = var_name[0] if var_name else 'unknown'
+            assert var_name not in var_name_dict, f"var_name: {var_name} already exists in var_name_dict: {var_name_dict}"
+            ## could append suffix like "f{var_name}[1]"
+            var_name_dict[var_name] = arr_or_list ## turn into dictionary
+            
+        if len(var_name_dict) == 0:
+            # return True # empty arrays are all equal
+            pass
+        elif len(var_name_dict) == 1:
+            # if only a single array, make sure it's not accidentally passed in incorrect
+            reference_array = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
+            # assert isinstance(reference_array, (np.ndarray))
+            a_shape = get_variable_shape(reference_array, should_fail_when_cannot_determine=True)
+            assert a_shape is not None
+            # return True # as long as imput is intended, always True
+            pass        
+        else:
+            ## It has more than two elements:
+            reference_array = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
+            reference_shape: int = get_variable_shape(reference_array, should_fail_when_cannot_determine=True)
+            shapes_dict = {k:get_variable_shape(v, should_fail_when_cannot_determine=True) for k, v in var_name_dict.items()}
+            for var_name, a_shape in shapes_dict.items():
+                if np.alltrue(a_shape == reference_shape):
+                # if a_shape != reference_shape:
+                    assert (a_shape == reference_shape), f"{var_name} must be of shape {reference_shape} but instead shape({var_name}): {a_shape}.\nreference_lengths: {shapes_dict}\n{var_name}: {arr_or_list}\n" # Perform the assertion with detailed error message
+            # Check equivalence for each array in the list
+            # return np.all([pairwise_numpy_fn(reference_array, an_arr, **kwargs) for an_arr in list_of_arrays[1:]]) # can be used without the list comprehension just as a generator if you use all(...) instead.
+            # return all(np.all(np.array_equiv(reference_array, an_arr) for an_arr in list_of_arrays[1:])) # the outer 'all(...)' is required, otherwise it returns a generator object like: `<generator object NumpyHelpers.all_array_equiv.<locals>.<genexpr> at 0x00000128E0482AC0>`
 
 
+    @classmethod
+    def all_are_not_None(cls, *args):
+        """ Ensures all passed *args are non-None, if it fails, it prints the actual values of each arg.
+        """
+        import inspect
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        
+        var_name_dict = {}
+        n_unknown_variables: int = 0
+            
+        for a_equal_checkable_var in args:
+            # Extract the variable name from the caller's local variables
+            var_name = [name for name, val in frame.f_locals.items() if val is a_equal_checkable_var]
+            # Use the first matched variable name or 'unknown' if not found
+            if var_name: 
+                var_name = var_name[0] 
+            else:
+                var_name = f'unknown[{n_unknown_variables}]' # var_name = var_name[0] if var_name else 'unknown'
+                n_unknown_variables += 1 ## increment    
+                
+            if var_name not in var_name_dict:
+                var_name_dict[var_name] = a_equal_checkable_var ## turn into dictionary
+            else:
+                raise NotImplementedError(f'have same name! var_name: "{var_name}", var_name_dict: {var_name_dict}')            
+
+        ## END for a_equal_checkab...
+            
+        if len(var_name_dict) == 0:
+            # return True # empty arrays are all equal
+            pass
+        elif len(var_name_dict) == 1:
+            # if only a single array, make sure it's not accidentally passed in incorrect
+            reference_var = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
+            return (reference_var is not None)
+        else:
+            ## It has more than two elements:
+            values_dict = {k:v for k, v in var_name_dict.items()}
+            for var_name, a_val in values_dict.items():
+                if (a_val is None):
+                    assert (a_val is None), f"{var_name} must be non-None but instead {var_name}: {a_val}.\nvalues_dict: {values_dict}\n{var_name}: {a_val}\n" # Perform the assertion with detailed error message
+
+
+    @classmethod
+    def all_are_None(cls, *args):
+        """ Ensures all passed *args are None, if it fails, it prints the actual values of each arg.
+        """
+        import inspect
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        
+        var_name_dict = {}
+        n_unknown_variables: int = 0
+            
+        for a_equal_checkable_var in args:
+            # Extract the variable name from the caller's local variables
+            var_name = [name for name, val in frame.f_locals.items() if val is a_equal_checkable_var]
+            # Use the first matched variable name or 'unknown' if not found
+            if var_name: 
+                var_name = var_name[0] 
+            else:
+                var_name = f'unknown[{n_unknown_variables}]' # var_name = var_name[0] if var_name else 'unknown'
+                n_unknown_variables += 1 ## increment    
+                
+            if var_name not in var_name_dict:
+                var_name_dict[var_name] = a_equal_checkable_var ## turn into dictionary
+            else:
+                raise NotImplementedError(f'have same name! var_name: "{var_name}", var_name_dict: {var_name_dict}')            
+
+        ## END for a_equal_checkab...
+            
+        if len(var_name_dict) == 0:
+            # return True # empty arrays are all equal
+            pass
+        elif len(var_name_dict) == 1:
+            # if only a single array, make sure it's not accidentally passed in incorrect
+            reference_var = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
+            return (reference_var is not None)
+        else:
+            ## It has more than two elements:
+            values_dict = {k:v for k, v in var_name_dict.items()}
+            for var_name, a_val in values_dict.items():
+                if a_val is not None:
+                    assert (a_val is not None), f"{var_name} must be None but instead {var_name}: {a_val}.\nvalues_dict: {values_dict}\n{var_name}: {a_val}\n" # Perform the assertion with detailed error message
+
+
+
+
+    # ==================================================================================================================================================================================================================================================================================== #
+    # Dataframes                                                                                                                                                                                                                                                                           #
+    # ==================================================================================================================================================================================================================================================================================== #
+    @classmethod
+    def require_columns(cls, dfs: Union[pd.DataFrame, List[pd.DataFrame], Dict[Any, pd.DataFrame]], required_columns: List[str]) -> bool:
+        """
+        Check if all DataFrames in the given container have the required columns.
+        
+        Parameters:
+            dfs: A container that may be a single DataFrame, a list/tuple of DataFrames, or a dictionary with DataFrames as values.
+            required_columns: A list of column names that are required to be present in each DataFrame.
+            print_changes: If True, prints the columns that are missing from each DataFrame.
+        
+        Returns:
+            True if all DataFrames contain all the required columns, otherwise False.
+
+        Usage:
+
+            required_cols = ['missing_column', 'congruent_dir_bins_ratio', 'coverage', 'direction_change_bin_ratio', 'jump', 'laplacian_smoothness', 'longest_sequence_length', 'longest_sequence_length_ratio', 'monotonicity_score', 'sequential_correlation', 'total_congruent_direction_change', 'travel'] # Replace with actual column names you require
+            has_required_columns = PandasHelpers.require_columns({a_name:a_result.filter_epochs for a_name, a_result in filtered_decoder_filter_epochs_decoder_result_dict.items()}, required_cols, print_missing_columns=True)
+            has_required_columns
+            
+
+
+        """
+        from neuropy.utils.indexing_helpers import PandasHelpers
+
+        has_all_columns: bool = PandasHelpers.require_columns(dfs=dfs, required_columns=required_columns, print_missing_columns=True)
+        assert has_all_columns
+        
+             
 
     # @classmethod
     # def _helper_all_array_generic(cls, pairwise_numpy_fn, list_of_arrays: List[NDArray], **kwargs) -> bool:

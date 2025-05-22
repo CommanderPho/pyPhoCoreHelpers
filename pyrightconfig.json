@@ -21,7 +21,7 @@
     "**/dist",
     "**/build",
     "**/.idea",
-    "**/.venv",
+    "**/.venv","**/.venv_new","**/.venv_*",
   ],
 //   "ignore": [
 //     "src/oldstuff"

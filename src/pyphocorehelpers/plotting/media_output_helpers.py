@@ -217,8 +217,9 @@ class ImageOperationsAndEffects:
     @classmethod
     def add_bottom_label(cls, image: Image.Image, label_text: str, padding: int = None, font_size: int = None,  
                         text_color: tuple = (255, 255, 255), background_color: tuple = (66, 66, 66, 255), 
-                        with_text_outline: bool = False, relative_font_size: float = 0.06,
-                        relative_padding: float = 0.025, fixed_label_region_height: Optional[int] = 420,
+                        text_outline_shadow_color=None,
+                        relative_font_size: float = 0.06,
+                        relative_padding: float = 0.025, fixed_label_region_height: Optional[int] = 520,
                         # font='OpenSansCondensed-LightItalic.ttf',
                         font='ndastroneer.ttf',
                         debug_print=False,
@@ -315,19 +316,20 @@ class ImageOperationsAndEffects:
         # print(f'text_width: {text_width}, text_height: {text_height}, _internal_temp_box_text_x: {_internal_temp_box_text_x}, _internal_temp_box_text_y: {_internal_temp_box_text_y}')
 
         # Draw the text
-        if with_text_outline:
+        if (text_outline_shadow_color is not None):
             # Calculate border thickness based on font size
             border_thickness = max(1, int(font_size * 0.05))  # 5% of font size, minimum 1px
             
             # Draw text with outline
-            shadow_color = (0, 0, 0)
+            
             for dx in range(-border_thickness, border_thickness + 1):
                 for dy in range(-border_thickness, border_thickness + 1):
                     if dx != 0 or dy != 0:  # Skip the center position
-                        draw_label_temp.text((dx, dy), label_text, fill=shadow_color, **label_kwargs)
+                        draw_label_temp.text((dx, dy), label_text, fill=text_outline_shadow_color, **label_kwargs)
             
             # Draw the main text
-            draw_label_temp.text((0, 0), label_text, fill=text_color, **label_kwargs)
+            # draw_label_temp.text((0, 0), label_text, fill=text_color, **label_kwargs)
+            draw_label_temp.text((_internal_temp_box_text_x, _internal_temp_box_text_y), label_text, fill=text_color, **label_kwargs)
         else:
             # Draw text without border
             draw_label_temp.text((_internal_temp_box_text_x, _internal_temp_box_text_y), label_text, fill=text_color, **label_kwargs) # , direction=''

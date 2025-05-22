@@ -248,3 +248,93 @@ class ObsidianCanvasHelper:
             _write_status = None
 
         return target_canvas, group_node, _write_status
+
+
+    @classmethod
+    def build_canvas_for_exported_session_posteriors(cls, sessions_export_folder = Path('K:/scratch/collected_outputs/2025-05-22'),
+                                                     intra_session_v_spacing: int = 3000, intra_laps_and_pbes_v_spacing: int = 1000, is_single_canvas: bool = True, common_add_images_to_canvas_kwargs = dict(debug_print=False), image_glob="p_x_given_n*.png",
+                                                     canvas_folders_url = Path(r"D:/PhoGlobalObsidian2022/🌐🧠 Working Memory/Pho-Kamran Paper 2024/_programmatic_test"),
+                                                     ):
+        
+        """ Takes an export directory of exported posteriors for each session, and generates either a combined or session-specific Obsidian Canvas
+
+                
+        added_groups_dict, write_modified_canvas_path = ObsidianCanvasHelper.build_canvas_for_exported_session_posteriors(sessions_export_folder = Path('K:/scratch/collected_outputs/2025-05-22'),
+                                                     intra_session_v_spacing: int = 3000, intra_laps_and_pbes_v_spacing: int = 1000, is_single_canvas: bool = True, common_add_images_to_canvas_kwargs = dict(debug_print=False), image_glob="p_x_given_n*.png",
+                                                     canvas_folders_url = Path(r"D:/PhoGlobalObsidian2022/🌐🧠 Working Memory/Pho-Kamran Paper 2024/_programmatic_test"),
+                                                     )
+
+
+        """
+        ## INPUTS: intra_session_v_spacing, intra_laps_and_pbes_v_spacing, is_single_canvas
+
+        ## INPUTS: base_path, canvas_folders_url
+        added_groups_dict = {}
+
+        # Create a new canvas
+        if is_single_canvas:
+            print(f'creating new Canvas as none was provided!')
+            target_canvas = Canvas(nodes=[], edges=[])
+            initial_x = 0
+            initial_y = 0    
+
+        else:
+            target_canvas = None
+            initial_x = 0
+            initial_y = 0
+            
+        # Iterate through only the directories (folders)
+        for session_folder in [item for item in sessions_export_folder.iterdir() if item.is_dir()]:
+            print(f"Found folder: {session_folder.name}")
+            session_name: str = session_folder.name.removesuffix('_weighted_position_posterior')
+            print(f'\tsession_name: {session_name}')
+            
+
+            if not is_single_canvas:
+                # Do something with each folder
+                write_modified_canvas_path: Path = canvas_folders_url.joinpath(f'_programmatic_test_{session_name}.canvas')
+                # image_folder_path: Path = Path(r'C:/Users/pho/repos/Spike3DWorkEnv/Spike3D/output/collected_outputs/2025-05-21/gor01_two_2006-6-07_16-40-19_normal_computed_[1, 2]_5.0/ripple/psuedo2D_nan_filled/raw_rgba').resolve()
+                target_canvas = None ## start with a blank canvas each time
+                
+            else:
+                ## single_canvas mode: set no save URL so it doesn't write out to file
+                write_modified_canvas_path = None
+
+            image_folder_path: Path = session_folder.joinpath('laps/psuedo2D_nan_filled/raw_rgba').resolve()
+            target_canvas, laps_group_node, _write_status = cls.add_images_to_canvas(image_folder_path=image_folder_path, image_glob=image_glob, target_canvas=target_canvas, write_modified_canvas_path=write_modified_canvas_path, override_write_mode='w',
+                                                                                     image_group_name=f'Laps - {session_name}', initial_x = initial_x, initial_y = initial_y, **common_add_images_to_canvas_kwargs)
+            
+            ## use the existing canvas
+            initial_y = initial_y + intra_laps_and_pbes_v_spacing
+            image_folder_path: Path = session_folder.joinpath('ripple/psuedo2D_nan_filled/raw_rgba').resolve()
+            target_canvas, pbes_group_node, _write_status = cls.add_images_to_canvas(image_folder_path=image_folder_path, image_glob=image_glob, target_canvas=target_canvas, write_modified_canvas_path=write_modified_canvas_path, override_write_mode='w',
+                                                                                     image_group_name=f'PBEs - {session_name}', initial_x = initial_x, initial_y=initial_y, **common_add_images_to_canvas_kwargs)
+            
+            ## Build session group
+            group_node: GroupNode = cls.group_wrapping_nodes(children_nodes=(laps_group_node, pbes_group_node), group_name=f'{session_name}', group_padding=(100, 90))
+            target_canvas.add_node(group_node)
+            # added_groups_dict[session_name] = group_node
+            added_groups_dict[f'{session_name}'] = {'session': group_node, 'laps': laps_group_node, 'pbes': pbes_group_node}
+            
+            if is_single_canvas:
+                initial_x = 0
+                initial_y = initial_y + intra_session_v_spacing ## spacing of 5000 between sessions
+
+            else:
+                ## reset canvas so new one is created
+                target_canvas = None
+                ## re-zero
+                initial_x = 0
+                initial_y = 0    
+
+            # target_canvas, _write_status
+
+
+        if is_single_canvas:
+            ## do final save
+            write_modified_canvas_path: Path = canvas_folders_url.joinpath(f'ALL_SESSIONS.canvas') ## session-specific canvas save URL
+            _write_status = ObsidianCanvasHelper.save(canvas=target_canvas, canvas_url=write_modified_canvas_path, write_mode='w')
+            print(f'Finished writing to "{write_modified_canvas_path.as_posix()}"')
+        ## OUTPUTS: added_groups_dict, write_modified_canvas_path
+
+        return added_groups_dict, write_modified_canvas_path

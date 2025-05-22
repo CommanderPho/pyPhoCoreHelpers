@@ -72,9 +72,61 @@ class ObsidianCanvasHelper:
         return _status_code      
 
 
+    @classmethod
+    def group_wrapping_nodes(cls, children_nodes: List, group_name: str='GROUP', group_padding=(50, 30), debug_print=True, **kwargs) -> GroupNode:
+        """ given a list of nodes to wrap, builds an appropriately sized (with padding) group of the specified name
+        Does not add it to canvas
+        
+        Usage:
+        
+            group_node: GroupNode = ObsidianCanvasHelper.group_wrapping_nodes(children_nodes=(laps_group_node, pbes_group_node), group_name=f'{session_name}', group_padding=(100, 90))
+            target_canvas.add_node(group_node)
+
+
+        """
+        # (laps_group_node.x, laps_group_node.y, laps_group_node.width, laps_group_node.height)
+        # node_shapes = np.vstack([(a_node.x, a_node.y, a_node.width, a_node.height) for i, a_node in enumerate(children_nodes)]) # (n_images, 4)
+        
+        # extents: (x0, y0, x1, y1)
+        node_extents = np.vstack([(a_node.x, a_node.y, (a_node.x + a_node.width),(a_node.y + a_node.height)) for i, a_node in enumerate(children_nodes)]) # (n_images, 4)
+
+        # total_grouped_image_size = np.sum(image_sizes, axis=0)       
+        total_grouped_node_extent = (np.min(node_extents[:, 0]), np.min(node_extents[:, 1]), np.max(node_extents[:, 2]), np.max(node_extents[:, 3]))
+        
+        # total_grouped_node_padded_extent = deepcopy(total_grouped_node_extent)
+        # total_grouped_node_padded_extent[2] += 
+
+        total_grouped_node_x_y_width_height = (total_grouped_node_extent[0], total_grouped_node_extent[1], (total_grouped_node_extent[2] - total_grouped_node_extent[0]), (total_grouped_node_extent[3] - total_grouped_node_extent[1]))  ## since being stacked horizontally, use the sum of the widths, but the max of the heights
+        total_grouped_node_size = np.array(total_grouped_node_x_y_width_height[2:])
+        # total_grouped_images_padding = (int(round(float(x_padding)*float(n_images-1))), 0)
+        initial_x, initial_y = total_grouped_node_x_y_width_height[:2]
+
+        group_padding = np.array(group_padding)
+        total_group_size = total_grouped_node_size + (2 * group_padding)
+        group_offset = np.array((initial_x, initial_y)) - group_padding
+
+        
+        if debug_print:
+            print(f'image_sizes: {np.shape(node_extents)}, total_grouped_node_x_y_width_height: {total_grouped_node_x_y_width_height}')        
+
+        ## group all elements in a group
+        group_node = GroupNode(
+            x=group_offset[0],
+            y=group_offset[1],
+            width=total_group_size[0],
+            height=total_group_size[1],
+            label=group_name,
+            # background="/path/to/background.jpg",
+            # backgroundStyle=GroupNodeBackgroundStyle.COVER,
+            **kwargs,
+        )
+        return group_node
+
+
+
     @classmethod 
     def add_images_to_canvas(cls, image_folder_path: Path, image_glob: str = "*.png", target_canvas: Optional[Canvas]=None, write_modified_canvas_path: Path=None,
-                                    x_padding: int = 2, canvas_image_node_scale: float=0.2, image_group_name: str = 'MyGroup',
+                                    x_padding: int = 2, canvas_image_node_scale: float=0.2, image_group_name: str = 'MyGroup', initial_x: int = 0, initial_y: int = 0, max_num_to_add: int = 1000,
                                     obsidian_vault_root_path: Path = Path(r'D:\PhoGlobalObsidian2022'), vault_relative_image_dir_filepath: str = 'z__META\__IMAGES',
                                     override_write_mode='x', debug_print = False):
         """ Adds the images matching the glob in the `image_folder_path` to the canvas, or creates a new canvas, as needed
@@ -115,23 +167,22 @@ class ObsidianCanvasHelper:
 
         ## INPUTS: active_canvas, debug_print
         
-        
         obsidian_canvas_image_link_path: Path = obsidian_vault_root_path.joinpath(vault_relative_image_dir_filepath) #  Path(r'D:\PhoGlobalObsidian2022\z__META\__IMAGES')
         # image path is like "collected_outputs\2025-05-21\gor01_two_2006-6-07_16-40-19_normal_computed_[1, 2]_5.0\ripple\psuedo2D_nan_filled\raw_rgba\p_x_given_n[7].png"
 
-        initial_x = 0
-        initial_y = 0
-        max_num_to_add: int = 1000
         n_added: int = 0
         
         # text_node = TextNode(x=initial_x, y=initial_y, width=200, height=100, text=f"#{image_group_name}")
         # target_canvas.add_node(text_node)
 
         image_sizes = np.vstack([(int(round(canvas_image_node_scale * float(an_img.size[0]))), int(round(canvas_image_node_scale * float(an_img.size[1])))) for i, (img_name, an_img) in enumerate(images_dict.items())]) # (n_images, 2)
-        if debug_print:
-            print(f'image_sizes: {np.shape(image_sizes)}, image_sizes: {image_sizes}')
+        # if debug_print:
+        #     print(f'image_sizes: {np.shape(image_sizes)}, max_img_sizes: {np.max(image_sizes, axis=0)}')
 
-        # total_grouped_image_size = np.sum(image_sizes, axis=0)       
+        # total_grouped_image_size = np.sum(image_sizes, axis=0)
+        
+        if debug_print:
+            print(f'max_img_sizes: {np.max(image_sizes, axis=0)}')
 
         total_grouped_image_size = (np.sum(image_sizes[:, 0], axis=0), np.max(image_sizes[:, 1], axis=0))  ## since being stacked horizontally, use the sum of the widths, but the max of the heights
         total_grouped_images_padding = (int(round(float(x_padding)*float(n_images-1))), 0)
@@ -188,8 +239,6 @@ class ObsidianCanvasHelper:
         )
         target_canvas.add_node(group_node)
 
-
-            
         # save the canvas back to a file _____________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________ #
         if write_modified_canvas_path is not None:
             # write_modified_canvas_path: Path = write_modified_canvas_path.with_name(f'_programmatic_test.canvas')
@@ -198,4 +247,4 @@ class ObsidianCanvasHelper:
             print(f'no write_modified_canvas_path provided, skipping write')
             _write_status = None
 
-        return target_canvas, _write_status
+        return target_canvas, group_node, _write_status

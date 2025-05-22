@@ -217,11 +217,15 @@ class ImageOperationsAndEffects:
     def add_bottom_label(cls, image: Image.Image, label_text: str, padding: int = None, font_size: int = None,  
                         text_color: tuple = (255, 255, 255), background_color: tuple = (66, 66, 66, 255), 
                         with_text_outline: bool = False, relative_font_size: float = 0.06,
-                        relative_padding: float = 0.025,
+                        relative_padding: float = 0.025, fixed_label_region_height: Optional[int] = 420,
                         # font='OpenSansCondensed-LightItalic.ttf',
                         font='ndastroneer.ttf',
+                        debug_print=False,
                         ) -> Image.Image:
-        """Adds a vertically oriented label at the bottom of an image."""
+        """Adds a vertically oriented label at the bottom of an image.
+        
+        
+        """
 
         # Calculate font size and padding based on image height if not provided
         img_height = deepcopy(image.height)
@@ -229,7 +233,8 @@ class ImageOperationsAndEffects:
             
         if font_size is None:
             font_size = max(int(img_height * relative_font_size), 20)  # Minimum font size of 8
-        
+            if debug_print:
+                print(f'computing font size with relative_font_size: {relative_font_size}: font_size: {font_size} |', end='\t')
         if padding is None:
             padding = max(int(img_height * relative_padding), 10)  # Minimum padding of 5
         
@@ -268,16 +273,31 @@ class ImageOperationsAndEffects:
         rotated_text_width = text_height  # After 90 degree rotation
         rotated_text_height = text_width  # After 90 degree rotation
         
+        if debug_print:
+            print(f'rotated_text_width: {rotated_text_width}, rotated_text_height: {rotated_text_height}', end='\t')
+            
+        if fixed_label_region_height is not None:
+            if ((padding + rotated_text_height) > fixed_label_region_height):
+                raise ValueError(f'Needed spacing for the label exceeds the specfied fixed_label_region_height: {fixed_label_region_height}, required space (padding + rotated_text_height): {(padding + rotated_text_height)}, padding: {padding}, rotated_text_height: {rotated_text_height}.')
+            active_total_label_region_height: int = fixed_label_region_height ## override with the `fixed_label_region_height`
+        else:
+            active_total_label_region_height: int = (padding + rotated_text_height)
+
         # Create a new image with space for the label
         new_width = image.width
-        new_height: int = int(image.height + padding + rotated_text_height)
-        
+        new_height: int = int(image.height + active_total_label_region_height)
+
+            
         # Create the new image with the background color
         if image.mode == 'RGBA':
             new_larger_image = Image.new('RGBA', (new_width, new_height), background_color)
         else:
             new_larger_image = Image.new(image.mode, (new_width, new_height), background_color[:3])
         
+        if debug_print:
+            print(f'new_larger_image.size(w: {new_width}, h: {new_height}', end='\t')
+            
+
         # Paste the original image at the top
         new_larger_image.paste(image, (0, 0))
         
@@ -311,13 +331,12 @@ class ImageOperationsAndEffects:
             # Draw text without border
             draw_label_temp.text((_internal_temp_box_text_x, _internal_temp_box_text_y), label_text, fill=text_color, **label_kwargs) # , direction=''
         
-        _temp_label_image
         
         # Rotate the text 270 degrees (so it reads from bottom to top)
         _temp_label_image = _temp_label_image.rotate(270, expand=1)
 
         # Get the dimensions of the rotated text image
-        rotated_width, rotated_height = _temp_label_image.size
+        # rotated_width, rotated_height = _temp_label_image.size
 
         # Calculate position to center the text horizontally
         # For 270 degree rotation, we need to center based on the height of the original text
@@ -329,6 +348,9 @@ class ImageOperationsAndEffects:
         # Paste the rotated text at the bottom center of the image
         new_larger_image.paste(_temp_label_image, (text_x, text_y), _temp_label_image)
 
+        if debug_print:
+            print(f'done.', end='\n') ## terminate the line
+            
         return new_larger_image
 
 

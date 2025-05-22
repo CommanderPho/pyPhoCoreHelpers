@@ -254,7 +254,7 @@ class ObsidianCanvasHelper:
 
     @classmethod
     def build_canvas_for_exported_session_posteriors(cls, sessions_export_folder = Path('K:/scratch/collected_outputs/2025-05-22'),
-                                                     intra_session_v_spacing: int = 3000, intra_laps_and_pbes_v_spacing: int = 1000, is_single_canvas: bool = True, common_add_images_to_canvas_kwargs = dict(debug_print=False), image_glob="p_x_given_n*.png",
+                                                     intra_session_v_spacing: int = 3000, intra_laps_and_pbes_v_spacing: int = 1000, is_single_canvas: bool = True, common_add_images_to_canvas_kwargs = dict(debug_print=False, canvas_image_node_scale=0.2), image_glob="p_x_given_n*.png",
                                                      canvas_folders_url = Path(r"D:/PhoGlobalObsidian2022/🌐🧠 Working Memory/Pho-Kamran Paper 2024/_programmatic_test"),
                                                      ):
         

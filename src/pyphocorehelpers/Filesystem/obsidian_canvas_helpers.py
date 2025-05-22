@@ -126,7 +126,7 @@ class ObsidianCanvasHelper:
 
     @classmethod 
     def add_images_to_canvas(cls, image_folder_path: Path, image_glob: str = "*.png", target_canvas: Optional[Canvas]=None, write_modified_canvas_path: Path=None,
-                                    x_padding: int = 2, canvas_image_node_scale: float=0.2, image_group_name: str = 'MyGroup', initial_x: int = 0, initial_y: int = 0, max_num_to_add: int = 1000,
+                                    x_padding: int = 2, canvas_image_node_scale: float=None, image_group_name: str = 'MyGroup', initial_x: int = 0, initial_y: int = 0, max_num_to_add: int = 1000,
                                     obsidian_vault_root_path: Path = Path(r'D:\PhoGlobalObsidian2022'), vault_relative_image_dir_filepath: str = 'z__META\__IMAGES',
                                     override_write_mode='x', debug_print = False):
         """ Adds the images matching the glob in the `image_folder_path` to the canvas, or creates a new canvas, as needed
@@ -174,7 +174,9 @@ class ObsidianCanvasHelper:
         
         # text_node = TextNode(x=initial_x, y=initial_y, width=200, height=100, text=f"#{image_group_name}")
         # target_canvas.add_node(text_node)
-
+        if canvas_image_node_scale is None:
+            canvas_image_node_scale = 1.0
+            
         image_sizes = np.vstack([(int(round(canvas_image_node_scale * float(an_img.size[0]))), int(round(canvas_image_node_scale * float(an_img.size[1])))) for i, (img_name, an_img) in enumerate(images_dict.items())]) # (n_images, 2)
         # if debug_print:
         #     print(f'image_sizes: {np.shape(image_sizes)}, max_img_sizes: {np.max(image_sizes, axis=0)}')

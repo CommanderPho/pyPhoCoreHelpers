@@ -1,6 +1,6 @@
 [project]
 name = "pyphocorehelpers"
-version = "0.4.0"
+version = "0.4.1"
 description = "A collection of generally useful python code by Pho Hale"
 authors = [{ name = "Pho Hale", email = "CommanderPho@users.noreply.github.com" }]
 requires-python = ">=3.9,<3.12"

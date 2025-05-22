@@ -68,17 +68,18 @@ def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
 class ImageOperationsAndEffects:
     
     @classmethod
-    def create_fn_builder(cls, a_fn, *args, **kwargs):
-        """ Used to capture values
+    def create_fn_builder(cls, a_fn, **static_kwargs):
+        """  Creates a function builder that captures static parameters and allows dynamic parameters to be added later.
+        
         
         a_fn = ImageOperationsAndEffects.create_fn_builder(ImageOperationsAndEffects.add_solid_border, border_color = (0, 0, 0, 255))
         
         """
-        def _create_new_img_operation_function(*args, **kwargs):
+        def _create_new_img_operation_function(*dynamic_args, **dynamic_kwargs):
             """Create a function that adds a specific label to an image."""
-            return lambda an_img: a_fn(an_img, *args, **kwargs)
+            final_kwargs = (deepcopy(static_kwargs) | dynamic_kwargs) ## override any static kwargs with the dynamic ones
+            return lambda an_img: a_fn(an_img, *dynamic_args, **final_kwargs)
         
-
         return _create_new_img_operation_function
 
 

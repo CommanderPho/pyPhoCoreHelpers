@@ -45,6 +45,11 @@ class ObsidianCanvasHelper:
     
     @classmethod
     def load(cls, canvas_url: Path) -> Canvas:
+        """ 
+        
+        loaded_canvas: Canvas = ObsidianCanvasHelper.load(canvas_url=existing_canvas_path)
+        
+        """
         # Load JSON from a string
         with open(canvas_url, 'r', encoding='utf-8') as f:
             # canvas_json = json.load(f)

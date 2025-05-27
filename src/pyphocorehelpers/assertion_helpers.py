@@ -300,9 +300,9 @@ class Assert:
         var_name_dict = {}
         n_unknown_variables: int = 0
             
-        for a_equal_checkable_var in args:
+        for an_equal_checkable_var in args:
             # Extract the variable name from the caller's local variables
-            var_name = [name for name, val in frame.f_locals.items() if val is a_equal_checkable_var]
+            var_name = [name for name, val in frame.f_locals.items() if val is an_equal_checkable_var]
             # Use the first matched variable name or 'unknown' if not found
             if var_name: 
                 var_name = var_name[0] 
@@ -311,7 +311,7 @@ class Assert:
                 n_unknown_variables += 1 ## increment    
                 
             if var_name not in var_name_dict:
-                var_name_dict[var_name] = a_equal_checkable_var ## turn into dictionary
+                var_name_dict[var_name] = an_equal_checkable_var ## turn into dictionary
             else:
                 raise NotImplementedError(f'have same name! var_name: "{var_name}", var_name_dict: {var_name_dict}')            
 
@@ -320,10 +320,10 @@ class Assert:
         if len(var_name_dict) == 0:
             # return True # empty arrays are all equal
             pass
-        elif len(var_name_dict) == 1:
-            # if only a single array, make sure it's not accidentally passed in incorrect
-            reference_var = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
-            return (reference_var is not None)
+        # elif len(var_name_dict) == 1:
+        #     # if only a single array, make sure it's not accidentally passed in incorrect
+        #     reference_var = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
+        #     assert (reference_var is not None), f"{var_name} must be non-None but instead {var_name}: {a_val}.\nvalues_dict: {values_dict}\n{var_name}: {a_val}\n"
         else:
             ## It has more than two elements:
             values_dict = {k:v for k, v in var_name_dict.items()}
@@ -363,10 +363,10 @@ class Assert:
         if len(var_name_dict) == 0:
             # return True # empty arrays are all equal
             pass
-        elif len(var_name_dict) == 1:
-            # if only a single array, make sure it's not accidentally passed in incorrect
-            reference_var = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
-            return (reference_var is not None)
+        # elif len(var_name_dict) == 1:
+        #     # if only a single array, make sure it's not accidentally passed in incorrect
+        #     reference_var = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
+        #     assert (reference_var is not None)
         else:
             ## It has more than two elements:
             values_dict = {k:v for k, v in var_name_dict.items()}

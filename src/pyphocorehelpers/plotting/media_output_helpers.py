@@ -230,15 +230,15 @@ class ImageOperationsAndEffects:
         """
 
         # Calculate font size and padding based on image height if not provided
-        img_height = deepcopy(image.height)
-        img_width = deepcopy(image.width) 
+        original_img_height: int = deepcopy(image.height)
+        original_img_width: int = deepcopy(image.width) 
             
         if font_size is None:
-            font_size = max(int(img_height * relative_font_size), 20)  # Minimum font size of 8
+            font_size = max(int(original_img_height * relative_font_size), 20)  # Minimum font size of 8
             if debug_print:
                 print(f'computing font size with relative_font_size: {relative_font_size}: font_size: {font_size} |', end='\t')
         if padding is None:
-            padding = max(int(img_height * relative_padding), 10)  # Minimum padding of 5
+            padding = max(int(original_img_height * relative_padding), 0)  # Minimum padding of 0
         
         # Try to load a nicer font if available, otherwise use default
         try:
@@ -260,8 +260,8 @@ class ImageOperationsAndEffects:
         label_kwargs = dict(font=font, align='center', anchor="ms") ## works okay
         
         # Create a temporary drawing context to measure text dimensions
-        temp_img = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
-        temp_draw = ImageDraw.Draw(temp_img)
+        _temp_empty_img = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
+        _temp_empty_draw = ImageDraw.Draw(_temp_empty_img)
         
         # Use getbbox() for newer Pillow versions, fallback to textsize()
         try:
@@ -271,9 +271,10 @@ class ImageOperationsAndEffects:
         except AttributeError:
             text_width, text_height = temp_draw.textsize(label_text, font=font, spacing=0) # , direction=None
         
+
         # For vertical text, we need to swap width and height
-        rotated_text_width = text_height  # After 90 degree rotation
-        rotated_text_height = text_width  # After 90 degree rotation
+        rotated_text_width: int = deepcopy(required_text_height)  # After 90 degree rotation
+        rotated_text_height: int = deepcopy(required_text_width)  # After 90 degree rotation
         
         if debug_print:
             print(f'rotated_text_width: {rotated_text_width}, rotated_text_height: {rotated_text_height}', end='\t')
@@ -286,10 +287,13 @@ class ImageOperationsAndEffects:
             active_total_label_region_height: int = (padding + rotated_text_height)
 
         # Create a new image with space for the label
-        new_width = image.width
-        new_height: int = int(image.height + active_total_label_region_height)
+        new_width: int = deepcopy(original_img_width)
+        new_height: int = int(original_img_height + active_total_label_region_height)
 
             
+        # ==================================================================================================================================================================================================================================================================================== #
+        # Create the `new_larger_image` with the text label at the bottom                                                                                                                                                                                                                      #
+        # ==================================================================================================================================================================================================================================================================================== #
         # Create the new image with the background color
         if image.mode == 'RGBA':
             new_larger_image = Image.new('RGBA', (new_width, new_height), background_color)
@@ -303,15 +307,19 @@ class ImageOperationsAndEffects:
         # Paste the original image at the top
         new_larger_image.paste(image, (0, 0))
         
+
+        # ==================================================================================================================================================================================================================================================================================== #
+        # Create the temporary `_temp_label_image` which is to be rotated                                                                                                                                                                                                                      #
+        # ==================================================================================================================================================================================================================================================================================== #
         # Create a transparent background for the text
         # _debug_red_color = (255, 0, 0, 90)
         _clear_color = (0, 0, 0, 0)
         _active_label_bg_color = _clear_color
-        _temp_label_image = Image.new('RGBA', (text_width, text_height), _active_label_bg_color)
-        draw_label_temp = ImageDraw.Draw(_temp_label_image)
+        _temp_label_image = Image.new('RGBA', (required_text_width, required_text_height), _active_label_bg_color)
+        _temp_draw_label = ImageDraw.Draw(_temp_label_image)
         
-        _internal_temp_box_text_x = (text_width // 2)
-        _internal_temp_box_text_y = 0 # (font_size // 2)        
+        _internal_temp_box_text_x: int = (required_text_width // 2)
+        _internal_temp_box_text_y: int = 0 # (font_size // 2)        
         
         # print(f'text_width: {text_width}, text_height: {text_height}, _internal_temp_box_text_x: {_internal_temp_box_text_x}, _internal_temp_box_text_y: {_internal_temp_box_text_y}')
 
@@ -321,18 +329,17 @@ class ImageOperationsAndEffects:
             border_thickness = max(1, int(font_size * 0.05))  # 5% of font size, minimum 1px
             
             # Draw text with outline
-            
             for dx in range(-border_thickness, border_thickness + 1):
                 for dy in range(-border_thickness, border_thickness + 1):
                     if dx != 0 or dy != 0:  # Skip the center position
-                        draw_label_temp.text((dx, dy), label_text, fill=text_outline_shadow_color, **label_kwargs)
+                        _temp_draw_label.text((dx, dy), label_text, fill=text_outline_shadow_color, **label_kwargs)
             
             # Draw the main text
             # draw_label_temp.text((0, 0), label_text, fill=text_color, **label_kwargs)
-            draw_label_temp.text((_internal_temp_box_text_x, _internal_temp_box_text_y), label_text, fill=text_color, **label_kwargs)
+            _temp_draw_label.text((_internal_temp_box_text_x, _internal_temp_box_text_y), label_text, fill=text_color, **label_kwargs)
         else:
-            # Draw text without border
-            draw_label_temp.text((_internal_temp_box_text_x, _internal_temp_box_text_y), label_text, fill=text_color, **label_kwargs) # , direction=''
+            # Draw text without an outline
+            _temp_draw_label.text((_internal_temp_box_text_x, _internal_temp_box_text_y), label_text, fill=text_color, **label_kwargs) # , direction=''
         
         
         # Rotate the text 270 degrees (so it reads from bottom to top)
@@ -346,7 +353,7 @@ class ImageOperationsAndEffects:
         # because after rotation, the height becomes the width
         # text_x = (new_width - rotated_width) // 2 ## WORKS, centers the result: 
         text_x = 0 ## WORKS, centers the result: 
-        text_y = image.height + padding  # Position at the bottom of the original image plus padding
+        text_y = original_img_height + padding  # Position at the bottom of the original image plus padding
 
         # Paste the rotated text at the bottom center of the image
         new_larger_image.paste(_temp_label_image, (text_x, text_y), _temp_label_image)

@@ -257,20 +257,24 @@ class ImageOperationsAndEffects:
 
 
         # label_kwargs = dict(font=font, align='center', anchor="mm") ## WORKS!, seems to be aligned better for small images, worse for large ones
-        label_kwargs = dict(font=font, align='center', anchor="ms") ## works okay
+        # label_kwargs = dict(font=font, align='center', anchor="ms") ## works okay.. #TODO 2025-05-27 15:39: - [ ] Seems to cut-off labels (all of them) for some reason?
+        label_kwargs = dict(font=font, align='center', anchor="mt") ## NOW working, but has too much space on the bottom (because I add padding somewhere)
         
         # Create a temporary drawing context to measure text dimensions
         _temp_empty_img = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
         _temp_empty_draw = ImageDraw.Draw(_temp_empty_img)
         
         # Use getbbox() for newer Pillow versions, fallback to textsize()
-        try:
-            bbox = temp_draw.textbbox((0, 0), label_text, **label_kwargs)
-            text_width = int(round(bbox[2] - bbox[0]))
-            text_height = int(round(bbox[3] - bbox[1]))
-        except AttributeError:
-            text_width, text_height = temp_draw.textsize(label_text, font=font, spacing=0) # , direction=None
-        
+        # try:
+        #     bbox = _temp_empty_draw.textbbox((0, 0), label_text, **label_kwargs)
+        #     text_width = int(np.ceil(bbox[2] - bbox[0]))
+        #     text_height = int(np.ceil(bbox[3] - bbox[1]))
+        # except AttributeError:
+        #     text_width, text_height = _temp_empty_draw.textsize(label_text, font=font, spacing=0) # , direction=None
+        required_text_width, required_text_height = _temp_empty_draw.textsize(label_text, font=font, spacing=0, direction='ltr')
+        required_text_height = required_text_height + padding
+        required_text_width = required_text_width + padding
+
 
         # For vertical text, we need to swap width and height
         rotated_text_width: int = deepcopy(required_text_height)  # After 90 degree rotation

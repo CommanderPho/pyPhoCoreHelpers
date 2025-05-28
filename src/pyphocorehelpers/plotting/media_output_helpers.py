@@ -555,7 +555,8 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
             
         norm_array = img_data_to_greyscale(img_data)
         # Scale to 0-255 and convert to uint8
-        image = Image.fromarray(norm_array, mode='L')
+        image = Image.fromarray(norm_array, mode='L') # .shape: (59, 4, 67)
+
         
 
     elif export_kind.value == HeatmapExportKind.COLORMAPPED.value:

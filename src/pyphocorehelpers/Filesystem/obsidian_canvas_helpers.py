@@ -261,6 +261,8 @@ class ObsidianCanvasHelper:
     def build_canvas_for_exported_session_posteriors(cls, sessions_export_folder = Path('K:/scratch/collected_outputs/2025-05-22'),
                                                      intra_session_v_spacing: int = 3000, intra_laps_and_pbes_v_spacing: int = 1000, is_single_canvas: bool = True, common_add_images_to_canvas_kwargs = dict(debug_print=False, canvas_image_node_scale=0.2), image_glob="p_x_given_n*.png",
                                                      canvas_folders_url = Path(r"D:/PhoGlobalObsidian2022/🌐🧠 Working Memory/Pho-Kamran Paper 2024/_programmatic_test"),
+                                                    #  series_folder_name: str = 'psuedo2D_nan_filled',
+                                                     series_folder_name: str = 'psuedo2D_ignore',
                                                      ):
         
         """ Takes an export directory of exported posteriors for each session, and generates either a combined or session-specific Obsidian Canvas
@@ -306,14 +308,15 @@ class ObsidianCanvasHelper:
             else:
                 ## single_canvas mode: set no save URL so it doesn't write out to file
                 write_modified_canvas_path = None
+                
 
-            image_folder_path: Path = session_folder.joinpath('laps/psuedo2D_nan_filled/raw_rgba').resolve()
+            image_folder_path: Path = session_folder.joinpath(f'laps/{series_folder_name}/raw_rgba').resolve()
             target_canvas, laps_group_node, _write_status = cls.add_images_to_canvas(image_folder_path=image_folder_path, image_glob=image_glob, target_canvas=target_canvas, write_modified_canvas_path=write_modified_canvas_path, override_write_mode='w',
                                                                                      image_group_name=f'Laps - {session_name}', initial_x = initial_x, initial_y = initial_y, **common_add_images_to_canvas_kwargs)
             
             ## use the existing canvas
             initial_y = initial_y + intra_laps_and_pbes_v_spacing
-            image_folder_path: Path = session_folder.joinpath('ripple/psuedo2D_nan_filled/raw_rgba').resolve()
+            image_folder_path: Path = session_folder.joinpath(f'ripple/{series_folder_name}/raw_rgba').resolve()
             target_canvas, pbes_group_node, _write_status = cls.add_images_to_canvas(image_folder_path=image_folder_path, image_glob=image_glob, target_canvas=target_canvas, write_modified_canvas_path=write_modified_canvas_path, override_write_mode='w',
                                                                                      image_group_name=f'PBEs - {session_name}', initial_x = initial_x, initial_y=initial_y, **common_add_images_to_canvas_kwargs)
             

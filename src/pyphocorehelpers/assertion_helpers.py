@@ -404,8 +404,22 @@ class Assert:
         """
         from neuropy.utils.indexing_helpers import PandasHelpers
 
-        has_all_columns: bool = PandasHelpers.require_columns(dfs=dfs, required_columns=required_columns, print_missing_columns=True)
-        assert has_all_columns
+        all_have_all_required_columns, debug_tuple = PandasHelpers.check_columns(dfs=dfs, required_columns=required_columns, return_only_dfs_missing_columns=True)
+        # missing_columns, all_have_all_required_columns = PandasHelpers.check_columns(dfs=dfs, required_columns=required_columns, print_missing_columns=True)
+        
+        assert all_have_all_required_columns, f'num_missing_columns: {debug_tuple[0]}, missing_columns: {debug_tuple[1]}, found_columns: {debug_tuple[2]}, all_df_columns: {debug_tuple[3]}'
+
+        # if not all_have_all_required_columns:
+        #     ## missing some columns
+        #     assert debug_tuple is not None
+        #     num_missing_columns, missing_columns, found_columns, all_df_columns = debug_tuple
+        #     raise ValueError(f'num_missing_columns: {num_missing_columns}, missing_columns: {missing_columns}, found_columns: {found_columns}, all_df_columns: {all_df_columns} ')
+
+        # has_all_columns: bool = PandasHelpers.require_columns(dfs=dfs, required_columns=required_columns, print_missing_columns=True)
+        # assert has_all_columns
+        
+        # has_all_columns: bool = PandasHelpers.require_columns(dfs=dfs, required_columns=required_columns, print_missing_columns=True)
+        # assert has_all_columns
         
              
 

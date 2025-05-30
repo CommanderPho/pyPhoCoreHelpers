@@ -30,6 +30,7 @@ from pyphocorehelpers.programming_helpers import metadata_attributes
 from pyphocorehelpers.function_helpers import function_attributes
 from pyphocorehelpers.programming_helpers import copy_image_to_clipboard
 from pyphocorehelpers.image_helpers import ImageHelpers
+from pyphocorehelpers.assertion_helpers import Assert
 
 # from pyphoplacecellanalysis.Pho2D.data_exporting import HeatmapExportKind
 
@@ -537,10 +538,13 @@ class ImagePostRenderFunctionSets:
         post_render_image_functions_dict_list: List[Dict[str, Callable]] = _build_image_export_functions_dict(a_decoder_decoded_epochs_result=a_decoder_decoded_epochs_result)
 
         """
+        from neuropy.core.epoch import ensure_dataframe
+        from pyphocorehelpers.assertion_helpers import Assert
+
         num_filter_epochs: int = a_decoder_decoded_epochs_result.num_filter_epochs
         active_filter_epochs: pd.DataFrame = ensure_dataframe(a_decoder_decoded_epochs_result.active_filter_epochs)
 
-        assert Assert.require_columns(active_filter_epochs, required_columns=['maze_id'])
+        Assert.require_columns(active_filter_epochs, required_columns=['maze_id'])
         is_epoch_pre_post_delta = active_filter_epochs['maze_id'].to_numpy()
 
         # Build post-image-generation callback functions _____________________________________________________________________________________________________________________________________________________________________________________________________________________________________ #

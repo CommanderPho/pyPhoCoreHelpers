@@ -675,8 +675,14 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
             norm_array = img_data
         else:
             # Normalize your array to 0-1 using nan-aware functions
-            min_val = kwargs.pop('vmin', np.nanmin(img_data))
-            max_val = kwargs.pop('vmax', np.nanmax(img_data))
+            min_val = kwargs.pop('vmin', None)
+            if min_val is None:
+                min_val = np.nanmin(img_data)
+                
+            max_val = kwargs.pop('vmax', None)
+            if max_val is None:
+                max_val = np.nanmax(img_data)
+
             assert (min_val < max_val), f"min_val: {min_val}, min_val: {min_val}, img_data: {img_data}"
             ptp_val = max_val - min_val
             norm_array = (img_data - min_val) / ptp_val

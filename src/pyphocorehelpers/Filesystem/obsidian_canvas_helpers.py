@@ -22,6 +22,60 @@ import shutil ## for copying images
 from pyphocorehelpers.image_helpers import ImageHelpers
 
 
+def sort_nodes_by_position_and_id(nodes_list):
+    # Sort by x, y, x1, y1, id in that order
+    return sorted(nodes_list, key=lambda node: (node.x, node.y, node.x1, node.y1, node.id))
+
+
+
+def create_group_nested_node_hierarchy(loaded_canvas: Canvas):
+    """
+    Usage:
+        loaded_canvas: Canvas = ObsidianCanvasHelper.load(canvas_url=existing_canvas_path)
+        group_organized_node_hierarchy = create_group_nested_node_hierarchy(loaded_canvas
+
+    """
+    loaded_canvas_nodes: List[GenericNode] = deepcopy(loaded_canvas.nodes)
+    loaded_canvas_nodes_df: pd.DataFrame = pd.DataFrame(loaded_canvas_nodes)
+    loaded_canvas_nodes_df
+
+    ## Add right-edge columns:
+    loaded_text_nodes_df['x1'] = loaded_text_nodes_df['x'] + loaded_text_nodes_df['width']
+    loaded_text_nodes_df['y1'] = loaded_text_nodes_df['y'] + loaded_text_nodes_df['height']
+
+    # Sort by columns: 'x' (ascending), 'y' (ascending), 'id' (ascending)
+    loaded_text_nodes_df = loaded_text_nodes_df.sort_values(['x', 'y', 'id'])
+    loaded_text_nodes_df
+
+
+    loaded_group_nodes: Set[GroupNode] = set([v for v in loaded_canvas_nodes if (v.type.value == NodeType.GROUP.value)])
+
+
+    loaded_text_nodes = [v for v in loaded_canvas_nodes if (v.type.value == NodeType.TEXT.value)]
+    loaded_text_nodes
+
+    # Loaded variable 'loaded_text_nodes' from kernel state
+
+    loaded_text_nodes_df: pd.DataFrame = pd.DataFrame(loaded_text_nodes)
+    ## Add right-edge columns:
+    loaded_text_nodes_df['x1'] = loaded_text_nodes_df['x'] + loaded_text_nodes_df['width']
+    loaded_text_nodes_df['y1'] = loaded_text_nodes_df['y'] + loaded_text_nodes_df['height']
+
+    # Sort by columns: 'x' (ascending), 'y' (ascending), 'id' (ascending)
+    loaded_text_nodes_df = loaded_text_nodes_df.sort_values(['x', 'y', 'id'])
+    loaded_text_nodes_df
+
+
+
+    group_organized_node_hierarchy: Dict = {}
+
+
+    a_group_node: GroupNode = loaded_group_nodes[0]
+
+    a_group_node.find_children(loaded_group_nodes[1:])
+    return group_organized_node_hierarchy
+
+
 # @metadata_attributes(short_name=None, tags=['canvas', 'obsidian'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-05-21 15:17', related_items=[])
 class ObsidianCanvasHelper:
     """ Helps with Obsidian Canvases
@@ -262,7 +316,9 @@ class ObsidianCanvasHelper:
                                                      intra_session_v_spacing: int = 3000, intra_laps_and_pbes_v_spacing: int = 1000, is_single_canvas: bool = True, common_add_images_to_canvas_kwargs = dict(debug_print=False, canvas_image_node_scale=0.2), image_glob="p_x_given_n*.png",
                                                      canvas_folders_url = Path(r"D:/PhoGlobalObsidian2022/🌐🧠 Working Memory/Pho-Kamran Paper 2024/_programmatic_test"),
                                                     #  series_folder_name: str = 'psuedo2D_nan_filled',
-                                                     series_folder_name: str = 'psuedo2D_ignore',
+                                                    #  series_folder_name: str = 'psuedo2D_ignore',
+                                                    # export_full_path: str = 'psuedo2D_ignore/raw_rgba',
+                                                    export_session_folder_relative_path: str = 'combined/multi',
                                                      ):
         
         """ Takes an export directory of exported posteriors for each session, and generates either a combined or session-specific Obsidian Canvas
@@ -309,20 +365,50 @@ class ObsidianCanvasHelper:
                 ## single_canvas mode: set no save URL so it doesn't write out to file
                 write_modified_canvas_path = None
                 
+            children_nodes = [] 
 
-            image_folder_path: Path = session_folder.joinpath(f'laps/{series_folder_name}/raw_rgba').resolve()
-            target_canvas, laps_group_node, _write_status = cls.add_images_to_canvas(image_folder_path=image_folder_path, image_glob=image_glob, target_canvas=target_canvas, write_modified_canvas_path=write_modified_canvas_path, override_write_mode='w',
-                                                                                     image_group_name=f'Laps - {session_name}', initial_x = initial_x, initial_y = initial_y, **common_add_images_to_canvas_kwargs)
-            
+
+            laps_group_node = None
+            # image_folder_path: Path = session_folder.joinpath(f'laps/{series_folder_name}/{export_format_series_path}').resolve()
+            image_folder_path: Path = session_folder.joinpath(f'laps/{export_session_folder_relative_path}').resolve()
+            try:
+                target_canvas, laps_group_node, _write_status = cls.add_images_to_canvas(image_folder_path=image_folder_path, image_glob=image_glob, target_canvas=target_canvas, write_modified_canvas_path=write_modified_canvas_path, override_write_mode='w',
+                                                                                        image_group_name=f'Laps - {session_name}', initial_x = initial_x, initial_y = initial_y, **common_add_images_to_canvas_kwargs)
+                if laps_group_node is not None:
+                    children_nodes.append(laps_group_node)
+            except ValueError as e:
+                print(f'\tfailed to export laps to Canvas with error {e}. Skipping and continuing...')
+                pass
+            except Exception as e:
+                raise 
+
+
             ## use the existing canvas
+            pbes_group_node = None
             initial_y = initial_y + intra_laps_and_pbes_v_spacing
-            image_folder_path: Path = session_folder.joinpath(f'ripple/{series_folder_name}/raw_rgba').resolve()
-            target_canvas, pbes_group_node, _write_status = cls.add_images_to_canvas(image_folder_path=image_folder_path, image_glob=image_glob, target_canvas=target_canvas, write_modified_canvas_path=write_modified_canvas_path, override_write_mode='w',
-                                                                                     image_group_name=f'PBEs - {session_name}', initial_x = initial_x, initial_y=initial_y, **common_add_images_to_canvas_kwargs)
-            
+            # image_folder_path: Path = session_folder.joinpath(f'ripple/{series_folder_name}/{export_format_series_path}').resolve()
+            image_folder_path: Path = session_folder.joinpath(f'ripple/{export_session_folder_relative_path}').resolve()
+            try:
+                target_canvas, pbes_group_node, _write_status = cls.add_images_to_canvas(image_folder_path=image_folder_path, image_glob=image_glob, target_canvas=target_canvas, write_modified_canvas_path=write_modified_canvas_path, override_write_mode='w',
+                                                                                        image_group_name=f'PBEs - {session_name}', initial_x = initial_x, initial_y=initial_y, **common_add_images_to_canvas_kwargs)
+                if pbes_group_node is not None:
+                    children_nodes.append(pbes_group_node)
+
+            except ValueError as e:
+                print(f'\tfailed to export PBEs to Canvas with error {e}. Skipping and continuing...')
+                pass
+            except Exception as e:
+                raise 
+
+
+
             ## Build session group
-            group_node: GroupNode = cls.group_wrapping_nodes(children_nodes=(laps_group_node, pbes_group_node), group_name=f'{session_name}', group_padding=(100, 90))
-            target_canvas.add_node(group_node)
+            group_node = None
+            if len(children_nodes) > 0:
+                group_node: GroupNode = cls.group_wrapping_nodes(children_nodes=children_nodes, group_name=f'{session_name}', group_padding=(100, 90))
+                target_canvas.add_node(group_node)
+
+
             # added_groups_dict[session_name] = group_node
             added_groups_dict[f'{session_name}'] = {'session': group_node, 'laps': laps_group_node, 'pbes': pbes_group_node}
             

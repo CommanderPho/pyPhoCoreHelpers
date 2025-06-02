@@ -1,5 +1,7 @@
 from indexed import IndexedOrderedDict
 from qtpy.QtWidgets import QWidget # for `print_widget_hierarchy`
+from pyphoplacecellanalysis.General.Mixins.DisplayHelpers import debug_build_QRect_str
+
 
 class TopLevelWindowHelper:
     """ Not quite finished, but tools to interact with the active QtWidgets and QWindows at the top-level
@@ -55,13 +57,21 @@ class TopLevelWindowHelper:
 
 
 
-def print_widget_hierarchy(widget: QWidget, curr_indent: str = "", indent_level_chars: str="  "):
+def print_widget_hierarchy(widget: QWidget, curr_indent: str = "", indent_level_chars: str="\t", include_class_name: bool=True, include_geometry_info:bool=True):
     """ from pyphocorehelpers.gui.Qt.TopLevelWindowHelper import print_widget_hierarchy
     
     """
+    
     undefined_widget_name: str = 'Unnamed'
-    print(f"{curr_indent}{widget.objectName() or undefined_widget_name} ({widget.__class__.__name__})")
+    _curr_out_str: str = f"{curr_indent}'{widget.objectName() or undefined_widget_name}'"
+    if include_class_name:
+        _curr_out_str = f"{_curr_out_str}\t({widget.__class__.__name__})"
+    
+    if include_geometry_info:
+        _curr_out_str = f"{_curr_out_str}\t{debug_build_QRect_str(widget.geometry(), prefix_string='', indent_string='', include_edge_positions=False)}"
+        
+    print(_curr_out_str)
     for child in widget.children():
         if isinstance(child, QWidget):
-            print_widget_hierarchy(child, curr_indent=(curr_indent + indent_level_chars), indent_level_chars=indent_level_chars)
+            print_widget_hierarchy(child, curr_indent=(curr_indent + indent_level_chars), indent_level_chars=indent_level_chars, include_geometry_info=include_geometry_info)
             

@@ -53,17 +53,42 @@ def add_shadow(image: Image.Image, offset: int = 5, background_color: tuple = (0
     return shadow
 
 
-def img_data_to_greyscale(img_data: NDArray) -> NDArray[np.uint8]:
+def img_data_to_greyscale(img_data: NDArray, min_val: Optional[float]=None, max_val: Optional[float]=None, should_invert: bool=False) -> NDArray[np.uint8]:
     """ rescales the img_data array to 0-255 
     
-    from pyphocorehelpers.plotting.media_output_helpers import img_data_to_greyscale
-    
-    norm_array = img_data_to_greyscale(img_data)
-    
+    if `should_invert == True`, higher values are darker (with max_val == 1.0)
+
+    Usage 1:
+        from pyphocorehelpers.plotting.media_output_helpers import img_data_to_greyscale
+        
+        norm_array = img_data_to_greyscale(img_data)
+
+    Usage 2:
+        from pyphocorehelpers.plotting.media_output_helpers import img_data_to_greyscale
+
+        norm_array = img_data_to_greyscale(img_data, min_val = kwargs.pop('vmin', None), max_val = kwargs.pop('vmax', None), should_invert=True)
+
     """
-    norm_array = (img_data - np.min(img_data)) / np.ptp(img_data)
+    # norm_array = (img_data - np.min(img_data)) / np.ptp(img_data) ## Default
+
+    # Normalize your array to 0-1 using nan-aware functions
+    
+    if min_val is None:
+        min_val = np.nanmin(img_data)
+    if max_val is None:
+        max_val = np.nanmax(img_data)
+
+    assert (min_val < max_val), f"min_val: {min_val}, min_val: {min_val}, img_data: {img_data}"
+    ptp_val = max_val - min_val
+    norm_array = (img_data - min_val) / ptp_val
+
     # Scale to 0-255 and convert to uint8
-    return (norm_array * 255).astype(np.uint8)
+    if should_invert:
+        # Invert the values: higher values become darker (0), lower values become lighter (255)
+        return (255 - (norm_array * 255)).astype(np.uint8)
+    else:
+        # Original behavior: higher values become lighter (255), lower values become darker (0)
+        return (norm_array * 255).astype(np.uint8)
 
 
 @metadata_attributes(short_name=None, tags=['image','post-hoc','export', 'posterior'], input_requires=[], output_provides=[], uses=[], used_by=['ImagePostRenderFunctionSets'], creation_date='2025-04-01 00:00', related_items=[])
@@ -659,10 +684,9 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
         if skip_img_normalization:
             print(f'WARN: when `export_grayscale == True`, `skip_img_normalization == True` makes no sense and will be ignored.')
             
-        norm_array = img_data_to_greyscale(img_data)
+        norm_array = img_data_to_greyscale(img_data, min_val = kwargs.pop('vmin', None), max_val = kwargs.pop('vmax', None), should_invert=True)
         # Scale to 0-255 and convert to uint8
         image = Image.fromarray(norm_array, mode='L') # .shape: (59, 4, 67)
-
         
 
     elif export_kind.value == HeatmapExportKind.COLORMAPPED.value:

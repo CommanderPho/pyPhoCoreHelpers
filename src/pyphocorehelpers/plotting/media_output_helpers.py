@@ -598,12 +598,13 @@ class ImagePostRenderFunctionSets:
             active_epoch_id: int = curr_epoch_info_dict.get('label', None)
             if active_epoch_id is not None:
                 active_epoch_id = int(active_epoch_id)
-                complete_epoch_identifier_str = f"{complete_epoch_identifier_str}lbl[{active_epoch_id:03d}]" # 2025-06-03 - 'p_x_given_n[067]'
+                # complete_epoch_identifier_str = f"{complete_epoch_identifier_str}lbl[{active_epoch_id:03d}]" # 2025-06-03 - 'p_x_given_n[067]'
+                complete_epoch_identifier_str = f"{complete_epoch_identifier_str}L{active_epoch_id:03d}"
             else:
                 print(f'falling back to plain epoch IDXs because label was not found!')
                 active_epoch_data_IDX: int = active_captured_single_epoch_result.epoch_data_index
                 if active_epoch_data_IDX is not None:
-                    complete_epoch_identifier_str = f'{complete_epoch_identifier_str}idx[{active_epoch_data_IDX:03d}]'
+                    complete_epoch_identifier_str = f'{complete_epoch_identifier_str}IDX{active_epoch_data_IDX:03d}'
 
             ## OUTPUTS: complete_epoch_identifier_str
             is_post_delta: bool = (is_epoch_pre_post_delta[i] > 0)
@@ -638,7 +639,7 @@ class ImagePostRenderFunctionSets:
 
 
             if len(complete_epoch_identifier_str) > 0:
-                curr_x_axis_label_str = f"{complete_epoch_identifier_str}|{earliest_t_str}" ## add separator if needed for time
+                curr_x_axis_label_str = f"{complete_epoch_identifier_str}: {earliest_t_str}" ## add separator if needed for time
             else:
                 curr_x_axis_label_str = f"{earliest_t_str}" # // 2025-06-03 09:10 working
 

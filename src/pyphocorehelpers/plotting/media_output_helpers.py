@@ -696,6 +696,12 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
             print(f'export_kind: {export_kind} explicitly provided, so ignoring export_grayscale: {export_grayscale}')
 
 
+
+    if np.ndim(img_data) < 2:
+        img_data = np.atleast_2d(img_data).T # (50, ) -> (50, 1)
+
+
+
     # Assuming `your_array` is your numpy array
     if export_kind.value == HeatmapExportKind.GREYSCALE.value:
     # if export_grayscale:
@@ -736,7 +742,7 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
         image_array = colormap(norm_array)
 
         # Convert to PIL image and remove alpha channel
-        image = Image.fromarray((image_array[:, :, :3] * 255).astype(np.uint8)) # TypeError: Cannot handle this data type: (1, 1, 3, 4), |u1
+        image = Image.fromarray((image_array[:, :, :3] * 255).astype(np.uint8)) # TypeError: Cannot handle this data type: (1, 1, 3, 4), |u1  || 2025-06-04 Failing for 1D input arrts which end up as (1D, 4): IndexError: too many indices for array: array is 2-dimensional, but 3 were indexed
         
 
     elif export_kind.value == HeatmapExportKind.RAW_RGBA.value:

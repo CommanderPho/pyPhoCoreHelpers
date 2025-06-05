@@ -2417,3 +2417,68 @@ class VSCodeSnippets:
         for line in snippet_lines:
             print(f"{line},")
         return snippet_flat_string
+
+
+
+
+
+
+
+
+
+
+
+# @function_attributes(short_name=None, tags=['UNTESTED', 'AI', 'globals'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-06-05 08:20', related_items=[])
+# def unpack_dict_into_locals(a_dict: Dict):
+#     """ Creates local variables in the calling context for each item in the dict.
+
+#     This function allows you to unpack a dictionary's keys and values directly into 
+#     local variables in the calling scope.
+
+#     Usage:
+#         from pyphocorehelpers.programming_helpers import unpack_dict_into_locals
+
+#         # In a Jupyter notebook:
+#         my_dict = {'x': 10, 'y': 20, 'name': 'example'}
+#         unpack_dict_into_locals(my_dict)
+#         # Now x, y, and name are available as local variables
+#         print(x, y, name)  # Output: 10 20 example
+
+#     Args:
+#         a_dict (Dict): The dictionary whose key-value pairs will be unpacked into local variables
+
+#     Note:
+#         This function modifies the local variable scope of the caller.
+
+
+#     """
+#     import inspect
+
+#     # Get the frame of the caller (one level up from current function)
+#     caller_frame = inspect.currentframe().f_back
+
+#     # Verify we have a valid dictionary
+#     if not isinstance(a_dict, dict):
+#         raise TypeError("Input must be a dictionary")
+
+#     # Add each key-value pair to the caller's local variables
+#     for key, value in a_dict.items():
+#         if not isinstance(key, str):
+#             print(f"Warning: Skipping non-string key {key}. Dictionary keys must be strings to be used as variable names.")
+#             continue
+
+#         # Check if the key is a valid Python identifier
+#         if not key.isidentifier():
+#             print(f"Warning: Skipping key '{key}'. Not a valid Python identifier.")
+#             continue
+
+#         # Set the variable in the caller's local namespace
+#         caller_frame.f_locals[key] = value
+
+#     # Force update of the frame locals
+#     # This is necessary in some Python implementations
+#     try:
+#         caller_frame.f_locals.update(caller_frame.f_locals)
+#     except Exception:
+#         pass
+

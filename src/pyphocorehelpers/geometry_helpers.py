@@ -226,9 +226,18 @@ class BoundsRect(UnpackableMixin):
   
     @classmethod
     def init_from_grid_bin_bounds(cls, grid_bin_bounds):
-        assert len(grid_bin_bounds) == 2
-        return cls(*grid_bin_bounds[0], *grid_bin_bounds[1])
-    
+        if (len(grid_bin_bounds) == 2):
+            # [[37.0773897438341, 250.69004399129707], [138.39266723911976, 146.9470603477007]]
+            assert len(grid_bin_bounds[0]) == 2
+            assert len(grid_bin_bounds[1]) == 2
+            return cls(*grid_bin_bounds[0], *grid_bin_bounds[1])
+        elif (len(grid_bin_bounds) == 4):
+            # [37.0773897438341, 250.69004399129707, 138.39266723911976, 146.9470603477007]
+            return cls(*grid_bin_bounds)
+        else:
+            raise ValueError(f'grid_bin_bounds: {grid_bin_bounds} but should be either ((x0, x1), (y0, y1)) or (x0, x1, y0, y1)')
+        
+
     @classmethod
     def init_from_x_y_w_h_tuple(cls, x_y_w_h_tuple):
         assert len(x_y_w_h_tuple) == 4

@@ -9,7 +9,7 @@ from IPython.display import display
 
 class DryRunExecutionWidget:
     """A widget that executes a function in dry-run mode first and provides a button 
-    to execute it for real.
+    to execute it for real, handling verbose output appropriately.
 
     Usage:
     ------
@@ -28,7 +28,7 @@ class DryRunExecutionWidget:
     widget = DryRunExecutionWidget(my_operation)
     """
 
-    def __init__(self, operation_function, execute_button_label="Execute for Real (Non-dry run)"):
+    def __init__(self, operation_function, execute_button_label="Execute for Real (Non-dry run)", output_max_height="200px", capture_prints=True, show_return_value=True):
         """Initialize the widget.
 
         Parameters:
@@ -37,20 +37,37 @@ class DryRunExecutionWidget:
             A function that takes an is_dryrun parameter and returns results
         execute_button_label : str
             Label for the execute button
+        output_max_height : str
+            Maximum height for output areas
+        capture_prints : bool
+            Whether to capture print statements (set to False if function is very verbose)
+        show_return_value : bool
+            Whether to display the return value of the function
         """
         import ipywidgets as widgets
         from IPython.display import display
 
         self.operation_function = operation_function
+        self.capture_prints = capture_prints
+        self.show_return_value = show_return_value
 
-        # Create the execute button
+        # Create control panel with fixed position
+        self.control_panel = widgets.VBox([
+            widgets.HTML("<h3>Dry Run Execution Controls</h3>"),
+            widgets.HTML("<p>Preview what will happen without making changes</p>")
+        ])
+
+        # Create the execute button (with fixed position)
         self.execute_button = widgets.Button(
             description=execute_button_label,
             button_style='danger',
             tooltip='Execute the operation for real (not a dry run)',
             icon='exclamation-triangle',
-            layout=widgets.Layout(width='250px')
+            layout=widgets.Layout(width='300px', margin='10px 0')
         )
+
+        # Add button to control panel
+        self.control_panel.children = (*self.control_panel.children, self.execute_button)
 
         # Create status display
         self.status = widgets.HTML(
@@ -58,25 +75,36 @@ class DryRunExecutionWidget:
             layout=widgets.Layout(margin='10px 0')
         )
 
-        # Container for preview results
+        # Add status to control panel
+        self.control_panel.children = (*self.control_panel.children, self.status)
+
+        # Improve container for preview results with better scrolling behavior
         self.preview_area = widgets.Output(
             layout=widgets.Layout(
                 border='1px solid #ddd',
                 padding='10px',
                 margin='10px 0',
-                max_height='300px',
-                overflow_y='auto'
+                max_height=output_max_height,
+                overflow_y='auto',
+                overflow_x='auto',  # Add horizontal scrolling too
+                width='100%',       # Ensure it takes full width
+                flex_flow='column', # Stack content vertically
+                display='flex'      # Use flex display
             )
         )
 
-        # Container for real execution results
+        # Container for real execution results with better scrolling
         self.execution_area = widgets.Output(
             layout=widgets.Layout(
                 border='1px solid #ddd',
                 padding='10px',
                 margin='10px 0',
-                max_height='300px',
-                overflow_y='auto'
+                max_height=output_max_height,
+                overflow_y='auto',
+                overflow_x='auto',  # Add horizontal scrolling too
+                width='100%',       # Ensure it takes full width
+                flex_flow='column', # Stack content vertically
+                display='flex'      # Use flex display
             )
         )
 
@@ -89,14 +117,26 @@ class DryRunExecutionWidget:
         self.preview_header = widgets.HTML("<h4>Dry Run Preview:</h4>")
         self.execution_header = widgets.HTML("<h4>Real Execution Results:</h4>")
 
-        # Create the widget UI
-        self.widget = widgets.VBox([
-            self.status,
+        # Create the widget UI - put controls in a separate fixed box
+        self.control_box = widgets.Box([self.control_panel],
+            layout=widgets.Layout(
+                border='1px solid #ccc',
+                padding='10px',
+                margin='10px 0',
+                background_color='#f8f8f8'
+            )
+        )
+
+        self.output_box = widgets.VBox([
             self.preview_header,
             self.preview_area,
-            self.execute_button,
             self.execution_header,
             self.execution_area
+        ])
+
+        self.widget = widgets.VBox([
+            self.control_box,
+            self.output_box
         ])
 
         # Execute in dry run mode immediately
@@ -104,6 +144,24 @@ class DryRunExecutionWidget:
 
         # Display the widget
         display(self.widget)
+
+    def _capture_output(self, func, *args, **kwargs):
+        """Capture output from a function if requested."""
+        import io
+        import sys
+        from contextlib import redirect_stdout, redirect_stderr
+
+        if self.capture_prints:
+            # Capture stdout and stderr
+            f = io.StringIO()
+            with redirect_stdout(f), redirect_stderr(f):
+                result = func(*args, **kwargs)
+            output = f.getvalue()
+            return result, output
+        else:
+            # Don't capture, just run the function
+            result = func(*args, **kwargs)
+            return result, None
 
     def _execute_dry_run(self):
         """Execute the operation in dry run mode."""
@@ -115,10 +173,29 @@ class DryRunExecutionWidget:
 
             # Execute the function with is_dryrun=True
             with self.preview_area:
-                from IPython.display import display
-                print("Dry run preview (no actual changes made):")
-                results = self.operation_function(is_dryrun=True)
-                display(results)
+                from IPython.display import display, HTML
+                print("Dry run preview (no actual changes made)...")
+
+                result, output = self._capture_output(self.operation_function, is_dryrun=True)
+
+                if output and self.capture_prints:
+                    print("\n--- Function output: ---")
+
+                    # Limit output length if it's very large
+                    if len(output) > 50000:  # Limit to ~50KB of text
+                        truncated_output = output[:25000] + "\n\n... [OUTPUT TRUNCATED] ...\n\n" + output[-25000:]
+                        print(truncated_output)
+                    else:
+                        # Wrap the output in a pre tag with specific styling for scrolling
+                        html_output = f"""<pre style="max-height: {self.preview_area.layout.max_height}; 
+                                               overflow-y: auto; 
+                                               white-space: pre-wrap; 
+                                               word-break: break-all;">{output}</pre>"""
+                        display(HTML(html_output))
+
+                if self.show_return_value:
+                    print("\n--- Return value: ---")
+                    display(result)
 
             self.status.value = "<b>Status:</b> Dry run preview completed"
 
@@ -128,6 +205,7 @@ class DryRunExecutionWidget:
                 import traceback
                 print(f"Error during dry run: {str(e)}")
                 traceback.print_exc()
+
 
     def _execute_for_real(self):
         """Execute the operation for real (non-dry run)."""
@@ -141,10 +219,19 @@ class DryRunExecutionWidget:
             # Execute the function with is_dryrun=False
             with self.execution_area:
                 from IPython.display import display
-                print("Executing operation for real:")
-                results = self.operation_function(is_dryrun=False)
-                print("Real execution completed.")
-                display(results)
+                print("Executing operation for real...")
+
+                result, output = self._capture_output(self.operation_function, is_dryrun=False)
+
+                if output and self.capture_prints:
+                    print("\n--- Function output: ---")
+                    print(output)
+
+                if self.show_return_value:
+                    print("\n--- Return value: ---")
+                    display(result)
+
+                print("\nReal execution completed.")
 
             self.status.value = "<b>Status:</b> Real execution completed"
 

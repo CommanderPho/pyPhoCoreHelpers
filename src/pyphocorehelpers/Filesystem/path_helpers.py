@@ -1343,6 +1343,8 @@ def try_move_pickle_files_on_GL(good_session_concrete_folders, session_basedirs_
              is_dryrun: bool=True, debug_print: bool=False)
 
     """
+    from neuropy.utils.result_context import IdentifyingContext
+
     ## INPUTS: good_session_concrete_folders, session_basedirs_dict, computation_script_paths
     # session_basedirs_dict: Dict[IdentifyingContext, Path] = {a_session_folder.context:a_session_folder.path for a_session_folder in good_session_concrete_folders}
 

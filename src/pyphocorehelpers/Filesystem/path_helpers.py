@@ -779,8 +779,27 @@ def read_filelist_from_text_file(filelist_path: Path, debug_print:bool=False) ->
 def save_copydict_to_text_file(file_movedict: Dict[Path,Path], filelist_path: Path, debug_print:bool=False):
     """ 
 
-    from pyphocorehelpers.Filesystem.path_helpers import save_copydict_to_text_file
-    
+    Usage:
+        from pyphocorehelpers.Filesystem.path_helpers import save_copydict_to_text_file
+        
+        a_copy_dict = copy_h5_dict
+
+        # Copies each file sequentially to the collected_outputs directory, and then builds an output file list
+        ## INPUT a_copy_dict
+        moved_files_dict_h5_files = copy_movedict(a_copy_dict)
+        moved_files_dict_h5_files
+        # INPUTS: active_filelist_prefix, target_dir
+        # active_filelist_prefix: str = 'backed_up_files'
+        active_filelist_prefix: str = 'session_h5_files'
+
+        # target_dir: Path = Path(global_data_root_parent_path)
+        target_dir: Path = collected_outputs_path
+
+        moved_files_copydict_output_filename=f'{active_filelist_prefix}_copydict_{BATCH_DATE_TO_USE}.csv'
+        moved_files_copydict_file_path = target_dir.joinpath(moved_files_copydict_output_filename).resolve() # Use Default
+        print(f'moved_files_copydict_file_path: "{moved_files_copydict_file_path}"')
+
+        _out_string, filedict_out_path = save_copydict_to_text_file(moved_files_dict_h5_files, moved_files_copydict_file_path, debug_print=True)
 
     """
     num_files_to_copy: int = len(file_movedict)
@@ -813,7 +832,7 @@ def read_copydict_from_text_file(filelist_path: Path, debug_print:bool=False) ->
 
     from pyphocorehelpers.Filesystem.path_helpers import read_copydict_from_text_file
     
-
+    file_movedict: Dict[Path,Path] = read_copydict_from_text_file(filelist_path=filelist_path)
     """
     # operation_symbol: str = '->'
     column_separator: str = ', '

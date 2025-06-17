@@ -223,7 +223,16 @@ class BoundsRect(UnpackableMixin):
         height = self.ymax - self.ymin
         aspect_ratio = float(width) / float(height)
         return aspect_ratio
-  
+
+    @property
+    def width(self) -> float:
+        return abs(self.xmax - self.xmin)
+    
+    @property
+    def height(self) -> float:
+        return abs(self.ymax - self.ymin)
+    
+
     @classmethod
     def init_from_grid_bin_bounds(cls, grid_bin_bounds):
         if (len(grid_bin_bounds) == 2):

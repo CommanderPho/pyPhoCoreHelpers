@@ -379,9 +379,8 @@ class Assert:
     def is_in(cls, curr_variable_value: Any, allowed_variable_list: List):
         """ Ensures the element is in the required literal list, if it fails, it prints the actual value and the available values
 
-        curr_variable_value = self.posterior_variable_to_render
-        allowed_variable_list = ['p_x_given_n', 'p_x_given_n_and_x_prev']
-        assert curr_variable_value in allowed_variable_list, f"{self.posterior_variable_to_render} not in allowed list: {allowed_variable_list}"
+        Usage:
+            Assert.is_in(self.posterior_variable_to_render, allowed_variable_list=['p_x_given_n', 'p_x_given_n_and_x_prev'])
 
         """
         import inspect

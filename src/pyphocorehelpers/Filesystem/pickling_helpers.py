@@ -11,16 +11,19 @@ import pandas as pd
 from pyphocorehelpers.assertion_helpers import Assert
 from pathlib import Path
 
-move_modules_list = {'pyphoplacecellanalysis.SpecificResults.PhoDiba2023Paper.SingleBarResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.SingleBarResult',
+# ==================================================================================================================================================================================================================================================================================== #
+# Move modules list is defined in `vscode://file/c:/Users/pho/repos/Spike3DWorkEnv/pyPhoPlaceCellAnalysis/src/pyphoplacecellanalysis/General/Pipeline/Stages/Loading.py:146`                                                                                                           #
+# ==================================================================================================================================================================================================================================================================================== #
+default_global_move_modules_list = {'pyphoplacecellanalysis.SpecificResults.PhoDiba2023Paper.SingleBarResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.SingleBarResult',
     'pyphoplacecellanalysis.SpecificResults.PhoDiba2023Paper.InstantaneousSpikeRateGroupsComputation':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.LongShortTrackComputations.InstantaneousSpikeRateGroupsComputation',
     'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.DirectionalPlacefieldGlobalComputationFunctions.DirectionalMergedDecodersResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.DirectionalPlacefieldGlobalComputationFunctions.DirectionalPseudo2DDecodersResult',
     'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.DirectionalPlacefieldGlobalComputationFunctions.DirectionalDecodersDecodedResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.MultiContextComputationFunctions.DirectionalPlacefieldGlobalComputationFunctions.DirectionalDecodersContinuouslyDecodedResult',
     'pyphocorehelpers.indexing_helpers.BinningInfo':'neuropy.utils.mixins.binning_helpers.BinningInfo',
     'pyphoplacecellanalysis.General.Model.Configs.DynamicConfigs.BaseConfig':'neuropy.core.parameters.BaseConfig',
     'neuropy.core.session.Formats.BaseDataSessionFormats.ParametersContainer':'neuropy.core.parameters.ParametersContainer',
-    'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions.GeneralDecoderDictDecodedEpochsDictResult': "pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions._DEP_GeneralDecoderDictDecodedEpochsDictResult" # AttributeError: Can't get attribute 'GeneralDecoderDictDecodedEpochsDictResult' on <module 'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions' from 'C:\\Users\\pho\\repos\\Spike3DWorkEnv\\pyPhoPlaceCellAnalysis\\src\\pyphoplacecellanalysis\\General\\Pipeline\\Stages\\ComputationFunctions\\EpochComputationFunctions.py'>
-    }
-
+    # 'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions.GeneralDecoderDictDecodedEpochsDictResult': "pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions._DEP_GeneralDecoderDictDecodedEpochsDictResult", # AttributeError: Can't get attribute 'GeneralDecoderDictDecodedEpochsDictResult' on <module 'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions' from 'C:\\Users\\pho\\repos\\Spike3DWorkEnv\\pyPhoPlaceCellAnalysis\\src\\pyphoplacecellanalysis\\General\\Pipeline\\Stages\\ComputationFunctions\\EpochComputationFunctions.py'>
+    'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions.NonPBEDimensionalDecodingResult':'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions.DecodingResultND',  # AttributeError: Can't get attribute 'NonPBEDimensionalDecodingResult' on <module 'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions' from 'C:\\Users\\pho\\repos\\Spike3DWorkEnv\\pyPhoPlaceCellAnalysis\\src\\pyphoplacecellanalysis\\General\\Pipeline\\Stages\\ComputationFunctions\\EpochComputationFunctions.py'>
+}
 
 # Custom unpickling to remove property 'b'
 def remove_property(obj_dict):
@@ -64,7 +67,7 @@ class RenameUnpickler(pickle.Unpickler):
             renamed_module, name = self._pandas_rename_map.get(key, key)
     
         if found_full_replacement_import_name is not None:
-            return super(RenameUnpickler, self).find_class(renamed_module, found_full_replacement_import_name)
+            return super(RenameUnpickler, self).find_class(renamed_module, found_full_replacement_import_name) # AttributeError: Can't get attribute '_DEP_GeneralDecoderDictDecodedEpochsDictResult' on <module 'pyphoplacecellanalysis.General.Pipeline.Stages.ComputationFunctions.EpochComputationFunctions' from 'C:\\Users\\pho\\repos\\Spike3DWorkEnv\\pyPhoPlaceCellAnalysis\\src\\pyphoplacecellanalysis\\General\\Pipeline\\Stages\\ComputationFunctions\\EpochComputationFunctions.py'>
         else:
             return super(RenameUnpickler, self).find_class(renamed_module, name)
 
@@ -75,8 +78,8 @@ class RenameUnpickler(pickle.Unpickler):
         pickle.Unpickler.__init__(self, *args, **kwds)
         # self._ignore = settings['ignore'] if _ignore is None else _ignore
         # self._move_modules_list = settings['move_modules_list'] if _move_modules_list is None else _move_modules_list
-        assert _move_modules_list is not None
-        self._move_modules_list = _move_modules_list
+        assert _move_modules_list is not None, f'Requires at least a custom empty move_modules_dict'
+        self._move_modules_list = (default_global_move_modules_list | _move_modules_list)
         self._pandas_rename_map = pd.compat.pickle_compat._class_locations_map
 
 def renamed_load(file_obj, move_modules_list:Dict=None, **kwargs):

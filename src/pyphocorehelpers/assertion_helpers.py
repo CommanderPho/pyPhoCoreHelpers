@@ -375,6 +375,24 @@ class Assert:
                     assert (a_val is not None), f"{var_name} must be None but instead {var_name}: {a_val}.\nvalues_dict: {values_dict}\n{var_name}: {a_val}\n" # Perform the assertion with detailed error message
 
 
+    @classmethod
+    def is_in(cls, curr_variable_value: Any, allowed_variable_list: List):
+        """ Ensures the element is in the required literal list, if it fails, it prints the actual value and the available values
+
+        curr_variable_value = self.posterior_variable_to_render
+        allowed_variable_list = ['p_x_given_n', 'p_x_given_n_and_x_prev']
+        assert curr_variable_value in allowed_variable_list, f"{self.posterior_variable_to_render} not in allowed list: {allowed_variable_list}"
+
+        """
+        import inspect
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        # Extract the variable name from the caller's local variables
+        var_name = [name for name, val in frame.f_locals.items() if val is curr_variable_value]
+        # Use the first matched variable name or 'unknown' if not found
+        var_name: str = var_name[0] if var_name else 'unknown'
+        assert curr_variable_value in allowed_variable_list, f"{var_name} not in allowed list: {allowed_variable_list} but instead {var_name} ={curr_variable_value}.\n{var_name}: {curr_variable_value}\n"
+
 
 
     # ==================================================================================================================================================================================================================================================================================== #

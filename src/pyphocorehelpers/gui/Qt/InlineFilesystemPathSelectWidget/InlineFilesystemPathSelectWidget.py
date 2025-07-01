@@ -115,9 +115,19 @@ class InlineFilesystemPathSelectWidget(QWidget):
     @pyqtExceptionPrintingSlot()
     def selectPathDialog(self, startDir=None):
         if startDir is None:
-            startDir = str(self.path)
-        if startDir is None:
+            try:
+                current_path = self.path
+                if current_path and current_path.exists():
+                    startDir = str(current_path)
+                else:
+                    startDir = '.'
+            except:
+                startDir = '.'
+
+        # Ensure startDir is always a string
+        if not isinstance(startDir, str):
             startDir = '.'
+
         # self.ui.fileDialog = pg.FileDialog(None, "Select File", startDir, "Custom Eval Node (*.pEval)")
     
         # folderpath = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Folder')
@@ -193,9 +203,10 @@ class InlineFilesystemPathSelectWidget(QWidget):
         
         # Emit changed signal:
         self.sigFileSelectionChanged.emit(str(fileName))
-        
-    @pyqtExceptionPrintingSlot()
-    def on_textChanged(self):
+
+
+    @pyqtExceptionPrintingSlot(str)
+    def on_textChanged(self, text):
         """ called when the path string changes (even during edits) """   
         ## validate the path
         is_path_valid = self._visually_validate_path(self.path)

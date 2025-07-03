@@ -1603,3 +1603,54 @@ class PDFHelpers:
 
         print(f"Successfully concatenated {len(pdf_paths)} PDFs vertically to: {output_path}")
         return output_path
+
+    @function_attributes(short_name=None, tags=['pdf','scale', 'resize'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-07-03 16:58', related_items=[])
+    @classmethod
+    def scale_pdf(cls, input_path: str, output_path: str, scale_factor: float = 0.5):
+        """ Scale all aspects of a vector PDF uniformly by `scale_factor`.
+        
+        Parameters:
+            input_path (str): Path to input PDF file.
+            output_path (str): Path to save scaled output PDF.
+            scale_factor (float): Scaling factor (e.g., 0.5 for 50% size).
+            
+            
+        Usage:
+        
+            from pyphocorehelpers.plotting.media_output_helpers import PDFHelpers
+
+            # Scale input.pdf down to 50% size, scaling around the center
+            PDFHelpers.scale_pdf(input_path=_fig2_final_combined_output_path, output_path=_fig2_final_combined_output_path.with_stem(f"scaled_output"), scale_factor=0.5, center=False)
+
+        """
+        from pypdf import PdfReader, PdfWriter, Transformation ## for PDFHelpers
+        from pypdf.generic import RectangleObject
+        reader = PdfReader(input_path)
+        writer = PdfWriter()
+
+        for page in reader.pages:
+            # Original size
+            w = float(page.mediabox.width)
+            h = float(page.mediabox.height)
+            transform = Transformation().scale(scale_factor)
+
+            # Apply transformation
+            page.add_transformation(transform)
+
+            # Compute new bounding box
+            new_w = w * scale_factor
+            new_h = h * scale_factor
+
+            # Create new rectangle
+            new_box = RectangleObject([0, 0, new_w, new_h])
+
+            # Update MediaBox and CropBox
+            page.mediabox = new_box
+            page.cropbox = new_box
+
+            writer.add_page(page)
+
+        # Write output
+        with open(output_path, "wb") as f_out:
+            writer.write(f_out)
+            

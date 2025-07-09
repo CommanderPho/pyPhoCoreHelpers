@@ -393,11 +393,12 @@ class FigureCollector:
             
         """
         fig_kw = kwargs.pop('fig_kw', dict()) # empty dict by default
-        extant_fig = kwargs.pop('extant_fig', None)
+        # extant_fig = kwargs.pop('extant_fig', None)
         if extant_fig is None:
             fig = plt.figure(**fig_kw) # layout="constrained"
             self.figures.append(fig)
         else:
+            fig = extant_fig
             if fig not in self.figures:
                 self.figures.append(fig)
 

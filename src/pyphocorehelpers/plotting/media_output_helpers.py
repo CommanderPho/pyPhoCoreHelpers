@@ -1654,3 +1654,309 @@ class PDFHelpers:
         with open(output_path, "wb") as f_out:
             writer.write(f_out)
             
+
+
+# ==================================================================================================================================================================================================================================================================================== #
+# SVGHelpers                                                                                                                                                                                                                                                                           #
+# ==================================================================================================================================================================================================================================================================================== #
+import xml.etree.ElementTree as ET
+from xml.dom import minidom
+import re
+from typing import List, Union, Tuple
+from pathlib import Path
+
+@metadata_attributes(short_name=None, tags=['SVG', 'export', 'filesystem', 'concatenate', 'combine', 'vector'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-07-22 00:00', related_items=['concatenate_pdfs_horizontally'])
+class SVGHelpers:
+    """ Helpers for concatenating and manipulating SVG files while preserving vector graphics
+
+    from pyphocorehelpers.plotting.media_output_helpers import SVGHelpers
+
+    """
+
+    @classmethod 
+    def _parse_svg_dimensions(cls, svg_path: Union[str, Path]) -> Tuple[float, float]:
+        """
+        Extract width and height from an SVG file.
+
+        Returns:
+        --------
+        Tuple[float, float]
+            (width, height) in pixels
+        """
+        try:
+            tree = ET.parse(svg_path)
+            root = tree.getroot()
+
+            width = root.get('width', '100')
+            height = root.get('height', '100')
+
+            # Parse viewBox if width/height are not specified or are percentages
+            viewbox = root.get('viewBox')
+            if viewbox:
+                try:
+                    vb_values = [float(x) for x in viewbox.split()]
+                    if len(vb_values) >= 4:
+                        vb_width, vb_height = vb_values[2], vb_values[3]
+
+                        # If width/height are percentages or missing, use viewBox
+                        if '%' in str(width) or 'em' in str(width) or width == '100':
+                            width = vb_width
+                        if '%' in str(height) or 'em' in str(height) or height == '100':
+                            height = vb_height
+                except ValueError:
+                    pass  # fallback to default parsing
+
+            # Convert to float, removing units
+            def parse_dimension(dim):
+                if isinstance(dim, (int, float)):
+                    return float(dim)
+                dim_str = str(dim).lower()
+                # Remove common units and convert to pixels (rough conversion)
+                dim_str = re.sub(r'[a-z%]+$', '', dim_str)
+                try:
+                    return float(dim_str)
+                except ValueError:
+                    return 100.0  # fallback
+
+            return parse_dimension(width), parse_dimension(height)
+        except Exception as e:
+            print(f"Error parsing SVG dimensions from {svg_path}: {e}")
+            return 100.0, 100.0  # fallback dimensions
+
+    @classmethod
+    def concatenate_svgs_horizontally(cls, svg_paths: List[Union[str, Path]], output_path: Union[str, Path], 
+                                    padding: float = 0, background_color: str = None) -> Path:
+        """
+        Horizontally concatenate multiple SVG files while preserving vector graphics.
+
+        Parameters:
+        -----------
+        svg_paths : List[Union[str, Path]]
+            List of paths to SVG files to concatenate horizontally
+        output_path : Union[str, Path]
+            Path for the output concatenated SVG
+        padding : float, optional
+            Spacing between SVGs in pixels, by default 0
+        background_color : str, optional
+            Background color for the combined SVG (e.g., 'white', '#ffffff'), by default None
+
+        Returns:
+        --------
+        Path
+            Path to the created concatenated SVG
+        """
+        if not svg_paths:
+            raise ValueError("svg_paths cannot be empty")
+
+        if len(svg_paths) == 1:
+            # If only one SVG, just copy it
+            import shutil
+            shutil.copy2(svg_paths[0], output_path)
+            return Path(output_path)
+
+        # Convert paths to Path objects
+        svg_paths = [Path(p) for p in svg_paths]
+        output_path = Path(output_path)
+
+        # Parse all SVGs and get their dimensions
+        svg_contents = []
+        svg_dimensions = []
+
+        for svg_path in svg_paths:
+            try:
+                with open(svg_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                svg_contents.append(content)
+                width, height = cls._parse_svg_dimensions(svg_path)
+                svg_dimensions.append((width, height))
+            except Exception as e:
+                print(f"Error reading SVG {svg_path}: {e}")
+                continue
+
+        if not svg_contents:
+            raise ValueError("No valid SVG files could be read")
+
+        # Calculate combined dimensions
+        widths = [dim[0] for dim in svg_dimensions]
+        heights = [dim[1] for dim in svg_dimensions]
+
+        total_padding = padding * (len(svg_contents) - 1) if len(svg_contents) > 1 else 0
+        combined_width = sum(widths) + total_padding
+        combined_height = max(heights)
+
+        # Create the combined SVG as string
+        svg_parts = []
+        svg_parts.append('<?xml version="1.0" encoding="UTF-8"?>')
+        svg_parts.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{combined_width}" height="{combined_height}" viewBox="0 0 {combined_width} {combined_height}">')
+
+        # Add background rectangle if specified
+        if background_color:
+            svg_parts.append(f'  <rect width="100%" height="100%" fill="{background_color}"/>')
+
+        # Add each SVG content horizontally
+        current_x_offset = 0
+
+        for i, (content, (width, height)) in enumerate(zip(svg_contents, svg_dimensions)):
+            # Extract content between <svg> tags, excluding the SVG element itself
+            inner_content = cls._extract_svg_inner_content(content)
+
+            if inner_content.strip():
+                # Wrap in a group with translation
+                if current_x_offset > 0:
+                    svg_parts.append(f'  <g transform="translate({current_x_offset}, 0)">')
+                else:
+                    svg_parts.append('  <g>')
+
+                # Add the inner content with proper indentation
+                for line in inner_content.split('\n'):
+                    if line.strip():
+                        svg_parts.append(f'    {line.strip()}')
+
+                svg_parts.append('  </g>')
+
+            # Update offset for next SVG
+            current_x_offset += width + padding
+
+        svg_parts.append('</svg>')
+
+        # Write the combined SVG
+        combined_content = '\n'.join(svg_parts)
+
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(combined_content)
+
+        print(f"Successfully concatenated {len(svg_contents)} SVGs horizontally to: {output_path}")
+        return output_path
+
+    @classmethod
+    def concatenate_svgs_vertically(cls, svg_paths: List[Union[str, Path]], output_path: Union[str, Path], 
+                                  padding: float = 0, background_color: str = None) -> Path:
+        """
+        Vertically concatenate multiple SVG files while preserving vector graphics.
+        """
+        if not svg_paths:
+            raise ValueError("svg_paths cannot be empty")
+
+        if len(svg_paths) == 1:
+            import shutil
+            shutil.copy2(svg_paths[0], output_path)
+            return Path(output_path)
+
+        # Convert paths to Path objects  
+        svg_paths = [Path(p) for p in svg_paths]
+        output_path = Path(output_path)
+
+        # Parse all SVGs and get their dimensions
+        svg_contents = []
+        svg_dimensions = []
+
+        for svg_path in svg_paths:
+            try:
+                with open(svg_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                svg_contents.append(content)
+                width, height = cls._parse_svg_dimensions(svg_path)
+                svg_dimensions.append((width, height))
+            except Exception as e:
+                print(f"Error reading SVG {svg_path}: {e}")
+                continue
+
+        if not svg_contents:
+            raise ValueError("No valid SVG files could be read")
+
+        # Calculate combined dimensions
+        widths = [dim[0] for dim in svg_dimensions]
+        heights = [dim[1] for dim in svg_dimensions]
+
+        total_padding = padding * (len(svg_contents) - 1) if len(svg_contents) > 1 else 0
+        combined_width = max(widths)
+        combined_height = sum(heights) + total_padding
+
+        # Create the combined SVG as string
+        svg_parts = []
+        svg_parts.append('<?xml version="1.0" encoding="UTF-8"?>')
+        svg_parts.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{combined_width}" height="{combined_height}" viewBox="0 0 {combined_width} {combined_height}">')
+
+        # Add background if specified
+        if background_color:
+            svg_parts.append(f'  <rect width="100%" height="100%" fill="{background_color}"/>')
+
+        # Add each SVG content vertically
+        current_y_offset = 0
+
+        for i, (content, (width, height)) in enumerate(zip(svg_contents, svg_dimensions)):
+            # Extract content between <svg> tags
+            inner_content = cls._extract_svg_inner_content(content)
+
+            if inner_content.strip():
+                # Wrap in a group with translation
+                if current_y_offset > 0:
+                    svg_parts.append(f'  <g transform="translate(0, {current_y_offset})">')
+                else:
+                    svg_parts.append('  <g>')
+
+                # Add the inner content with proper indentation
+                for line in inner_content.split('\n'):
+                    if line.strip():
+                        svg_parts.append(f'    {line.strip()}')
+
+                svg_parts.append('  </g>')
+
+            # Update offset for next SVG
+            current_y_offset += height + padding
+
+        svg_parts.append('</svg>')
+
+        # Write the combined SVG
+        combined_content = '\n'.join(svg_parts)
+
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(combined_content)
+
+        print(f"Successfully concatenated {len(svg_contents)} SVGs vertically to: {output_path}")
+        return output_path
+
+    @classmethod
+    def _extract_svg_inner_content(cls, svg_content: str) -> str:
+        """
+        Extract the inner content of an SVG file (everything between the root <svg> tags).
+
+        Parameters:
+        -----------
+        svg_content : str
+            The full SVG file content as a string
+
+        Returns:
+        --------
+        str
+            The inner content without the root <svg> element
+        """
+        import re
+
+        # Remove XML declaration and doctype if present
+        content = re.sub(r'<\?xml[^>]*\?>', '', svg_content)
+        content = re.sub(r'<!DOCTYPE[^>]*>', '', content)
+
+        # Find the opening and closing svg tags
+        # Match opening <svg> tag (may span multiple lines and have attributes)
+        svg_start_match = re.search(r'<svg[^>]*>', content, re.DOTALL | re.IGNORECASE)
+        if not svg_start_match:
+            return ""
+
+        # Find the matching closing </svg> tag
+        svg_end_match = re.search(r'</svg\s*>', content, re.IGNORECASE)
+        if not svg_end_match:
+            return ""
+
+        # Extract content between the tags
+        start_pos = svg_start_match.end()
+        end_pos = svg_end_match.start()
+
+        inner_content = content[start_pos:end_pos].strip()
+
+        # Remove any nested <svg> root elements that might cause conflicts
+        # but keep their content
+        inner_content = re.sub(r'<svg[^>]*>', '', inner_content, flags=re.IGNORECASE)
+        inner_content = re.sub(r'</svg\s*>', '', inner_content, flags=re.IGNORECASE)
+
+        return inner_content

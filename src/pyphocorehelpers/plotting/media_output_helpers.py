@@ -34,6 +34,76 @@ from pyphocorehelpers.assertion_helpers import Assert
 
 # from pyphoplacecellanalysis.Pho2D.data_exporting import HeatmapExportKind
 
+from enum import Enum, auto
+
+
+class ImageStackOrientation(Enum):
+    """ The orientation upon which to stack a set of images
+    
+    Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import ImageStackOrientation
+
+        stack_orientations: List[ImageStackOrientation] = [ImageStackOrientation.VERTICAL]
+        for an_orientation in stack_orientations:
+            _single_epoch_combined_img = an_orientation.stack_images(_single_epoch_row, padding=combined_img_padding, separator_color=combined_img_separator_color)    
+            _single_epoch_single_series_single_export_type_rows_list.append(_single_epoch_combined_img)
+            ## Save the image:
+            _img_path = _output_combined_dir.joinpath(f'merged_{an_orientation.name}_{known_epoch_type_name}[{i}].png').resolve()
+            _single_epoch_combined_img.save(_img_path)
+            _output_combined_image_save_dirs.append(_img_path)
+    """
+    VERTICAL = auto()
+    HORIZONTAL = auto()
+    GRID = auto()
+    
+    @property
+    def is_vertical(self) -> bool:
+        return (self.name == ImageStackOrientation.VERTICAL.name)
+    
+    @property
+    def is_horizontal(self) -> bool:
+        return (self.name == ImageStackOrientation.HORIZONTAL.name)
+    
+    @property
+    def is_grid(self) -> bool:
+        return (self.name == ImageStackOrientation.GRID.name)
+
+    @property
+    def shortname(self) -> str:
+        """ Abbreviation like 'V' or 'H' """
+        return self.name.upper()[0] ## Only the first letter
+        # return self.name.lower()
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def list_values(cls):
+        """Returns a list of all enum values"""
+        return list(cls)
+
+    @classmethod
+    def list_names(cls):
+        """Returns a list of all enum names"""
+        return [e.name for e in cls]
+    
+    def stack_images(self, *args, **kwargs):
+        """ shortcut to perform image stacking
+        Usage:
+        
+            from pyphocorehelpers.plotting.media_output_helpers import ImageStackOrientation
+            
+        """
+        if self.name == ImageStackOrientation.VERTICAL.name:
+            return vertical_image_stack(*args, **kwargs)
+        elif self.name == ImageStackOrientation.HORIZONTAL.name:
+            return horizontal_image_stack(*args, **kwargs)
+        elif self.name == ImageStackOrientation.GRID.name:
+            return image_grid(*args, **kwargs)
+        else:
+            raise NotImplementedError(f'self: {self}')
+
+
 
 def add_border(image: Image.Image, border_size: int = 5, border_color: tuple = (0, 0, 0)) -> Image.Image:
     return ImageOps.expand(image, border=border_size, fill=border_color)
@@ -928,6 +998,24 @@ def get_array_as_image_stack(imgs: List[Image.Image], offset=10, single_image_al
     return output_img
 
 
+def compute_total_padding(padding: Union[str, float], num_images: int, dimension_size: float) -> float:
+    """ 
+    dimension_size: only used if padding is passed as a percent
+
+    Usage:     
+        output_width = np.sum(widths)
+        output_total_padding_width: float = compute_total_padding(padding=padding, num_images=len(imgs), dimension_size=output_width)
+    """
+    if isinstance(padding, str) and padding.endswith('%'):
+        # if it's a string like '1%', it specifies the desired width in terms of the total image width
+        padding_percent = padding.strip('%')
+        padding_percent = float(padding_percent)
+        assert (padding <= 100.0) and (padding >= 0.0), f"padding: {padding} is invalid! Should be a percentage of the total image width like '1%'."
+        padding = (padding_percent * dimension_size) / float(num_images - 1) # padding in px
+
+    return (padding * (num_images - 1))
+
+
 
 def vertical_image_stack(imgs: List[Image.Image], padding=10, v_overlap: int=0, separator_color=None) -> Image.Image:
     """ Builds a stack of images into a vertically concatenated image.
@@ -951,14 +1039,8 @@ def vertical_image_stack(imgs: List[Image.Image], padding=10, v_overlap: int=0, 
     # Create a new image with size larger than original ones, considering offsets
     # output_height = (np.sum(heights) + (padding * (len(imgs) - 1))) - v_overlap
     output_height = np.sum(heights) - v_overlap
-    if isinstance(padding, str) and padding.endswith('%'):
-        # if it's a string like '1%', it specifies the desired width in terms of the total image height
-        padding_percent = padding.strip('%')
-        padding_percent = float(padding_percent)
-        assert (padding <= 100.0) and (padding >= 0.0), f"padding: {padding} is invalid! Should be a percentage of the total image height like '1%'."
-        padding = (padding_percent * output_height) / float(len(imgs) - 1) # padding in px
+    output_total_padding_height: float = compute_total_padding(padding=padding, num_images=len(imgs), dimension_size=output_height)
 
-    output_total_padding_height: float = (padding * (len(imgs) - 1))
     output_height = output_height + output_total_padding_height
     output_width = np.max(widths)
     # print(f'output_width: {output_width}, output_height: {output_height}')
@@ -1003,14 +1085,7 @@ def horizontal_image_stack(imgs: List[Image.Image], padding=10, separator_color=
 
     # Create a new image with size larger than original ones, considering offsets
     output_width = np.sum(widths)
-    if isinstance(padding, str) and padding.endswith('%'):
-        # if it's a string like '1%', it specifies the desired width in terms of the total image width
-        padding_percent = padding.strip('%')
-        padding_percent = float(padding_percent)
-        assert (padding <= 100.0) and (padding >= 0.0), f"padding: {padding} is invalid! Should be a percentage of the total image width like '1%'."
-        padding = (padding_percent * output_width) / float(len(imgs) - 1) # padding in px
-
-    output_total_padding_width: float = (padding * (len(imgs) - 1))
+    output_total_padding_width: float = compute_total_padding(padding=padding, num_images=len(imgs), dimension_size=output_width)
     output_width = output_width + output_total_padding_width
     output_height = np.max(heights)
     
@@ -1032,7 +1107,7 @@ def horizontal_image_stack(imgs: List[Image.Image], padding=10, separator_color=
     return output_img
 
 
-def image_grid(imgs: List[List[Image.Image]], v_padding=5, h_padding=5) -> Image.Image:
+def image_grid(imgs: List[List[Image.Image]], v_padding=None, h_padding=None, padding:Optional[float]=None, separator_color=None, v_overlap=0, h_overlap=0) -> Image.Image:
     """ Builds a stack of images into a horizontally concatenated image.
     offset = 10  # your desired offset
 
@@ -1047,27 +1122,72 @@ def image_grid(imgs: List[List[Image.Image]], v_padding=5, h_padding=5) -> Image
         _out_hstack
 
     """
+    if padding is not None:
+        ## same padding for both
+        v_padding = padding
+        h_padding = padding
+    else:
+        ## default to 5 pixels
+        v_padding = 5
+        h_padding = 5
+        
     # Ensure all images are in RGBA mode
     imgs = [img.convert('RGBA') if img.mode != 'RGBA' else img for img in imgs]
     
-    # Assume all images are the same size
-    width, height = imgs[0].size
-    
+    ## get the sizes of each image
     widths = np.array([img.size[0] for img in imgs])
     heights = np.array([img.size[1] for img in imgs])
 
     # Create a new image with size larger than original ones, considering offsets
-    output_width = np.sum(widths) + (padding * (len(imgs) - 1))
-    output_height = np.max(heights)
+    output_height = np.sum(heights)
+    output_total_padding_height: float = compute_total_padding(padding=v_padding, num_images=len(imgs), dimension_size=output_height)
+    output_height = output_height + output_total_padding_height
+    output_width = np.sum(widths)
+    output_total_padding_width: float = compute_total_padding(padding=h_padding, num_images=len(imgs), dimension_size=output_width)
+    output_width = output_width + output_total_padding_width
+
+    # Create a new image with size larger than original ones, considering offsets
+    # output_width = np.sum(widths) + (padding * (len(imgs) - 1))
+    # output_height = np.max(heights)
+
     # print(f'output_width: {output_width}, output_height: {output_height}')
     output_img = Image.new('RGBA', (output_width, output_height))
-    # cum_height = 0
+
+    cum_height = 0
     cum_width = 0
-    for i, img in enumerate(imgs):
-        curr_img_width, curr_img_height = img.size
-        output_img.paste(img, (cum_width, 0), img)
-        # cum_height += (curr_img_height+padding)
-        cum_width += (curr_img_width+padding)
+    # for i, img in enumerate(imgs):
+    
+    for row_i, a_row in enumerate(imgs):
+
+        if row_i > 0:
+            ## not the first row
+            ## VERT
+            cum_height += (curr_img_height - v_overlap) ## add the current image height
+            if (separator_color is not None) and (v_padding > 0):
+                ## fill the between-image area with a separator_color
+                _tmp_separator_img = Image.new('RGBA', (output_width, v_padding), separator_color)
+                output_img.paste(_tmp_separator_img, (0, cum_height))
+                        
+            cum_height += v_padding
+
+
+
+        for col_i, img in enumerate(a_row):
+            curr_img_width, curr_img_height = img.size
+            output_img.paste(img, (cum_width, cum_height), img)
+            
+            ## HORIZONTAL
+            cum_width += (curr_img_width - h_overlap) ## add the current image width
+            if (separator_color is not None) and (h_padding > 0):
+                ## fill the between-image area with a separator_color
+                _tmp_separator_img = Image.new('RGBA', (h_padding, output_height), separator_color)
+                output_img.paste(_tmp_separator_img, (cum_width, 0))
+        
+            cum_width += h_padding
+
+        ## OLD GRID
+        ## cum_height += (curr_img_height+padding)
+        # cum_width += (curr_img_width+padding)
 
     return output_img
 

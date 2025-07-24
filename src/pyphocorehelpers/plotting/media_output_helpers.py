@@ -1107,7 +1107,7 @@ def horizontal_image_stack(imgs: List[Image.Image], padding=10, separator_color=
     return output_img
 
 
-def image_grid(imgs: List[List[Image.Image]], v_padding=None, h_padding=None, padding:Optional[float]=None, separator_color=None, v_overlap=0, h_overlap=0) -> Image.Image:
+def image_grid(imgs: List[List[Image.Image]], v_padding=None, h_padding=None, padding:Optional[float]=None, separator_color=None, v_overlap=0) -> Image.Image:
     """ Builds a stack of images into a horizontally concatenated image.
     offset = 10  # your desired offset
 
@@ -1130,67 +1130,7 @@ def image_grid(imgs: List[List[Image.Image]], v_padding=None, h_padding=None, pa
         ## default to 5 pixels
         v_padding = 5
         h_padding = 5
-        
-    # Ensure all images are in RGBA mode
-    imgs = [img.convert('RGBA') if img.mode != 'RGBA' else img for img in imgs]
-    
-    ## get the sizes of each image
-    widths = np.array([img.size[0] for img in imgs])
-    heights = np.array([img.size[1] for img in imgs])
-
-    # Create a new image with size larger than original ones, considering offsets
-    output_height = np.sum(heights)
-    output_total_padding_height: float = compute_total_padding(padding=v_padding, num_images=len(imgs), dimension_size=output_height)
-    output_height = output_height + output_total_padding_height
-    output_width = np.sum(widths)
-    output_total_padding_width: float = compute_total_padding(padding=h_padding, num_images=len(imgs), dimension_size=output_width)
-    output_width = output_width + output_total_padding_width
-
-    # Create a new image with size larger than original ones, considering offsets
-    # output_width = np.sum(widths) + (padding * (len(imgs) - 1))
-    # output_height = np.max(heights)
-
-    # print(f'output_width: {output_width}, output_height: {output_height}')
-    output_img = Image.new('RGBA', (output_width, output_height))
-
-    cum_height = 0
-    cum_width = 0
-    # for i, img in enumerate(imgs):
-    
-    for row_i, a_row in enumerate(imgs):
-
-        if row_i > 0:
-            ## not the first row
-            ## VERT
-            cum_height += (curr_img_height - v_overlap) ## add the current image height
-            if (separator_color is not None) and (v_padding > 0):
-                ## fill the between-image area with a separator_color
-                _tmp_separator_img = Image.new('RGBA', (output_width, v_padding), separator_color)
-                output_img.paste(_tmp_separator_img, (0, cum_height))
-                        
-            cum_height += v_padding
-
-
-
-        for col_i, img in enumerate(a_row):
-            curr_img_width, curr_img_height = img.size
-            output_img.paste(img, (cum_width, cum_height), img)
-            
-            ## HORIZONTAL
-            cum_width += (curr_img_width - h_overlap) ## add the current image width
-            if (separator_color is not None) and (h_padding > 0):
-                ## fill the between-image area with a separator_color
-                _tmp_separator_img = Image.new('RGBA', (h_padding, output_height), separator_color)
-                output_img.paste(_tmp_separator_img, (cum_width, 0))
-        
-            cum_width += h_padding
-
-        ## OLD GRID
-        ## cum_height += (curr_img_height+padding)
-        # cum_width += (curr_img_width+padding)
-
-    return output_img
-
+    return vertical_image_stack(imgs=[horizontal_image_stack(imgs=a_row, padding=h_padding, separator_color=separator_color) for a_row in imgs], padding=v_padding, v_overlap=v_overlap, separator_color=separator_color)
 
 
 

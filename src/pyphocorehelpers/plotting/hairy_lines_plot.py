@@ -15,7 +15,7 @@ class HairyLinePlot:
 
     """
     @classmethod
-    def _perform_plot_hairy_overlayed_position(cls, x: NDArray, y: NDArray, ax, normal_x=None, normal_y=None, hair_length:float=1.0, linewidth: float=0.9, color='red', alpha:Optional[float]=None, should_draw_reference_line: bool=False, reference_line_kwargs=None, **kwargs):
+    def _perform_plot_hairy_overlayed_position(cls, x: NDArray, y: NDArray, ax, normal_x=None, normal_y=None, hair_length:float=1.0, linewidth: float=1.2, color='red', alpha:Optional[float]=None, should_draw_reference_line: bool=False, reference_line_kwargs=None, **kwargs):
         """ plots only the extremely confident context periods on the position trajectory over time (red when sure it's Long, blue when sure it's Short)
 
 

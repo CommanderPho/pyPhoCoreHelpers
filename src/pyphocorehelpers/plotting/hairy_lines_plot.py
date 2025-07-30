@@ -86,18 +86,33 @@ class HairyLinePlot:
         # Create individual disconnected line segments normal to the reference line
         segments = []
 
-        for i in range(len(x)):
-                    
+        for i in range(num_points):
+
             if (normal_x is not None) and (normal_y is not None):
                 ## NEW-WORKING REPLACEMENT use these pre-computed arrays to build the segments
                 pass
                 assert len(normal_x) == len(normal_y)
                 assert len(normal_x) == num_points
-                ## TODO: WRITE THIS CODE HERE
+                # ---------- preferred path: use pre-computed normals -------------
+                if (normal_x is not None) and (normal_y is not None):
+                    assert (len(normal_x) == len(normal_y) == num_points), (
+                        "normal_x / normal_y must match x, y length")
+
+                    # Decide this segment’s actual length
+                    if np.ndim(hair_length) == 0:        # scalar
+                        curr_len = hair_length
+                    else:                                # array-like
+                        curr_len = hair_length[i]
+
+                    # Start at the curve point, go OUTWARD only
+                    x_start, y_start = x[i], y[i]
+                    x_end   = x_start + normal_x[i] * curr_len
+                    y_end   = y_start + normal_y[i] * curr_len
+
+                    segments.append([[x_start, y_start], [x_end, y_end]])
                 
             else:
-                ## BAD, BROKEN MANUAL CALCULATION
-                raise NotImplementedError(f'OLD BROKEN')
+                ## BAD, Manual
                 # Calculate tangent direction at this point
                 if i == 0 and len(x) > 1:
                     # First point: use tangent to next point

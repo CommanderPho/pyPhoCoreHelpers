@@ -90,7 +90,11 @@ class HairyLinePlot:
         # Compute attributes for each segment (use start of segment)
         if isinstance(linewidth, (float, int)):
             linewidths = np.full((num_points,), fill_value=linewidth)
-
+        else:
+            linewidths = deepcopy(linewidth)
+            
+        assert len(linewidths) == num_points, f"num_points: {num_points}, len(linewidths): {len(linewidths)}, linewidths: {linewidths}"
+        
 
         # if isinstance(color, (tuple, NDArray, list)):
         # 	if (len(color) == 4) and len(x) != 4:
@@ -105,7 +109,7 @@ class HairyLinePlot:
             base_rgba = deepcopy(color)
             ## TODO: assumes that color is scalar
 
-        assert np.ndim(np.squeeze(color)) == 1, f"#TODO 2025-07-30 10:52: - [ ] expect a scalar color like color='red' for now, easy to implement but not yet done 2025-07-29.\ncolor: {color}"
+        assert np.ndim(np.squeeze(base_rgba)) == 1, f"#TODO 2025-07-30 10:52: - [ ] expect a scalar color like color='red' for now, easy to implement but not yet done 2025-07-29.\nbase_rgba: {base_rgba}"
 
         if alpha is None:
             ## extract the alpha from the color, in case the user provided the alpha in the color
@@ -113,7 +117,10 @@ class HairyLinePlot:
 
         if isinstance(alpha, (float, int)):
             alphas = np.full((num_points,), fill_value=alpha)
-
+        else:
+            alphas = deepcopy(alpha)
+            
+        assert len(alphas) == num_points, f"num_points: {num_points}, len(alphas): {len(alphas)}, alphas: {alphas}"
         base_rgba = base_rgba[:3]  # strip alpha, we'll set it per-segment
         colors = np.tile(base_rgba, (len(alphas), 1)) # (1956, 3)
         colors = np.hstack([colors, alphas[:, None]])  # append alphas column-wise (1956, 4)
@@ -260,7 +267,7 @@ class HairyLinePlot:
             # base_rgba = base_rgba[:3]  # strip alpha, we'll set it per-segment
             # colors = np.tile(base_rgba, (len(alphas), 1))
             # colors = np.hstack([colors, alphas[:, None]])  # append alphas column-wise
-            hairs_line_collection, pos_line_artist = cls._perform_plot_hairy_overlayed_position(x = df_viz[t_bin_col_name].values[mask], y = df_viz[pos_col_name].values[mask],
+            hairs_line_collection, pos_line_artist = cls._perform_plot_hairy_overlayed_position(x = df_viz[t_bin_col_name].values[:-1][mask], y = df_viz[pos_col_name].values[:-1][mask],
                                                                                                     linewidth = df_viz[f'{a_var_name}_Score'].values[:-1][mask],
                                                                                                     color=a_colors,
                                                                                                     alpha = df_viz[f'{a_var_name}_Opacity'].values[:-1][mask], 

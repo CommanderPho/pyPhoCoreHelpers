@@ -15,7 +15,7 @@ class HairyLinePlot:
 
     """
     @classmethod
-    def _perform_plot_hairy_overlayed_position(cls, x: NDArray, y: NDArray, ax, linewidth: float=0.9, color='red', alpha:Optional[float]=None, should_draw_reference_line: bool=False, reference_line_kwargs=None, **kwargs):
+    def _perform_plot_hairy_overlayed_position(cls, x: NDArray, y: NDArray, ax, normal_x=None, normal_y=None, hair_length:float=1.0, linewidth: float=0.9, color='red', alpha:Optional[float]=None, should_draw_reference_line: bool=False, reference_line_kwargs=None, **kwargs):
         """ plots only the extremely confident context periods on the position trajectory over time (red when sure it's Long, blue when sure it's Short)
 
 
@@ -83,13 +83,59 @@ class HairyLinePlot:
         ## build plot
         num_points: int = len(x)
         
-        # Create individual disconnected line segments (vertical hairs)
-        # Each segment is a short vertical line at each x position
+        # Create individual disconnected line segments normal to the reference line
         segments = []
+
         for i in range(len(x)):
-            # Create short vertical line segments instead of connecting points
-            y_offset = linewidth[i] if hasattr(linewidth, '__len__') else linewidth
-            segments.append([[x[i], y[i] - y_offset/2], [x[i], y[i] + y_offset/2]])
+                    
+            if (normal_x is not None) and (normal_y is not None):
+                ## NEW-WORKING REPLACEMENT use these pre-computed arrays to build the segments
+                pass
+                assert len(normal_x) == len(normal_y)
+                assert len(normal_x) == num_points
+                ## TODO: WRITE THIS CODE HERE
+                
+            else:
+                ## BAD, BROKEN MANUAL CALCULATION
+                raise NotImplementedError(f'OLD BROKEN')
+                # Calculate tangent direction at this point
+                if i == 0 and len(x) > 1:
+                    # First point: use tangent to next point
+                    dx = x[1] - x[i]
+                    dy = y[1] - y[i]
+                elif i == len(x) - 1 and len(x) > 1:
+                    # Last point: use tangent from previous point
+                    dx = x[i] - x[i-1]
+                    dy = y[i] - y[i-1]
+                elif len(x) > 2:
+                    # Middle points: use average of adjacent tangents
+                    dx = (x[i+1] - x[i-1]) / 2
+                    dy = (y[i+1] - y[i-1]) / 2
+                else:
+                    # Single point or two points: default to vertical
+                    dx, dy = 1, 0
+                
+                # Calculate normal direction (perpendicular to tangent)
+                # Rotate tangent 90 degrees: (dx, dy) -> (dy, -dx)
+                norm = np.sqrt(dx*dx + dy*dy)
+                if norm > 0:
+                    normal_x = dy / norm
+                    normal_y = -dx / norm
+                else:
+                    normal_x, normal_y = 0, 1  # Default to vertical
+                
+                # Create hair segment normal to the line
+                hair_length = linewidth[i] if hasattr(linewidth, '__len__') else linewidth
+                half_length = hair_length / 2
+                
+                segments.append([
+                    [x[i] - normal_x * half_length, y[i] - normal_y * half_length],
+                    [x[i] + normal_x * half_length, y[i] + normal_y * half_length]
+                ])
+                
+                
+        ## end for i in ...
+        
         segments = np.array(segments)
 
         # Compute attributes for each segment (use start of segment)
@@ -100,13 +146,6 @@ class HairyLinePlot:
             
         assert len(linewidths) == num_points, f"num_points: {num_points}, len(linewidths): {len(linewidths)}, linewidths: {linewidths}"
         
-
-        # if isinstance(color, (tuple, NDArray, list)):
-        # 	if (len(color) == 4) and len(x) != 4:
-        # 		## has alpha component
-        # 		if alpha is not None:
-
-
         ## build the appropriate colors
         if not isinstance(color, NDArray):
             base_rgba = np.array(to_rgba(color))  # converts color name to RGBA

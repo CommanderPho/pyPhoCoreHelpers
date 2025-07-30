@@ -83,9 +83,14 @@ class HairyLinePlot:
         ## build plot
         num_points: int = len(x)
         
-        # Extract full segments before masking
-        points = np.array([x, y]).T
-        segments = np.stack([points[:-1], points[1:]], axis=1)
+        # Create individual disconnected line segments (vertical hairs)
+        # Each segment is a short vertical line at each x position
+        segments = []
+        for i in range(len(x)):
+            # Create short vertical line segments instead of connecting points
+            y_offset = linewidth[i] if hasattr(linewidth, '__len__') else linewidth
+            segments.append([[x[i], y[i] - y_offset/2], [x[i], y[i] + y_offset/2]])
+        segments = np.array(segments)
 
         # Compute attributes for each segment (use start of segment)
         if isinstance(linewidth, (float, int)):
@@ -126,7 +131,9 @@ class HairyLinePlot:
         colors = np.hstack([colors, alphas[:, None]])  # append alphas column-wise (1956, 4)
 
         markersize: float = kwargs.get('markersize', 5) ## translate the marker size to the hair length? 5 is the default
-        hairs_line_collection: LineCollection = LineCollection(segments, linewidths=linewidths, colors=colors, zorder=kwargs.get('zorder', 2)) ## don't pass kwargs by default, they won't work
+        # Use a fixed linewidth for the hair thickness since we're creating vertical hairs
+        hair_linewidth = 1.0  # Fixed width for the hair lines themselves
+        hairs_line_collection: LineCollection = LineCollection(segments, linewidths=hair_linewidth, colors=colors, facecolors='none', zorder=kwargs.get('zorder', 2)) ## don't pass kwargs by default, they won't work
         ax.add_collection(hairs_line_collection)
 
         ## draw a constant-thickness solid black lines for position - do only once, post-hoc:

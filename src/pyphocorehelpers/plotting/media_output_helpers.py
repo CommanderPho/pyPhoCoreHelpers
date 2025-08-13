@@ -573,7 +573,7 @@ class ImageOperationsAndEffects:
 
 
     @classmethod
-    def add_top_left_overlay_label(cls, image: Image.Image, label_text: str, 
+    def add_overlayed_text(cls, image: Image.Image, label_text: str, 
                                  padding: int = None, font_size: int = None,
                                  text_color: tuple = (255, 255, 255), 
                                  background_color: tuple = (0, 0, 0, 0),
@@ -624,21 +624,16 @@ class ImageOperationsAndEffects:
             
         Usage:
         ------
-        from pyphocorehelpers.plotting.media_output_helpers import ImageHelpers
+        from pyphocorehelpers.plotting.media_output_helpers import ImageOperationsAndEffects
         
         # Add a simple overlay
-        labeled_image = ImageHelpers.add_top_left_overlay_label(
+        labeled_image = ImageOperationsAndEffects.add_top_left_overlay_label(
             image, "Session 1", text_color=(255, 255, 0)
         )
         
         # Add overlay with custom styling
-        labeled_image = ImageHelpers.add_top_left_overlay_label(
-            image, "Epoch 1", 
-            text_color=(255, 255, 255),
-            background_color=(0, 0, 0, 180),
-            text_outline_shadow_color=(0, 0, 0, 255),
-            corner='bottom-right'
-        )
+            ## Add overlay text to `an_active_img`
+            an_active_img = ImageOperationsAndEffects.add_overlayed_text(an_active_img, a_decoder_name, font_size=48, text_color="#FF00EACA", stroke_width=1, stroke_fill="#000000")
         """
         
         # Validate corner parameter

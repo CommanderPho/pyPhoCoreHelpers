@@ -1,4 +1,3 @@
- 
 from __future__ import annotations # prevents having to specify types for typehinting as strings
 from typing import TYPE_CHECKING
 
@@ -373,15 +372,7 @@ class ImageOperationsAndEffects:
         _temp_empty_img = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
         _temp_empty_draw = ImageDraw.Draw(_temp_empty_img)
         
-        # Use getbbox() for newer Pillow versions, fallback to textsize()
-        # try:
-        #     bbox = _temp_empty_draw.textbbox((0, 0), label_text, **label_kwargs)
-        #     text_width = int(np.ceil(bbox[2] - bbox[0]))
-        #     text_height = int(np.ceil(bbox[3] - bbox[1]))
-        # except AttributeError:
-        #     text_width, text_height = _temp_empty_draw.textsize(label_text, font=font, spacing=0) # , direction=None
-        
-        required_text_width, required_text_height = _temp_empty_draw.textsize(label_text, font=font, spacing=0) ## disabled in newer versions of pillow
+        required_text_width, required_text_height = _temp_empty_draw.textsize(label_text, font=font, spacing=0)
         
         required_text_height = required_text_height # + padding
         required_text_width = required_text_width # + padding
@@ -477,6 +468,189 @@ class ImageOperationsAndEffects:
             print(f'done.', end='\n') ## terminate the line
             
         return new_larger_image
+
+
+    @classmethod
+    def add_top_left_overlay_label(cls, image: Image.Image, label_text: str, 
+                                 padding: int = None, font_size: int = None,
+                                 text_color: tuple = (255, 255, 255), 
+                                 background_color: tuple = (0, 0, 0, 128),
+                                 text_outline_shadow_color: Optional[tuple] = None,
+                                 relative_font_size: float = 0.04,
+                                 relative_padding: float = 0.02,
+                                 font: str = 'ndastroneer.ttf',
+                                 corner: str = 'top-left',
+                                 debug_print: bool = False) -> Image.Image:
+        """Adds a text label as an overlay in the specified corner of an image with a transparent background.
+        
+        This function creates a text overlay that sits on top of the original image without changing
+        its dimensions. The text has a semi-transparent background for better readability.
+        
+        Parameters:
+        -----------
+        image : Image.Image
+            The PIL Image to add the overlay label to
+        label_text : str
+            The text to display as the overlay
+        padding : int, optional
+            Padding around the text in pixels. If None, calculated based on relative_padding
+        font_size : int, optional
+            Font size in pixels. If None, calculated based on relative_font_size
+        text_color : tuple, optional
+            RGB or RGBA color for the text, by default (255, 255, 255) (white)
+        background_color : tuple, optional
+            RGBA color for the background rectangle, by default (0, 0, 0, 128) (semi-transparent black)
+        text_outline_shadow_color : tuple, optional
+            RGB or RGBA color for text outline/shadow. If None, no outline is drawn
+        relative_font_size : float, optional
+            Font size as a fraction of image height, by default 0.04 (4% of image height)
+        relative_padding : float, optional
+            Padding as a fraction of image height, by default 0.02 (2% of image height)
+        font : str, optional
+            Font file name to use, by default 'ndastroneer.ttf'
+        corner : str, optional
+            Corner to place the overlay: 'top-left', 'top-right', 'bottom-left', 'bottom-right', 
+            by default 'top-left'
+        debug_print : bool, optional
+            Whether to print debug information, by default False
+            
+        Returns:
+        --------
+        Image.Image
+            A new image with the text overlay added (same dimensions as original)
+            
+        Usage:
+        ------
+        from pyphocorehelpers.plotting.media_output_helpers import ImageHelpers
+        
+        # Add a simple overlay
+        labeled_image = ImageHelpers.add_top_left_overlay_label(
+            image, "Session 1", text_color=(255, 255, 0)
+        )
+        
+        # Add overlay with custom styling
+        labeled_image = ImageHelpers.add_top_left_overlay_label(
+            image, "Epoch 1", 
+            text_color=(255, 255, 255),
+            background_color=(0, 0, 0, 180),
+            text_outline_shadow_color=(0, 0, 0, 255),
+            corner='bottom-right'
+        )
+        """
+        
+        # Validate corner parameter
+        valid_corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
+        if corner not in valid_corners:
+            raise ValueError(f"corner must be one of {valid_corners}, got '{corner}'")
+        
+        # Ensure image is in RGBA mode for transparency support
+        if image.mode != 'RGBA':
+            working_image = image.convert('RGBA')
+        else:
+            working_image = image.copy()
+        
+        # Calculate font size and padding based on image height if not provided
+        original_img_height: int = working_image.height
+        original_img_width: int = working_image.width
+            
+        if font_size is None:
+            font_size = max(int(original_img_height * relative_font_size), 12)  # Minimum font size of 12
+            if debug_print:
+                print(f'Computing font size with relative_font_size: {relative_font_size}: font_size: {font_size}')
+                
+        if padding is None:
+            padding = max(int(original_img_height * relative_padding), 4)  # Minimum padding of 4px
+        
+        # Try to load the specified font, fall back to default if not available
+        try:
+            font_obj = ImageHelpers.get_font(font, size=font_size, allow_caching=True)
+        except (IOError, OSError):
+            # Fall back to default font with specified size
+            try:
+                font_obj = ImageFont.load_default(size=font_size)
+            except TypeError:
+                default_font = ImageFont.load_default()
+                try:
+                    font_obj = ImageFont.truetype("DejaVuSans.ttf", font_size)
+                except (IOError, OSError):
+                    font_obj = default_font
+                    if debug_print:
+                        print(f"Warning: Could not load font '{font}' with size {font_size}. Using default font.")
+        
+        # Create a temporary drawing context to measure text dimensions
+        temp_img = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
+        temp_draw = ImageDraw.Draw(temp_img)
+        
+        # Get text dimensions (handle both old and new PIL versions)
+        try:
+            # Newer PIL versions
+            bbox = temp_draw.textbbox((0, 0), label_text, font=font_obj)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+        except AttributeError:
+            # Older PIL versions
+            text_width, text_height = temp_draw.textsize(label_text, font=font_obj)
+        
+        # Calculate background rectangle dimensions
+        bg_width = text_width + (padding * 2)
+        bg_height = text_height + (padding * 2)
+        
+        # Create background rectangle image
+        bg_image = Image.new('RGBA', (bg_width, bg_height), background_color)
+        
+        # Create text image with transparent background
+        text_image = Image.new('RGBA', (bg_width, bg_height), (0, 0, 0, 0))
+        text_draw = ImageDraw.Draw(text_image)
+        
+        # Calculate text position (centered in the background)
+        text_x = padding
+        text_y = padding
+        
+        # Draw text with outline if specified
+        if text_outline_shadow_color is not None:
+            # Calculate border thickness based on font size
+            border_thickness = max(1, int(font_size * 0.08))  # 8% of font size, minimum 1px
+            
+            # Draw text outline/shadow
+            for dx in range(-border_thickness, border_thickness + 1):
+                for dy in range(-border_thickness, border_thickness + 1):
+                    if dx != 0 or dy != 0:  # Skip the center position
+                        text_draw.text((text_x + dx, text_y + dy), label_text, 
+                                     fill=text_outline_shadow_color, font=font_obj)
+        
+        # Draw the main text
+        text_draw.text((text_x, text_y), label_text, fill=text_color, font=font_obj)
+        
+        # Composite text onto background
+        overlay_image = Image.alpha_composite(bg_image, text_image)
+        
+        # Calculate position based on corner
+        if corner == 'top-left':
+            pos_x = 0
+            pos_y = 0
+        elif corner == 'top-right':
+            pos_x = original_img_width - bg_width
+            pos_y = 0
+        elif corner == 'bottom-left':
+            pos_x = 0
+            pos_y = original_img_height - bg_height
+        elif corner == 'bottom-right':
+            pos_x = original_img_width - bg_width
+            pos_y = original_img_height - bg_height
+        
+        # Ensure position is within image bounds
+        pos_x = max(0, min(pos_x, original_img_width - bg_width))
+        pos_y = max(0, min(pos_y, original_img_height - bg_height))
+        
+        # Create final image by compositing the overlay onto the working image
+        result_image = working_image.copy()
+        result_image.paste(overlay_image, (pos_x, pos_y), overlay_image)
+        
+        if debug_print:
+            print(f'Added overlay label "{label_text}" at {corner} (x={pos_x}, y={pos_y})')
+            print(f'Text dimensions: {text_width}x{text_height}, Background: {bg_width}x{bg_height}')
+            
+        return result_image
 
 
     def add_half_width_rectangle(image: Image.Image, side: str = 'left', 

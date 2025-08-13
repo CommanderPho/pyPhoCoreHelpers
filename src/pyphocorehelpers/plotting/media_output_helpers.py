@@ -368,7 +368,9 @@ class ImageOperationsAndEffects:
         #     text_height = int(np.ceil(bbox[3] - bbox[1]))
         # except AttributeError:
         #     text_width, text_height = _temp_empty_draw.textsize(label_text, font=font, spacing=0) # , direction=None
-        required_text_width, required_text_height = _temp_empty_draw.textsize(label_text, font=font, spacing=0, direction='ltr')
+        
+        required_text_width, required_text_height = _temp_empty_draw.textsize(label_text, font=font, spacing=0) ## disabled in newer versions of pillow
+        
         required_text_height = required_text_height # + padding
         required_text_width = required_text_width # + padding
 

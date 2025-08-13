@@ -367,14 +367,14 @@ class ImageOperationsAndEffects:
         tmp_draw = ImageDraw.Draw(tmp_img)
         text_w, text_h = tmp_draw.textsize(label_text, font=font_obj, **text_kwargs)
 
-        # Calculate box size (minimal wrap unless fixed_label_region_size set)
+        # Determine label box size
+        fw, fh = fixed_label_region_size if fixed_label_region_size else (None, None)
         if image_edge in ('top', 'bottom'):
-            label_box_w = fixed_label_region_size if fixed_label_region_size else text_w + 2 * padding
-            label_box_h = fixed_label_region_size if fixed_label_region_size else text_h + 2 * padding
+            label_box_w = fw if fw is not None else original_width
+            label_box_h = fh if fh is not None else text_h + 2 * padding
         else:
-            # For vertical text, swap dimensions post-rotation
-            label_box_w = fixed_label_region_size if fixed_label_region_size else text_h + 2 * padding
-            label_box_h = fixed_label_region_size if fixed_label_region_size else text_w + 2 * padding
+            label_box_w = fw if fw is not None else text_h + 2 * padding
+            label_box_h = fh if fh is not None else original_height
 
         label_img = Image.new('RGBA', (label_box_w, label_box_h), background_color)
         draw_label = ImageDraw.Draw(label_img)

@@ -327,7 +327,7 @@ class ImageOperationsAndEffects:
                                  padding: int = None, font_size: int = None,
                                 text_color: tuple = (255, 255, 255), background_color: tuple = (66, 66, 66, 255),
                                 text_outline_shadow_color=None, relative_font_size: float = 0.06,
-                                relative_padding: float = 0.025, fixed_label_region_size: Optional[int] = None,
+                                relative_padding: float = 0.025, fixed_label_region_size: Optional[Tuple[Optional[int], Optional[int]]] = None,
                                 font='ndastroneer.ttf', 
                                 debug_print=False, **text_kwargs) -> Image.Image:
         """Adds a box containing an appropriately oriented text label (vertical for L/R edge, horizontal for Top/Bottom edge)
@@ -343,6 +343,8 @@ class ImageOperationsAndEffects:
         """
         assert image_edge in ('top', 'bottom', 'left', 'right'), f"Invalid image_edge: {image_edge}, valid options: ['top', 'left', 'right', 'bottom']"
         original_width, original_height = image.size
+        if fixed_label_region_size is None:
+            fixed_label_region_size = [None, None]
 
         # Font size / padding
         ref_dim = original_height if image_edge in ('top', 'bottom') else original_width
@@ -361,17 +363,18 @@ class ImageOperationsAndEffects:
                 font_obj = ImageFont.load_default()
 
         # Measure text
-        tmp_img = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
+        tmp_img = Image.new('RGBA', (1, 1))
         tmp_draw = ImageDraw.Draw(tmp_img)
         text_w, text_h = tmp_draw.textsize(label_text, font=font_obj, **text_kwargs)
 
-        # Determine box dimensions & orientation
+        # Calculate box size (minimal wrap unless fixed_label_region_size set)
         if image_edge in ('top', 'bottom'):
-            label_box_w = original_width
-            label_box_h = fixed_label_region_size if fixed_label_region_size else padding * 2 + text_h
+            label_box_w = fixed_label_region_size if fixed_label_region_size else text_w + 2 * padding
+            label_box_h = fixed_label_region_size if fixed_label_region_size else text_h + 2 * padding
         else:
-            label_box_w = fixed_label_region_size if fixed_label_region_size else padding * 2 + text_h
-            label_box_h = original_height
+            # For vertical text, swap dimensions post-rotation
+            label_box_w = fixed_label_region_size if fixed_label_region_size else text_h + 2 * padding
+            label_box_h = fixed_label_region_size if fixed_label_region_size else text_w + 2 * padding
 
         label_img = Image.new('RGBA', (label_box_w, label_box_h), background_color)
         draw_label = ImageDraw.Draw(label_img)
@@ -386,7 +389,7 @@ class ImageOperationsAndEffects:
                         if dx or dy:
                             draw_label.text((tx + dx, ty + dy), label_text, fill=text_outline_shadow_color, font=font_obj, **text_kwargs)
             draw_label.text((tx, ty), label_text, fill=text_color, font=font_obj, **text_kwargs)
-        else:  # left / right — vertical orientation
+        else:
             vert_img = Image.new('RGBA', (text_w + 2 * padding, text_h + 2 * padding), (0, 0, 0, 0))
             vert_draw = ImageDraw.Draw(vert_img)
             if text_outline_shadow_color:
@@ -398,28 +401,27 @@ class ImageOperationsAndEffects:
             vert_draw.text((padding, padding), label_text, fill=text_color, font=font_obj, **text_kwargs)
             if image_edge == 'left':
                 vert_img = vert_img.rotate(90, expand=True)
-            else:  # right
+            else:
                 vert_img = vert_img.rotate(270, expand=True)
-            # Center vertically in the label box
             y_off = (label_box_h - vert_img.height) // 2
             x_off = (label_box_w - vert_img.width) // 2
             label_img.paste(vert_img, (x_off, y_off), vert_img)
 
         # Concatenate
         if image_edge == 'top':
-            new_img = Image.new('RGBA', (original_width, label_box_h + original_height))
+            new_img = Image.new('RGBA', (max(original_width, label_box_w), label_box_h + original_height), (0, 0, 0, 0))
             new_img.paste(label_img, (0, 0))
             new_img.paste(image, (0, label_box_h))
         elif image_edge == 'bottom':
-            new_img = Image.new('RGBA', (original_width, original_height + label_box_h))
+            new_img = Image.new('RGBA', (max(original_width, label_box_w), original_height + label_box_h), (0, 0, 0, 0))
             new_img.paste(image, (0, 0))
             new_img.paste(label_img, (0, original_height))
         elif image_edge == 'left':
-            new_img = Image.new('RGBA', (label_box_w + original_width, original_height))
+            new_img = Image.new('RGBA', (label_box_w + original_width, max(original_height, label_box_h)), (0, 0, 0, 0))
             new_img.paste(label_img, (0, 0))
             new_img.paste(image, (label_box_w, 0))
-        else:  # right
-            new_img = Image.new('RGBA', (original_width + label_box_w, original_height))
+        else:
+            new_img = Image.new('RGBA', (original_width + label_box_w, max(original_height, label_box_h)), (0, 0, 0, 0))
             new_img.paste(image, (0, 0))
             new_img.paste(label_img, (original_width, 0))
 

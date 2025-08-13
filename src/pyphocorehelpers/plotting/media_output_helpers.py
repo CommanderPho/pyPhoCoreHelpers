@@ -1085,10 +1085,25 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
         if skip_img_normalization:
             print(f'WARN: when `export_grayscale == True`, `skip_img_normalization == True` makes no sense and will be ignored.')
             
+        alpha = (~np.isnan(img_data)).astype(np.uint8) * 255
         norm_array = img_data_to_greyscale(img_data, min_val = kwargs.pop('vmin', None), max_val = kwargs.pop('vmax', None), should_invert=True)
         # Scale to 0-255 and convert to uint8
-        image = Image.fromarray(norm_array, mode='L') # .shape: (59, 4, 67)
+        # image = Image.fromarray(norm_array, mode='L') # .shape: (59, 4, 67)
         
+        ### have to build `mode='LA'` (mode='LA' → Grayscale + Alpha) image out of norm_array to represent transparency
+        norm_array = np.nan_to_num(norm_array, nan=0).astype(np.uint8)
+        image = Image.fromarray(np.dstack((norm_array, alpha)), mode='LA')
+
+
+        # ## Fill np.nan with a color instead -  have to build RGBA image out of norm_array to represent transparency
+        # nan_fill_color = (155, 0, 0, 155)  # Red, fully opaque
+        # nan_mask = np.isnan(norm_array)
+        # norm_array = np.nan_to_num(norm_array, nan=0).astype(np.uint8)
+        # rgba = np.dstack((norm_array, norm_array, norm_array, np.full_like(norm_array, 255)))
+        # rgba[nan_mask] = nan_fill_color  # replace NaNs with chosen RGBA color
+        # image = Image.fromarray(rgba, mode='RGBA')
+
+
 
     elif export_kind.value == HeatmapExportKind.COLORMAPPED.value:
         ## Color export mode!

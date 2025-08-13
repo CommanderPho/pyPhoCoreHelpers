@@ -148,9 +148,14 @@ def img_data_to_greyscale(img_data: NDArray, min_val: Optional[float]=None, max_
     if max_val is None:
         max_val = np.nanmax(img_data)
 
-    if (min_val == 0) and (max_val == 0):
+
+    if np.all(np.isnan(img_data)):
+        ## Image contains only np.nan values, we cannot normalize it.
+        ## okay to just use the NaNs directly I guess
+        norm_array = img_data
+    elif (min_val == 0) and (max_val == 0):
         assert np.nansum(img_data) == 0.0, f"this should only occur when the image is all zeros, but the image: \nimg_data: {img_data}"
-        # assert np.allclose(img_data, 0.0, equal_nan=True), f"this should only occur when the image is all zeros, but the image: \nimg_data: {img_data}"
+        # assert np.allclose(img_data, 0.0, equal_nan=True), f"this should only occur when the image is all zeros, but the image: \nimg_data: {img_data}" ## doesn't work for images with all zeros except they contain np.nan somewhere (making the np.allclose(..., 0.0) comparison fail
         ## okay to just use the zeros directly
         norm_array = img_data
     else:

@@ -148,9 +148,14 @@ def img_data_to_greyscale(img_data: NDArray, min_val: Optional[float]=None, max_
     if max_val is None:
         max_val = np.nanmax(img_data)
 
-    assert (min_val < max_val), f"min_val: {min_val}, min_val: {min_val}, img_data: {img_data}"
-    ptp_val = max_val - min_val
-    norm_array = (img_data - min_val) / ptp_val
+    if (min_val == 0) and (max_val == 0):
+        assert np.allclose(img_data, 0.0), f"this should only occur when the image is all zeros, but the image: \nimg_data: {img_data}"
+        ## okay to just use the zeros directly
+        norm_array = img_data
+    else:
+        assert (min_val < max_val), f"min_val: {min_val}, max_val: {max_val}, img_data: {img_data}"
+        ptp_val = max_val - min_val
+        norm_array = (img_data - min_val) / ptp_val
 
     # Scale to 0-255 and convert to uint8
     if should_invert:

@@ -321,6 +321,108 @@ class ImageOperationsAndEffects:
     #     return new_image
 
 
+
+    @classmethod
+    def add_boxed_adjacent_label(cls, image: Image.Image, label_text: str, image_edge: str = 'top', # ['top', 'left', 'right', 'bottom']
+                                 padding: int = None, font_size: int = None,
+                                text_color: tuple = (255, 255, 255), background_color: tuple = (66, 66, 66, 255),
+                                text_outline_shadow_color=None, relative_font_size: float = 0.06,
+                                relative_padding: float = 0.025, fixed_label_region_size: Optional[int] = None,
+                                font='ndastroneer.ttf', 
+                                debug_print=False, **text_kwargs) -> Image.Image:
+        """Adds a box containing an appropriately oriented text label (vertical for L/R edge, horizontal for Top/Bottom edge)
+        and concatenates it to that edge of the image.
+        """
+        assert image_edge in ('top', 'bottom', 'left', 'right'), f"Invalid image_edge: {image_edge}, valid options: ['top', 'left', 'right', 'bottom']"
+        original_width, original_height = image.size
+
+        # Font size / padding
+        if font_size is None:
+            ref_dim = original_height if image_edge in ('top', 'bottom') else original_width
+            font_size = max(int(ref_dim * relative_font_size), 8)
+        if padding is None:
+            ref_dim = original_height if image_edge in ('top', 'bottom') else original_width
+            padding = max(int(ref_dim * relative_padding), 0)
+
+        # Load font
+        try:
+            font_obj = ImageHelpers.get_font(font, size=font_size, allow_caching=True)
+        except IOError:
+            try:
+                font_obj = ImageFont.truetype("DejaVuSans.ttf", font_size)
+            except IOError:
+                font_obj = ImageFont.load_default()
+
+        # Measure text
+        tmp_img = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
+        tmp_draw = ImageDraw.Draw(tmp_img)
+        text_w, text_h = tmp_draw.textsize(label_text, font=font_obj, **text_kwargs)
+
+        # Determine box dimensions & orientation
+        if image_edge in ('top', 'bottom'):
+            label_box_w = original_width
+            label_box_h = fixed_label_region_size if fixed_label_region_size else padding * 2 + text_h
+        else:
+            label_box_w = fixed_label_region_size if fixed_label_region_size else padding * 2 + text_h
+            label_box_h = original_height
+
+        label_img = Image.new('RGBA', (label_box_w, label_box_h), background_color)
+        draw_label = ImageDraw.Draw(label_img)
+
+        # Draw text (orientation aware)
+        if image_edge in ('top', 'bottom'):
+            tx, ty = (label_box_w - text_w) // 2, (label_box_h - text_h) // 2
+            if text_outline_shadow_color:
+                border_thickness = max(1, int(font_size * 0.05))
+                for dx in range(-border_thickness, border_thickness + 1):
+                    for dy in range(-border_thickness, border_thickness + 1):
+                        if dx or dy:
+                            draw_label.text((tx + dx, ty + dy), label_text, fill=text_outline_shadow_color, font=font_obj, **text_kwargs)
+            draw_label.text((tx, ty), label_text, fill=text_color, font=font_obj, **text_kwargs)
+        else:  # left / right — vertical orientation
+            vert_img = Image.new('RGBA', (text_w + 2 * padding, text_h + 2 * padding), (0, 0, 0, 0))
+            vert_draw = ImageDraw.Draw(vert_img)
+            if text_outline_shadow_color:
+                border_thickness = max(1, int(font_size * 0.05))
+                for dx in range(-border_thickness, border_thickness + 1):
+                    for dy in range(-border_thickness, border_thickness + 1):
+                        if dx or dy:
+                            vert_draw.text((padding + dx, padding + dy), label_text, fill=text_outline_shadow_color, font=font_obj, **text_kwargs)
+            vert_draw.text((padding, padding), label_text, fill=text_color, font=font_obj, **text_kwargs)
+            if image_edge == 'left':
+                vert_img = vert_img.rotate(90, expand=True)
+            else:  # right
+                vert_img = vert_img.rotate(270, expand=True)
+            # Center vertically in the label box
+            y_off = (label_box_h - vert_img.height) // 2
+            x_off = (label_box_w - vert_img.width) // 2
+            label_img.paste(vert_img, (x_off, y_off), vert_img)
+
+        # Concatenate
+        if image_edge == 'top':
+            new_img = Image.new('RGBA', (original_width, label_box_h + original_height))
+            new_img.paste(label_img, (0, 0))
+            new_img.paste(image, (0, label_box_h))
+        elif image_edge == 'bottom':
+            new_img = Image.new('RGBA', (original_width, original_height + label_box_h))
+            new_img.paste(image, (0, 0))
+            new_img.paste(label_img, (0, original_height))
+        elif image_edge == 'left':
+            new_img = Image.new('RGBA', (label_box_w + original_width, original_height))
+            new_img.paste(label_img, (0, 0))
+            new_img.paste(image, (label_box_w, 0))
+        else:  # right
+            new_img = Image.new('RGBA', (original_width + label_box_w, original_height))
+            new_img.paste(image, (0, 0))
+            new_img.paste(label_img, (original_width, 0))
+
+        if debug_print:
+            print(f"add_boxed_adjacent_label: edge={image_edge}, box=({label_box_w}x{label_box_h}), font_size={font_size}, padding={padding}")
+
+        return new_img
+
+
+
     @classmethod
     def add_bottom_label(cls, image: Image.Image, label_text: str, padding: int = None, font_size: int = None,  
                         text_color: tuple = (255, 255, 255), background_color: tuple = (66, 66, 66, 255), 
@@ -474,13 +576,14 @@ class ImageOperationsAndEffects:
     def add_top_left_overlay_label(cls, image: Image.Image, label_text: str, 
                                  padding: int = None, font_size: int = None,
                                  text_color: tuple = (255, 255, 255), 
-                                 background_color: tuple = (0, 0, 0, 128),
+                                 background_color: tuple = (0, 0, 0, 0),
                                  text_outline_shadow_color: Optional[tuple] = None,
                                  relative_font_size: float = 0.04,
                                  relative_padding: float = 0.02,
                                  font: str = 'ndastroneer.ttf',
                                  corner: str = 'top-left',
-                                 debug_print: bool = False) -> Image.Image:
+                                 inverse_scale_factor: Optional[Tuple]=None,
+                                 debug_print: bool = False, **text_kwargs) -> Image.Image:
         """Adds a text label as an overlay in the specified corner of an image with a transparent background.
         
         This function creates a text overlay that sits on top of the original image without changing
@@ -615,12 +718,17 @@ class ImageOperationsAndEffects:
             for dx in range(-border_thickness, border_thickness + 1):
                 for dy in range(-border_thickness, border_thickness + 1):
                     if dx != 0 or dy != 0:  # Skip the center position
-                        text_draw.text((text_x + dx, text_y + dy), label_text, 
-                                     fill=text_outline_shadow_color, font=font_obj)
+                        text_draw.text((text_x + dx, text_y + dy), label_text, fill=text_outline_shadow_color, font=font_obj, **text_kwargs)
         
         # Draw the main text
-        text_draw.text((text_x, text_y), label_text, fill=text_color, font=font_obj)
+        text_draw.text((text_x, text_y), label_text, fill=text_color, font=font_obj, **text_kwargs)
         
+        # ## inverse transform the text image so that when the parent image gets stretched, the text doesn't look stretched. #TODO 2025-08-13 14:35: - [ ] Currently does not work
+        # if inverse_scale_factor is not None:
+        #     assert len(inverse_scale_factor) == 2, f"inverse_scale_factor should be a tuple (width_scale_factor, height_scale_factor) but is instead inverse_scale_factor: {inverse_scale_factor}"
+        #     rescale_size = ((bg_width * int(inverse_scale_factor[0])), (bg_height * int(inverse_scale_factor[1])))
+        #     text_image = text_image.resize(size=rescale_size) ## scale image down by 1/4 in width but leave the original height
+            
         # Composite text onto background
         overlay_image = Image.alpha_composite(bg_image, text_image)
         
@@ -644,8 +752,12 @@ class ImageOperationsAndEffects:
         
         # Create final image by compositing the overlay onto the working image
         result_image = working_image.copy()
-        result_image.paste(overlay_image, (pos_x, pos_y), overlay_image)
-        
+        # result_image.paste(overlay_image, (pos_x, pos_y), overlay_image)
+        # result_image = Image.alpha_composite(working_image.copy(), overlay_image) # Composite text onto background
+        position = (pos_x, pos_y)
+        result_image.alpha_composite(overlay_image, dest=position)
+    
+
         if debug_print:
             print(f'Added overlay label "{label_text}" at {corner} (x={pos_x}, y={pos_y})')
             print(f'Text dimensions: {text_width}x{text_height}, Background: {bg_width}x{bg_height}')

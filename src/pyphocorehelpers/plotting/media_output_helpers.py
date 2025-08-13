@@ -322,7 +322,8 @@ class ImageOperationsAndEffects:
                         debug_print=False,
                         ) -> Image.Image:
         """Adds a vertically oriented label at the bottom of an image.
-        
+
+        This is used when building combined posterior images (one for each decoder) to add a band at the bottom containing a label with the epoch start timestamp.
         
         """
 

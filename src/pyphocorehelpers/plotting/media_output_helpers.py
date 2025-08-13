@@ -332,6 +332,14 @@ class ImageOperationsAndEffects:
                                 debug_print=False, **text_kwargs) -> Image.Image:
         """Adds a box containing an appropriately oriented text label (vertical for L/R edge, horizontal for Top/Bottom edge)
         and concatenates it to that edge of the image.
+        
+        Usage:
+            from pyphocorehelpers.plotting.media_output_helpers import vertical_image_stack, horizontal_image_stack, image_grid, ImageOperationsAndEffects
+            
+            _out_row_stack = ImageOperationsAndEffects.add_boxed_adjacent_label(_out_row_stack, 'global', image_edge='top', font_size=48, text_color="#000000",
+                                            background_color=(255, 255, 255, 0),
+                                            )
+                                            
         """
         assert image_edge in ('top', 'bottom', 'left', 'right'), f"Invalid image_edge: {image_edge}, valid options: ['top', 'left', 'right', 'bottom']"
         original_width, original_height = image.size

@@ -149,7 +149,8 @@ def img_data_to_greyscale(img_data: NDArray, min_val: Optional[float]=None, max_
         max_val = np.nanmax(img_data)
 
     if (min_val == 0) and (max_val == 0):
-        assert np.allclose(img_data, 0.0), f"this should only occur when the image is all zeros, but the image: \nimg_data: {img_data}"
+        assert np.nansum(img_data) == 0.0, f"this should only occur when the image is all zeros, but the image: \nimg_data: {img_data}"
+        # assert np.allclose(img_data, 0.0, equal_nan=True), f"this should only occur when the image is all zeros, but the image: \nimg_data: {img_data}"
         ## okay to just use the zeros directly
         norm_array = img_data
     else:

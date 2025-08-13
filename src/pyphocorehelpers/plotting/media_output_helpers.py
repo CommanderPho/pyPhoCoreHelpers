@@ -345,11 +345,10 @@ class ImageOperationsAndEffects:
         original_width, original_height = image.size
 
         # Font size / padding
+        ref_dim = original_height if image_edge in ('top', 'bottom') else original_width
         if font_size is None:
-            ref_dim = original_height if image_edge in ('top', 'bottom') else original_width
             font_size = max(int(ref_dim * relative_font_size), 8)
         if padding is None:
-            ref_dim = original_height if image_edge in ('top', 'bottom') else original_width
             padding = max(int(ref_dim * relative_padding), 0)
 
         # Load font

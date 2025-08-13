@@ -1110,6 +1110,8 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
         assert (colormap is not None)
         # Get the specified colormap
         colormap = plt.get_cmap(colormap)
+        
+        alpha = (~np.isnan(img_data)).astype(np.uint8) * 255
 
         if skip_img_normalization:
             norm_array = img_data
@@ -1131,8 +1133,17 @@ def get_array_as_image(img_data: NDArray[ND.Shape["IM_HEIGHT, IM_WIDTH, 4"], np.
         image_array = colormap(norm_array)
 
         # Convert to PIL image and remove alpha channel
-        image = Image.fromarray((image_array[:, :, :3] * 255).astype(np.uint8)) # TypeError: Cannot handle this data type: (1, 1, 3, 4), |u1  || 2025-06-04 Failing for 1D input arrts which end up as (1D, 4): IndexError: too many indices for array: array is 2-dimensional, but 3 were indexed
+        # image = Image.fromarray((image_array[:, :, :3] * 255).astype(np.uint8)) # TypeError: Cannot handle this data type: (1, 1, 3, 4), |u1  || 2025-06-04 Failing for 1D input arrts which end up as (1D, 4): IndexError: too many indices for array: array is 2-dimensional, but 3 were indexed
         
+        ## Fill np.nan with a color instead -  have to build RGBA image out of norm_array to represent transparency
+        # nan_fill_color = (155, 0, 0, 155)  # Red, fully opaque
+        # nan_mask = np.isnan(norm_array)
+        # norm_array = np.nan_to_num(norm_array, nan=0).astype(np.uint8)
+        # rgba = np.dstack(((image_array[:, :, :3] * 255).astype(np.uint8), np.full_like(norm_array, 255)))
+        # rgba[nan_mask] = nan_fill_color  # replace NaNs with chosen RGBA color
+        rgba = np.dstack(((image_array[:, :, :3] * 255).astype(np.uint8), alpha))
+        image = Image.fromarray(rgba, mode='RGBA')
+
 
     elif export_kind.value == HeatmapExportKind.RAW_RGBA.value:
         ## Raw ready to use RGBA image is passed in:

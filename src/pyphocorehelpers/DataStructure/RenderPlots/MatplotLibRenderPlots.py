@@ -11,7 +11,7 @@ from pyphocorehelpers.DataStructure.general_parameter_containers import RenderPl
 from pyphocorehelpers.programming_helpers import metadata_attributes
 from pyphocorehelpers.function_helpers import function_attributes
 from neuropy.utils.indexing_helpers import wrap_in_container_if_needed, unwrap_single_item, flatten_dict
-
+from neuropy.utils.mixins.print_helpers import BaseFieldPrintingReprMixin
 
 class MatplotlibRenderPlots(RenderPlots):
     """Container for holding and accessing Matplotlib-based figures for MatplotlibRenderPlots.
@@ -134,8 +134,9 @@ class MatplotlibRenderPlots(RenderPlots):
     
 
 
-@function_attributes(short_name=None, tags=['collector', 'figure', 'output'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-06-05 17:27', related_items=['plotting.figure_management.PhoActiveFigureManager2D'])
-class FigureCollector:
+
+@function_attributes(short_name=None, tags=['collector', 'figure', 'output', 'matplotlib'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-06-05 17:27', related_items=['plotting.figure_management.PhoActiveFigureManager2D'])
+class FigureCollector(BaseFieldPrintingReprMixin):
     """ 2023-12-27 - Very useful context-manger helper for capturing matplotlib figures, axes, and other outputs.
     
     
@@ -143,10 +144,6 @@ class FigureCollector:
     
     Specifically a Matplotlib thing: .create_figure(...), .subplots(...), .subplot_mosaic(...) are alternatives to the matplotlib functions of the same names but they keep track of the outputs for later use.
     
-
-
-        
-
 
     """
     def __init__(self, name='MatplotlibRenderPlots', figures=None, axes=None, axes_dict=None, contexts=None, base_context=None):
@@ -447,6 +444,8 @@ class FigureCollector:
         else:
             for ctxt in contexts:
                 self.contexts.append(ctxt)
+
+
 
 # #TODO 2023-12-23 22:01: - [ ] Context-determining figure
 # class ContextCollectingFigureCollector(FigureCollector):

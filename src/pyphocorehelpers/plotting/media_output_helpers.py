@@ -1918,7 +1918,7 @@ class PDFHelpers:
         with open(output_path, 'wb') as output_file:
             writer.write(output_file)
 
-        print(f"Successfully concatenated {len(pdf_paths)} PDFs to: {output_path}")
+        print(f'Successfully concatenated {len(pdf_paths)} PDFs to: "{output_path}"')
         return output_path
 
 
@@ -1991,7 +1991,7 @@ class PDFHelpers:
         with open(output_path, 'wb') as output_file:
             writer.write(output_file)
 
-        print(f"Successfully concatenated {len(pdf_paths)} PDFs vertically to: {output_path}")
+        print(f'Successfully concatenated {len(pdf_paths)} PDFs vertically to: "{output_path}"')
         return output_path
 
     @function_attributes(short_name=None, tags=['pdf','scale', 'resize'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-07-03 16:58', related_items=[])
@@ -2215,7 +2215,7 @@ class SVGHelpers:
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(combined_content)
 
-        print(f"Successfully concatenated {len(svg_contents)} SVGs horizontally to: {output_path}")
+        print(f'Successfully concatenated {len(svg_contents)} SVGs horizontally to: "{output_path}"')
         return output_path
 
     @classmethod
@@ -2303,7 +2303,7 @@ class SVGHelpers:
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(combined_content)
 
-        print(f"Successfully concatenated {len(svg_contents)} SVGs vertically to: {output_path}")
+        print(f'Successfully concatenated {len(svg_contents)} SVGs vertically to: "{output_path}"')
         return output_path
 
     @classmethod

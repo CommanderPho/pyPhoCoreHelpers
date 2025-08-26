@@ -1,9 +1,9 @@
 from pyphocorehelpers.print_helpers import SimplePrintable, PrettyPrintable, iPythonKeyCompletingMixin
 from pyphocorehelpers.DataStructure.dynamic_parameters import DynamicParameters
+from pyphocorehelpers.DataStructure.general_parameter_containers import RenderPlots
 
 
-
-class NestedRenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
+class NestedRenderPlots(iPythonKeyCompletingMixin, RenderPlots):
     """ This class was supposed to provide a hierarchical alternative to a flat "RenderPlots" item: 
     
     
@@ -32,11 +32,17 @@ class NestedRenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
     def children(self):
         """The accessor for the TimeWindowPlaybackPropertiesMixin class for the main active time window that it will animate."""
         children_dict = {}
-        for a_key, an_item in self.items():
+        for a_key, an_item in self.render_items.items():
             # Only return members that are NestedRenderPlots
             if isinstance(an_item, NestedRenderPlots):
-                children_dict[a_key] = an_item
-        return children_dict    
+                children_dict.update({'.'.join(a_key, k):v for k, v in an_item.children}) ## add all children as flat but with 'parent.child' keys
+            else:
+                children_dict[a_key] = an_item ## add child directly                
+        return children_dict
+
+
+
+
 
     def __init__(self, name, render_items=None, tags=None, **kwargs) -> None:
         if render_items is None:

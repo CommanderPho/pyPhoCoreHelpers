@@ -1596,15 +1596,24 @@ class CodeConversion(object):
 
     _type_to_typehint_dict = {list: 'List', set: 'Set', tuple: 'Tuple'}
     
-    @function_attributes(short_name=None, tags=['GOOD', 'recursive', 'typehints'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-08-26 09:15', related_items=[])
+    @function_attributes(short_name=None, tags=['WORKING', 'GOOD', 'recursive', 'typehints'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-08-26 09:15', related_items=[])
     @classmethod
-    def get_recursive_typehint(cls, obj, recurrsion_depth: int=0, MAX_RECURRSION_DEPTH: int = 3, should_return_Any_for_terminal: bool=False, use_relative_types:bool = True) -> str:
+    def get_recursive_typehint(cls, obj, recurrsion_depth: int=0, MAX_RECURRSION_DEPTH: int = 3, should_return_Any_for_terminal: bool=False, use_relative_types:bool = True, max_enumerated_items: int = 10) -> str:
         """ recurses through Dict objects to get the type of their members to build a recurrsive typestring like Dict[str, Dict[str, NDArray]]
                     
-        "List[<class 'pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.ContainerBased.TemplateDebugger.BaseTemplateDebuggingMixin'>]"
+        'List[BaseTemplateDebuggingMixin]'
         
+        #TODO 2025-08-26 09:34: - [ ] Add NDArray support
+
+        
+        Usage:
+        
+            from pyphocorehelpers.programming_helpers import CodeConversion
+
+            contents_type_str, required_imports_list = CodeConversion.get_recursive_typehint(out_pf1D_decoder_template_objects)
+
         """
-        get_recursive_typehint_kwargs = dict(recurrsion_depth=(recurrsion_depth+1), should_return_Any_for_terminal=should_return_Any_for_terminal, use_relative_types=use_relative_types)
+        get_recursive_typehint_kwargs = dict(recurrsion_depth=(recurrsion_depth+1), should_return_Any_for_terminal=should_return_Any_for_terminal, use_relative_types=use_relative_types, max_enumerated_items=max_enumerated_items)
         if isinstance(obj, dict) and (recurrsion_depth <= MAX_RECURRSION_DEPTH):
             if len(obj) == 0:
                 contents_type_list = []
@@ -1615,14 +1624,16 @@ class CodeConversion(object):
             else:
                 ## get type of the first element:
                 contents_type_list = [cls.get_recursive_typehint(list(obj.keys())[0], **get_recursive_typehint_kwargs), cls.get_recursive_typehint(list(obj.values())[0], **get_recursive_typehint_kwargs)]
+                required_imports_list = [v[1] for v in contents_type_list]
+                contents_type_list = [v[0] for v in contents_type_list]
                 contents_type_str = ', '.join(contents_type_list)
                 
             if contents_type_str:
-                return f"Dict[" + contents_type_str + "]"
+                return f"Dict[" + contents_type_str + "]", required_imports_list
             else:
-                return 'Dict'
+                return 'Dict', required_imports_list
         
-        elif isinstance(obj, (list, set, tuple)) and (recurrsion_depth <= MAX_RECURRSION_DEPTH):
+        elif isinstance(obj, (list, set)) and (recurrsion_depth <= MAX_RECURRSION_DEPTH):
             if len(obj) == 0:
                 if should_return_Any_for_terminal:
                     contents_type_str = 'Any'
@@ -1630,16 +1641,38 @@ class CodeConversion(object):
                     contents_type_str = ''
             else:
                 ## get type of the first element:
-                contents_type_str = cls.get_recursive_typehint(obj[0], **get_recursive_typehint_kwargs)
+                contents_type_str, required_imports_list = cls.get_recursive_typehint(obj[0], **get_recursive_typehint_kwargs)
                 
             if contents_type_str:
-                return f"{cls._type_to_typehint_dict[type(obj)]}[" + contents_type_str + "]"
+                return f"{cls._type_to_typehint_dict[type(obj)]}[" + contents_type_str + "]", required_imports_list
             else:
-                return f'{cls._type_to_typehint_dict[type(obj)]}'
+                return f'{cls._type_to_typehint_dict[type(obj)]}', required_imports_list
+            
+
+        elif isinstance(obj, tuple) and (recurrsion_depth <= MAX_RECURRSION_DEPTH):
+            if len(obj) == 0:
+                if should_return_Any_for_terminal:
+                    contents_type_str = 'Any'
+                else:
+                    contents_type_str = ''
+            else:
+                ## get type of the first element:
+                _out_temp = [cls.get_recursive_typehint(an_elem, **get_recursive_typehint_kwargs) for i, an_elem in enumerate(obj) if (i < max_enumerated_items)]
+                contents_type_str = [v[0] for v in _out_temp]
+                required_imports_list = set([v[1] for v in _out_temp]) ## ensuring unique
+                if len(_out_temp) > max_enumerated_items:
+                    print(f'WARN: len(_out_temp): {len(_out_temp)} > max_enumerated_items: {max_enumerated_items}. Results will be truncated.')
+
+            if contents_type_str:
+                return f"{cls._type_to_typehint_dict[type(obj)]}[" + contents_type_str + "]", required_imports_list
+            else:
+                return f'{cls._type_to_typehint_dict[type(obj)]}', required_imports_list
+            
+
 
         else:
             ## raw or flat type to be returned as-is
-            return cls.convert_type_to_typehint_string(type(obj), use_relative_types=use_relative_types)[0]
+            return cls.convert_type_to_typehint_string(type(obj), use_relative_types=use_relative_types)
         
 
 

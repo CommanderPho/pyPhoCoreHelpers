@@ -1594,6 +1594,58 @@ class CodeConversion(object):
 
 
 
+    _type_to_typehint_dict = {list: 'List', set: 'Set', tuple: 'Tuple'}
+    
+    @function_attributes(short_name=None, tags=['GOOD', 'recursive', 'typehints'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-08-26 09:15', related_items=[])
+    @classmethod
+    def get_recursive_typehint(cls, obj, recurrsion_depth: int=0, MAX_RECURRSION_DEPTH: int = 3, should_return_Any_for_terminal: bool=False, use_relative_types:bool = True) -> str:
+        """ recurses through Dict objects to get the type of their members to build a recurrsive typestring like Dict[str, Dict[str, NDArray]]
+                    
+        "List[<class 'pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.ContainerBased.TemplateDebugger.BaseTemplateDebuggingMixin'>]"
+        
+        """
+        get_recursive_typehint_kwargs = dict(recurrsion_depth=(recurrsion_depth+1), should_return_Any_for_terminal=should_return_Any_for_terminal, use_relative_types=use_relative_types)
+        if isinstance(obj, dict) and (recurrsion_depth <= MAX_RECURRSION_DEPTH):
+            if len(obj) == 0:
+                contents_type_list = []
+                if should_return_Any_for_terminal:
+                    contents_type_str = 'Any, Any'
+                else:
+                    contents_type_str = ''
+            else:
+                ## get type of the first element:
+                contents_type_list = [cls.get_recursive_typehint(list(obj.keys())[0], **get_recursive_typehint_kwargs), cls.get_recursive_typehint(list(obj.values())[0], **get_recursive_typehint_kwargs)]
+                contents_type_str = ', '.join(contents_type_list)
+                
+            if contents_type_str:
+                return f"Dict[" + contents_type_str + "]"
+            else:
+                return 'Dict'
+        
+        elif isinstance(obj, (list, set, tuple)) and (recurrsion_depth <= MAX_RECURRSION_DEPTH):
+            if len(obj) == 0:
+                if should_return_Any_for_terminal:
+                    contents_type_str = 'Any'
+                else:
+                    contents_type_str = ''
+            else:
+                ## get type of the first element:
+                contents_type_str = cls.get_recursive_typehint(obj[0], **get_recursive_typehint_kwargs)
+                
+            if contents_type_str:
+                return f"{cls._type_to_typehint_dict[type(obj)]}[" + contents_type_str + "]"
+            else:
+                return f'{cls._type_to_typehint_dict[type(obj)]}'
+
+        else:
+            ## raw or flat type to be returned as-is
+            return cls.convert_type_to_typehint_string(type(obj), use_relative_types=use_relative_types)[0]
+        
+
+
+
+
+    
 
     # ==================================================================================================================== #
     # Public/Main Methods                                                                                                  #

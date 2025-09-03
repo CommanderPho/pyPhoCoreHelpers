@@ -420,17 +420,20 @@ class ImageOperationsAndEffects:
             new_img = Image.new('RGBA', (label_box_w + original_width, max(original_height, label_box_h)), (0, 0, 0, 0))
             new_img.paste(label_img, (0, 0))
             new_img.paste(image, (label_box_w, 0))
-        else:
+            
+        elif image_edge == 'right':
             new_img = Image.new('RGBA', (original_width + label_box_w, max(original_height, label_box_h)), (0, 0, 0, 0))
             new_img.paste(image, (0, 0))
-            new_img.paste(label_img, (original_width, 0))
+            new_img.paste(label_img, (original_width, 0))            
+        else:
+            raise NotImplementedError(f"unknown image_edge value: '{image_edge}'. Valid values are in: ['top', 'left', 'right', 'bottom'] ")
 
         if debug_print:
             print(f"add_boxed_adjacent_label: edge={image_edge}, box=({label_box_w}x{label_box_h}), font_size={font_size}, padding={padding}")
 
         return new_img
 
-
+ 
 
     @classmethod
     def add_bottom_label(cls, image: Image.Image, label_text: str, padding: int = None, font_size: int = None,  

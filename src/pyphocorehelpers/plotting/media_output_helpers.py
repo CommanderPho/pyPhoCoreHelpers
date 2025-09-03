@@ -919,6 +919,30 @@ class ImagePostRenderFunctionSets:
                                                             post_render_image_functions_builder_fn=ImagePostRenderFunctionSets._build_mergedColorDecoders_image_export_functions_dict),
 
     """
+    # prepare_for_publication: bool = False
+    prepare_for_publication: bool = True
+
+    @function_attributes(short_name=None, tags=['publication', 'light-mode', 'export'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-09-03 08:31', related_items=[])
+    @classmethod
+    def _get_export_color_scheme_kwargs(cls, is_prepare_for_publication: bool=True):
+        """ Added 2025-09-03 to make Figure 4 Example Posterior exports better
+        """
+        fixed_label_region_height: Optional[int] = 520
+        # font_size = 144
+        # font_size = 96
+        # font_size = 72
+        font_size = 48
+
+        _common_kwargs = dict(fixed_label_region_height=fixed_label_region_height, font_size=font_size)
+        
+        if not is_prepare_for_publication:
+            return _common_kwargs | dict(text_color=(255, 255, 255), background_color=(66, 66, 66)) # light color fg on dark bg
+        else:
+            ## publication mode
+            return _common_kwargs | dict(text_color=(0, 0, 0), background_color=(236,236,236)) # dark color fg on light bg
+        
+
+
     @classmethod
     def _build_no_op_image_export_functions_dict(cls, a_decoder_decoded_epochs_result: DecodedFilterEpochsResult) -> List[Dict[str, Callable]]:
         """ empty/no-op 
@@ -948,14 +972,9 @@ class ImagePostRenderFunctionSets:
 
         # Build post-image-generation callback functions _____________________________________________________________________________________________________________________________________________________________________________________________________________________________________ #
 
-        fixed_label_region_height: Optional[int] = 520
+        _label_kwargs = cls._get_export_color_scheme_kwargs(is_prepare_for_publication=cls.prepare_for_publication)
 
-        # font_size = 144
-        # font_size = 96
-        # font_size = 72
-        font_size = 48
-
-        create_label_function = ImageOperationsAndEffects.create_fn_builder(ImageOperationsAndEffects.add_bottom_label, font_size=font_size, text_color=(255, 255, 255), background_color=(66, 66, 66), fixed_label_region_height=fixed_label_region_height)
+        create_label_function = ImageOperationsAndEffects.create_fn_builder(ImageOperationsAndEffects.add_bottom_label, **_label_kwargs) #  text_color=(255, 255, 255), background_color=(66, 66, 66), font_size=font_size, fixed_label_region_height=fixed_label_region_height
         # create_half_width_rectangle_function = ImageOperationsAndEffects.create_fn_builder(ImageOperationsAndEffects.add_half_width_rectangle, height_fraction = 0.1)    
         create_solid_border_function = ImageOperationsAndEffects.create_fn_builder(ImageOperationsAndEffects.add_solid_border) # border_color = (0, 0, 0, 255)
 
@@ -1020,7 +1039,7 @@ class ImagePostRenderFunctionSets:
             # curr_post_render_image_functions_dict = {'add_bottom_label': (lambda an_img: add_bottom_label(an_img, curr_x_axis_label_str, font_size=8))}
             curr_post_render_image_functions_dict = {
                 # 'add_bottom_label': create_label_function(curr_x_axis_label_str, font_size=font_size, text_color=(255, 255, 255), background_color=(66, 66, 66), text_outline_shadow_color=None, fixed_label_region_height=fixed_label_region_height, debug_print=False),
-                'add_bottom_label': create_label_function(curr_x_axis_label_str, font_size=font_size, text_color=epoch_rect_color, background_color=(66, 66, 66), text_outline_shadow_color=None, fixed_label_region_height=fixed_label_region_height, debug_print=False),
+                'add_bottom_label': create_label_function(curr_x_axis_label_str, **(_label_kwargs | dict(text_color=epoch_rect_color)), text_outline_shadow_color=None, debug_print=False), # , fixed_label_region_height=fixed_label_region_height, font_size=font_size
                 # 'create_solid_border_function': create_solid_border_function(border_width = 10, border_color = epoch_rect_color),
                 # 'create_half_width_rectangle_function': create_half_width_rectangle_function(side, epoch_rect_color), ## create rect to indicate pre/post delta
                 # 'create_half_width_rectangle_function': create_half_width_rectangle_function(side, epoch_rect_color),

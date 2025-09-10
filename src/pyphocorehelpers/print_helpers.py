@@ -1296,7 +1296,14 @@ def print_keys_if_possible(curr_key, curr_value, max_depth=20, depth=0, omit_cur
 
             # Then recurrsively try to expand the item if possible:
             try:
-                for (curr_child_key, curr_child_value) in curr_value.items():
+                if isinstance(curr_value.items, list):
+                    # #TODO 2025-09-10 07:50: - [ ] pg.PlotItem results in `TypeError: 'list' object is not callable` because `curr_value.items` is the name of one of its properties, and is a regular list
+                    ## get children
+                    _curr_iter_dict = {curr_child_value.name():curr_child_value for curr_child_value in  curr_value.items}
+                else:
+                    _curr_iter_dict = curr_value
+  
+                for (curr_child_key, curr_child_value) in _curr_iter_dict.items(): 
                     # print children keys
                     print_keys_if_possible(curr_child_key, curr_child_value, max_depth=max_depth, depth=(depth+1), omit_curr_item_print=False, additional_excluded_item_classes=additional_excluded_item_classes, non_expanded_item_keys=non_expanded_item_keys, custom_item_formatter=custom_item_formatter)
             except AttributeError as e:

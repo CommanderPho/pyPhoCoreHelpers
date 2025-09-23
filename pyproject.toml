@@ -12,7 +12,6 @@ dependencies = [
     "numpy>=1.23.2,<2",
     "pandas==1.5.3",
     "ansi2html>=1.8.0,<2",
-    "numba>=0.56.4,<0.57",
     "mkdocs-gen-files>=0.5.0,<0.6",
     "mkdocs-literate-nav>=0.6.1,<0.7",
     "mkdocs-section-index>=0.3.8,<0.4",

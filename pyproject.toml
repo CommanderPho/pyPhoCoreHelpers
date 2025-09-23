@@ -1,6 +1,6 @@
 [project]
 name = "pyphocorehelpers"
-version = "0.4.2"
+version = "0.4.3"
 description = "A collection of generally useful python code by Pho Hale"
 authors = [{ name = "Pho Hale", email = "CommanderPho@users.noreply.github.com" }]
 requires-python = ">=3.9,<3.12"
@@ -50,7 +50,7 @@ default-groups = [
 
 [tool.uv.sources]
 vedo = { git = "https://github.com/CommanderPho/vedo.git", rev = "feature/merge-upstream" }
-neuropy = { git = "https://github.com/CommanderPho/NeuroPy.git", rev = "feature/safe-advance" }
+neuropy = { path = "../NeuroPy", editable=true }
 
 [build-system]
 requires = ["hatchling"]

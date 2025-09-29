@@ -15,7 +15,6 @@ import psutil # For MemoryManagement
 from enum import Enum, unique
 import re
 import ast
-import nbformat
 import IPython
 from IPython.display import display, Javascript
 import json
@@ -26,7 +25,7 @@ from pyphocorehelpers.function_helpers import function_attributes
 from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 from typing_extensions import TypeAlias
 from typing import NewType
-from nptyping import NDArray
+# from nptyping import NDArray
 
 PythonPathStr = NewType('PythonPathStr', str) # a python path to a specific object type: f"{obj.__module__}.{obj.__name__}"
 
@@ -790,6 +789,8 @@ class IPythonHelpers:
 
         cells_with_tags
         """
+        import nbformat
+
         with open(notebook_path, 'r', encoding='utf-8') as notebook_file:
             notebook_content = nbformat.read(notebook_file, as_version=4)
 
@@ -800,6 +801,8 @@ class IPythonHelpers:
     @classmethod
     def write_notebook(cls, cells, path: Path):
         """ writes a new notebook with the provided cells to the path provided. """
+        import nbformat
+
         if not isinstance(path, Path):
             path = Path(path).resolve()
 

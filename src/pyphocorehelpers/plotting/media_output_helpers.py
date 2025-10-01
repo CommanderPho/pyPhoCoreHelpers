@@ -912,7 +912,7 @@ class ImageOperationsAndEffects:
 
 @metadata_attributes(short_name=None, tags=['function'], input_requires=[], output_provides=[], uses=['ImageOperationsAndEffects'], used_by=[], creation_date='2025-05-30 04:49', related_items=['ImageOperationsAndEffects'])
 class ImagePostRenderFunctionSets:
-    """ Provides SETS of operations to be performed on images, specifically for a particular export type (greyscale heatmaps for individual 1D decoders like 'long_LR' vs. RAW_RGBA (pseudo2D)
+    """ Provides SETS of operations to be performed on IMAGES, specifically for a particular export type (greyscale heatmaps for individual 1D decoders like 'long_LR' vs. RAW_RGBA (pseudo2D)
 
     Usage:
         from pyphocorehelpers.plotting.media_output_helpers import ImagePostRenderFunctionSets, ImageOperationsAndEffects

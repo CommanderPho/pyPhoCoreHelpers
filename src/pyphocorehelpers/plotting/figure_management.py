@@ -217,6 +217,48 @@ def capture_new_figures_decorator(func):
     return wrapper
 
 
+class CaptureNewFiguresContextManager(object):
+    """ a context manager that's supposed to capture all matplotlib figures generated within the context by comparing the global plt.get_fignums() before and after that function's executions. Won't detect updated figures, and hasn't been thoroughly tested.
+
+    
+
+    Usage:
+        from pyphocorehelpers.plotting.figure_management import CaptureNewFiguresContextManager
+
+        with CaptureNewFiguresContextManager() as fig_capturer:
+            # code that generates figures
+
+        new_figs_dict = fig_capturer.new_fig_dict
+        new_figs_dict
+
+    """
+    def __init__(self): # , name='MatplotlibRenderPlots', figures=None, axes=None, axes_dict=None, contexts=None, base_context=None
+        # self.name = name
+        # self.figures = figures or []
+        # self.axes = axes or []
+        # self.axes_dict = axes_dict or {} # advanced axes support
+        # self.contexts = contexts or []
+        self.pre_fignums = []
+        self.post_fignums = []
+        self.new_fignums = []
+        self.new_fig_dict = {}
+        ## begin by capturing the pre_fignums:
+        self.pre_fignums = plt.get_fignums()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # Cleanup code, if needed
+        self.post_fignums = plt.get_fignums()
+        print(f"post_fignums: {self.post_fignums}.")
+        self.new_fignums = list(set(self.post_fignums).symmetric_difference(set(self.pre_fignums)))
+        print(f"new_fignums: {self.new_fignums}.")
+        self.new_fig_dict = {fig_num:plt.figure(fig_num) for fig_num in self.new_fignums} # return a dictionary of the new figure_nums and figures
+        pass
+
+
+
 
     
 class FigureFormatter2D(object):

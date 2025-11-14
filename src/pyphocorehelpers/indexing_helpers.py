@@ -1201,7 +1201,7 @@ class PhoDataframeAccessor:
             raise ValueError(f"object must be a pandas Dataframe but is of type: {type(obj)}!\nobj: {obj}")
 
 
-    def constrain_df_cols(self, should_drop_constrained_columns: bool=True, **constraining_kwargs) -> pd.DataFrame:
+    def constrain_df_cols(self, should_drop_constrained_columns: bool=True, debug_print: bool=False, **constraining_kwargs) -> pd.DataFrame:
         """ 
         from neuropy.utils.indexing_helpers import NeuroPyDataframeAccessor
         
@@ -1210,6 +1210,12 @@ class PhoDataframeAccessor:
 
         """
         _out_df: pd.DataFrame = deepcopy(self._df)
+        if debug_print:
+            filter_step_count = {'initial': len(_out_df)}
+            print(f'[[constrain_df_cols: {constraining_kwargs}:')
+            print(f'initial: {len(_out_df)}')
+
+
         for col_name, val in constraining_kwargs.items():
             if isinstance(val, (list, tuple, set)):
                 _out_df = _out_df[_out_df[col_name].isin(val)]
@@ -1218,8 +1224,18 @@ class PhoDataframeAccessor:
                 if should_drop_constrained_columns:
                     ## only drop columns when the value was constrained to a single value
                     _out_df.drop(columns=[col_name], inplace=True)
-                    
+
+            if debug_print:
+                step_key: str = f'{col_name}=={val}'
+                filter_step_count[step_key] = len(_out_df)
+                print(f'\t{step_key}: {len(_out_df)}')
+
         # END for col_...
+        if debug_print:
+            filter_step_count['final'] = len(_out_df)
+            print(f'final: {len(_out_df)}')
+            # print(f'filter_step_count: {filter_step_count}')
+            
         return _out_df
 
 

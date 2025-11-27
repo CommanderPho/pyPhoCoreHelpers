@@ -331,6 +331,9 @@ class ColormapHelpers:
     def create_colormap_transparent_below_value(cls, mycmap: Union[str, Any], low_value_cuttoff:float=0.2, below_low_value_cuttoff_alpha_value: float=0.0, resampled_num_colors:int=7):
         """ Modifies the provided colormap by settings the opacity/alpha of all values below `low_value_cuttoff` (where values always go [0.0, 1.0]) to the value `below_low_value_cuttoff_alpha_value`
         Usage:
+        
+            from pyphocorehelpers.gui.Qt.color_helpers import ColormapHelpers
+        
             additional_cmap_names = dict(zip(TrackTemplates.get_decoder_names(), ['red', 'purple', 'green', 'orange'])) # {'long_LR': 'red', 'long_RL': 'purple', 'short_LR': 'green', 'short_RL': 'orange'}
 
             long_epoch_config = long_short_display_config_manager.long_epoch_config.as_pyqtgraph_kwargs()

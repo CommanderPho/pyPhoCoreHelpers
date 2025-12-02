@@ -1,5 +1,8 @@
 # from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 from enum import Enum
+from typing import TypeAlias
+from nptyping import NDArray, ND
+import numpy as np
 
 
 class PlottingBackendType(Enum):
@@ -28,3 +31,15 @@ class PlottingBackendSpecifyingMixin:
     def is_matplotlib_based(cls) -> bool:
         return (cls.get_plot_backing_type().value == PlottingBackendType.Matplotlib.value)
     
+
+
+class PlotImageExportableMixin:
+    """ Implementors can be exported to a 2D NDArray representing their contents rendered as an image.
+
+    from pyphocorehelpers.plotting.mixins.plotting_backend_mixin import PlotImageExportableMixin
+
+    """
+    
+    def export_as_img_arr(self, **kwargs) -> NDArray:
+        raise NotImplementedError(f'Implementors must override!')
+        # return arr

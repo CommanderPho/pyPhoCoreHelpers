@@ -44,7 +44,6 @@ viz = [
 default-groups = [
     "dev",
     "viz",
-    "remote",
 ]
 
 [tool.uv.sources]

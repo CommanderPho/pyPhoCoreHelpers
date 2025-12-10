@@ -6,6 +6,9 @@ class ParamQtWidget(QtWidgets.QWidget):
     """A QWidget that automatically creates Qt-based controls for a param.Parameterized object
     while managing sync
     
+    Historical: I created this fresh, but there's already a `ParamToPyQtBinding` that I'm not sure how well it works
+
+
     Usage:
     
         from pyphocorehelpers.gui.Qt.ParamQtWidget import ParamQtWidget, ParamQtWidgetMappingMixin

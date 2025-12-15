@@ -1762,6 +1762,19 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
 
     # Define a function to apply a colormap and text color based on luminance
     def color_map(val):
+        """Cell-wise style function used by pandas Styler."""
+        # Special handling for boolean columns so True/False are clearly distinguishable
+        if isinstance(val, (bool, np.bool_)):
+            if bool(val):
+                # True
+                color = (0.2, 0.6, 0.2, 1.0) if is_dark_mode else (0.7, 0.9, 0.7, 1.0)
+            else:
+                # False
+                color = (0.6, 0.2, 0.2, 1.0) if is_dark_mode else (0.98, 0.8, 0.8, 1.0)
+            text_color = white_color if is_dark_mode else black_color
+
+            return f'background-color: rgba({color[0]*255}, {color[1]*255}, {color[2]*255}, {color[3]}); color: {text_color}'
+
         use_default_formatting = True
         cmap = None
         if cmap_name is not None:
@@ -1779,10 +1792,10 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
         
         if use_default_formatting:
             if is_dark_mode:
-                color = black_color
+                color = (0.0, 0.0, 0.0, 1.0)
                 text_color = white_color
             else:
-                color = white_color
+                color = (0.9, 0.9, 0.9, 1.0)
                 text_color = black_color
 
         return f'background-color: rgba({color[0]*255}, {color[1]*255}, {color[2]*255}, {color[3]}); color: {text_color}'

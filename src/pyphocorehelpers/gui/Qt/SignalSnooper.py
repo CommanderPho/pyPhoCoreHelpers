@@ -45,6 +45,7 @@ try:
     from qtpy.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, 
                                  QPushButton, QLabel, QCheckBox, QLineEdit, QSpinBox)
     from qtpy.QtCore import Qt, QTimer
+    from qtpy.QtGui import QFont
     # Try to get Signal types for detection
     try:
         from qtpy.QtCore import Signal as QtSignal, pyqtSignal
@@ -65,6 +66,7 @@ except ImportError:
         from PyQt5.QtCore import QObject, pyqtSignal, Qt, QTimer
         from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit,
                                      QPushButton, QLabel, QCheckBox, QLineEdit, QSpinBox)
+        from PyQt5.QtGui import QFont
         from PyQt5 import QtWidgets, QtCore
         _SIGNAL_TYPES = (pyqtSignal,)
     except ImportError:
@@ -481,8 +483,17 @@ class SignalSnooperWidget(QWidget):
         # Text display
         self.text_display = QTextEdit(self)
         self.text_display.setReadOnly(True)
-        self.text_display.setFontFamily("Courier")
-        self.text_display.setFontPointSize(10)
+        # Set font using QFont object to ensure it actually applies
+        font = QFont("Courier", 8)
+        # Try different ways to set monospace style hint depending on Qt version
+        try:
+            font.setStyleHint(QFont.StyleHint.Monospace)
+        except AttributeError:
+            try:
+                font.setStyleHint(QFont.Monospace)
+            except AttributeError:
+                pass  # Just use Courier family without style hint
+        self.text_display.setFont(font)
         main_layout.addWidget(self.text_display)
         
         self.setLayout(main_layout)

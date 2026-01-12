@@ -8,14 +8,14 @@ from pyphocorehelpers.function_helpers import function_attributes
 
 
 class SilxRenderPlots(RenderPlots):
-	"""Container for holding and accessing Pyqtgraph-based figures for PyqtgraphRenderPlots.
+	"""Container for holding and accessing Silx-based figures for SilxRenderPlots.
 
 	from pyphocorehelpers.DataStructure.RenderPlots.SilxRenderPlots import SilxRenderPlots
 
 	"""
 	_display_library:str = 'silx'
 	
-	def __init__(self, name='PyqtgraphRenderPlots', app=None, parent_root_widget=None, display_outputs=DynamicParameters(), context=None, **kwargs):
+	def __init__(self, name='SilxRenderPlots', app=None, parent_root_widget=None, display_outputs=DynamicParameters(), context=None, **kwargs):
 		super(SilxRenderPlots, self).__init__(name, app=app, parent_root_widget=parent_root_widget, display_outputs=display_outputs, context=context, **kwargs)
 		
 

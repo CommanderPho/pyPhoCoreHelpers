@@ -354,6 +354,14 @@ class NotebookProcessor:
         ## Capturing the history:
         _notebook_processor.export_notebook_run_history()
 
+        
+        ## indexed by the cell_idx
+
+        in_cell_ids: List[int] = list(In.keys())
+        out_cell_ids: List[int] = list(Out.keys())
+        # an_out: Dict[int, Any] = Out
+        in_cell_ids
+        out_cell_ids
 
     """
     path: Path = field()

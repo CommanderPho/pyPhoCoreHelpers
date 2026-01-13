@@ -325,7 +325,7 @@ def smart_array2string(arr: NDArray, disable_readible_format: bool=False, separa
 def single_NDArray_array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizontal_layout=True, include_plaintext_repr:bool=False, **kwargs):
     """ Generate an HTML representation for a NumPy array with a Dask shape preview and a thumbnail heatmap
     
-        from pho_jupyter_preview_widget.pho_jupyter_preview_widget.display_helpers import array_preview_with_heatmap_repr_html
+        from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import array_preview_with_heatmap_repr_html
 
         # Register the custom display function for numpy arrays
         import IPython
@@ -490,7 +490,7 @@ def array_repr_with_graphical_shape(ip: "ipykernel.zmqshell.ZMQInteractiveShell"
     """Generate an HTML representation for a NumPy array, similar to Dask.
         
     from preferences_helpers import array_graphical_shape
-    from pho_jupyter_preview_widget.display_helpers import array_preview_with_graphical_shape_repr_html
+    from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import array_preview_with_graphical_shape_repr_html
     
     # Register the custom display function for NumPy arrays
     import IPython

@@ -46,7 +46,7 @@ class PreviewWidgetMagics(Magics):
     """ 
     ## Usage:
 
-        from pho_jupyter_preview_widget.ipython_helpers import PreviewWidgetMagics
+        from pyphocorehelpers.pho_jupyter_preview_widget.ipython_helpers import PreviewWidgetMagics
         # Register the magic
         ip = get_ipython()
         ip.register_magics(PreviewWidgetMagics)
@@ -65,7 +65,7 @@ class PreviewWidgetMagics(Magics):
         
         
         """
-        from pho_jupyter_preview_widget.display_helpers import array_repr_with_graphical_preview
+        from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import array_repr_with_graphical_preview
         config = _parse_ndarray_preview_params(line=line)
 
         ip = get_ipython()
@@ -84,7 +84,7 @@ class PreviewWidgetMagics(Magics):
         compatable with `InteractiveShell.ast_node_interactivity = "all"` and handles multiple outputs gracefully.
         
         """
-        from pho_jupyter_preview_widget.display_helpers import array_repr_with_graphical_preview
+        from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import array_repr_with_graphical_preview
             
         debug_print = False
 

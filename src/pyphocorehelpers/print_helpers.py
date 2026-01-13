@@ -1561,8 +1561,7 @@ def build_run_log_task_identifier(run_context: Union[str, List[str]], logging_ro
     return out_str
 
 
-def build_logger(full_logger_string: str, file_logging_dir=None,
-                logFormatter: Optional[logging.Formatter]=None, debug_print=True):
+def build_logger(full_logger_string: str, file_logging_dir=None, logFormatter: Optional[logging.Formatter]=None, debug_print=True):
     """ builds a logger
     
     from pyphocorehelpers.print_helpers import build_run_log_task_identifier, build_logger

@@ -76,7 +76,7 @@ def array_repr_with_graphical_shape(ip: "ipykernel.zmqshell.ZMQInteractiveShell"
     """Generate an HTML representation for a NumPy array, similar to Dask.
         
     from preferences_helpers import array_graphical_shape
-    from pyphocorehelpers.print_helpers import array_preview_with_graphical_shape_repr_html
+    from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import array_preview_with_graphical_shape_repr_html
     
     # Register the custom display function for NumPy arrays
     import IPython
@@ -85,7 +85,7 @@ def array_repr_with_graphical_shape(ip: "ipykernel.zmqshell.ZMQInteractiveShell"
 
 
     """
-    from pyphocorehelpers.print_helpers import array_preview_with_graphical_shape_repr_html
+    from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import array_preview_with_graphical_shape_repr_html
     # Register the custom display function for NumPy arrays
     ip.display_formatter.formatters['text/html'].for_type(np.ndarray, lambda arr: array_preview_with_graphical_shape_repr_html(arr))
     return ip
@@ -95,7 +95,7 @@ def array_repr_with_graphical_preview(ip: "ipykernel.zmqshell.ZMQInteractiveShel
     """Generate an HTML representation for a NumPy array with a Dask shape preview and a thumbnail heatmap
     
     """
-    from pyphocorehelpers.print_helpers import array_preview_with_heatmap_repr_html
+    from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import array_preview_with_heatmap_repr_html
     
 
     # Register the custom display function for NumPy arrays

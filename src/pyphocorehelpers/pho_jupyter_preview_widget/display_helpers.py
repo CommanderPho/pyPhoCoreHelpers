@@ -20,8 +20,10 @@ import base64
 
 
 import matplotlib.pyplot as plt
+from PIL import Image, ImageDraw, ImageFont
+from pyphocorehelpers.plotting.media_output_helpers import get_array_as_image, get_array_as_image_stack
 
-from pyphocorehelpers.print_helpers import render_scrollable_colored_table_from_dataframe, render_scrollable_colored_table
+# from pyphocorehelpers.print_helpers import render_scrollable_colored_table_from_dataframe, render_scrollable_colored_table
 
 
 # ==================================================================================================================== #
@@ -228,9 +230,74 @@ class MatplotlibToIPythonWidget:
             """
         return combined_html
 
-
     
-def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None) -> Optional[BytesIO]: # , omission_indices: list = None
+
+def _create_ellipsis_placeholder_image(width: int, height: int, text: str = "...", n_hidden: Optional[int] = None) -> Image.Image:
+    """ Creates a placeholder PIL Image for ellipsis in stack rendering.
+    
+    Args:
+        width: Width of the placeholder image (should match slice image width)
+        height: Height of the placeholder image (should match slice image height)
+        text: Text to display (default: "...")
+        n_hidden: Optional number of hidden slices to display in subtitle
+    
+    Returns:
+        PIL Image with gray background and centered text
+    """
+    # Create a gray background image
+    img = Image.new('RGB', (width, height), color=(200, 200, 200))
+    draw = ImageDraw.Draw(img)
+    
+    # Try to use a default font, fallback to basic if not available
+    try:
+        font = ImageFont.truetype("arial.ttf", size=min(width, height) // 4)
+    except (OSError, IOError):
+        try:
+            font = ImageFont.load_default()
+        except:
+            font = None
+    
+    # Calculate text position (centered)
+    if font:
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+    else:
+        # Approximate if no font available
+        text_width = len(text) * 10
+        text_height = 20
+    
+    text_x = (width - text_width) // 2
+    text_y = (height - text_height) // 2
+    
+    # Draw main text
+    draw.text((text_x, text_y), text, fill=(100, 100, 100), font=font)
+    
+    # Draw subtitle with number of hidden slices if provided
+    if n_hidden is not None and n_hidden > 0:
+        subtitle = f"({n_hidden} hidden)"
+        try:
+            subtitle_font = ImageFont.truetype("arial.ttf", size=min(width, height) // 8)
+        except (OSError, IOError):
+            try:
+                subtitle_font = ImageFont.load_default()
+            except:
+                subtitle_font = None
+        
+        if subtitle_font:
+            subtitle_bbox = draw.textbbox((0, 0), subtitle, font=subtitle_font)
+            subtitle_width = subtitle_bbox[2] - subtitle_bbox[0]
+        else:
+            subtitle_width = len(subtitle) * 6
+        
+        subtitle_x = (width - subtitle_width) // 2
+        subtitle_y = text_y + text_height + 5
+        draw.text((subtitle_x, subtitle_y), subtitle, fill=(120, 120, 120), font=subtitle_font)
+    
+    return img
+
+
+def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None, max_slices: int = 16, stack_offset: int = 10, stack_alpha: float = 1.0, thumbnail_height: Optional[int] = None) -> Optional[BytesIO]: # , omission_indices: list = None
     """ 
     
     #TODO 2024-08-16 04:05: - [ ] Make non-interactive and open in the background
@@ -272,14 +339,107 @@ def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None) -> Optional[Byt
         }
 
         active_cmap = 'viridis'
-        fig = plt.figure(figsize=(3, 3), num='_jup_backend')
-        ax = fig.add_subplot(111)
-        ax.imshow(data, cmap=active_cmap, **imshow_shared_kwargs)
-        ax.axis('off')
+        
+        # Handle 3D arrays by creating a stack of 2D slices using PIL Images
+        if data.ndim == 3:
+            n_slices = data.shape[-1]
             
-        buf = BytesIO()
-        fig.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
-        buf.seek(0)
+            # Determine which slices to show with ellipsis if needed
+            if n_slices <= max_slices:
+                # Show all slices
+                slice_indices = list(range(n_slices))
+                show_ellipsis = False
+            else:
+                # Show first few, ellipsis, and last few
+                # Use roughly half of max_slices for first, half for last
+                n_first = max_slices // 2
+                n_last = max_slices - n_first - 1  # -1 for ellipsis placeholder
+                slice_indices = list(range(n_first)) + [None] + list(range(n_slices - n_last, n_slices))
+                show_ellipsis = True
+                n_hidden = n_slices - max_slices
+            
+            # Convert each slice to PIL Image
+            pil_images = []
+            reference_width = None
+            reference_height = None
+            
+            for slice_idx in slice_indices:
+                if slice_idx is None:
+                    # Create ellipsis placeholder image
+                    # Use reference dimensions if available, otherwise use a default size
+                    if reference_width is None or reference_height is None:
+                        # Default size based on first two dimensions of array
+                        reference_width = data.shape[1] if data.shape[1] < 200 else 200
+                        reference_height = data.shape[0] if data.shape[0] < 200 else 200
+                    
+                    placeholder_img = _create_ellipsis_placeholder_image(
+                        width=reference_width, 
+                        height=reference_height, 
+                        n_hidden=n_hidden if show_ellipsis else None
+                    )
+                    pil_images.append(placeholder_img)
+                else:
+                    # Convert numpy slice to PIL Image
+                    slice_data = data[:, :, slice_idx]
+                    
+                    # Use get_array_as_image to convert numpy array to PIL Image
+                    try:
+                        from pyphoplacecellanalysis.Pho2D.data_exporting import HeatmapExportKind
+                        slice_img = get_array_as_image(
+                            slice_data,
+                            colormap=active_cmap,
+                            desired_height=thumbnail_height,
+                            skip_img_normalization=True,
+                            export_kind=HeatmapExportKind.COLORMAPPED
+                        )
+                        
+                        # Store reference dimensions from first successful conversion
+                        if reference_width is None:
+                            reference_width, reference_height = slice_img.size
+                        
+                        pil_images.append(slice_img)
+                    except Exception as e:
+                        print(f'WARN: Failed to convert slice {slice_idx} to PIL Image: {e}')
+                        # Create a placeholder for failed slices
+                        if reference_width is None or reference_height is None:
+                            reference_width = data.shape[1] if data.shape[1] < 200 else 200
+                            reference_height = data.shape[0] if data.shape[0] < 200 else 200
+                        placeholder_img = _create_ellipsis_placeholder_image(
+                            width=reference_width,
+                            height=reference_height,
+                            text=f"Err {slice_idx}"
+                        )
+                        pil_images.append(placeholder_img)
+            
+            # Stack the images using get_array_as_image_stack
+            if len(pil_images) > 0:
+                try:
+                    stacked_img = get_array_as_image_stack(
+                        pil_images,
+                        offset=stack_offset,
+                        single_image_alpha_level=stack_alpha
+                    )
+                    
+                    # Convert PIL Image to BytesIO
+                    buf = BytesIO()
+                    stacked_img.save(buf, format='png')
+                    buf.seek(0)
+                except Exception as e:
+                    print(f'ERROR: Failed to create image stack: {e}')
+                    buf = None
+            else:
+                buf = None
+        else:
+            # 2D array - convert to PIL Image and use single-image stack (or keep matplotlib)
+            # For 2D arrays, we'll use matplotlib for now to maintain compatibility
+            fig = plt.figure(figsize=(3, 3), num='_jup_backend')
+            ax = fig.add_subplot(111)
+            ax.imshow(data, cmap=active_cmap, **imshow_shared_kwargs)
+            ax.axis('off')
+            
+            buf = BytesIO()
+            fig.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
+            buf.seek(0)
         
     except SystemError as err:
         # SystemError: tile cannot extend outside image
@@ -293,12 +453,12 @@ def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None) -> Optional[Byt
     return buf
 
 # Convert to ipywidgets Image
-def _subfn_display_heatmap(data: NDArray, brokenaxes_kwargs=None, **img_kwargs) -> Optional[IPython.core.display.Image]:
+def _subfn_display_heatmap(data: NDArray, brokenaxes_kwargs=None, max_slices: int = 16, stack_offset: int = 10, stack_alpha: float = 1.0, thumbnail_height: Optional[int] = None, **img_kwargs) -> Optional[IPython.core.display.Image]:
     """ Renders a small thumbnail Image of a heatmap array
     
     """
     img_kwargs = dict(width=None, height=img_kwargs.get('height', 100), format='png') | img_kwargs
-    buf = _subfn_create_heatmap(data, brokenaxes_kwargs=brokenaxes_kwargs)
+    buf = _subfn_create_heatmap(data, brokenaxes_kwargs=brokenaxes_kwargs, max_slices=max_slices, stack_offset=stack_offset, stack_alpha=stack_alpha, thumbnail_height=thumbnail_height)
     if buf is not None:
         # Create an IPython Image object
         img = IPython.core.display.Image(data=buf.getvalue(), **img_kwargs) # IPython.core.display.Image
@@ -342,50 +502,55 @@ def single_NDArray_array_preview_with_heatmap_repr_html(arr, include_shape: bool
     if isinstance(arr, np.ndarray):
         
         n_dim: int = np.ndim(arr)
+        
+        # Handle arrays of any dimension (1D, 2D, 3D+)
         if n_dim > 2:
-            print(f'WARN: n_dim: {n_dim} greater than 2 is unsupported!')
-            # from pyphocorehelpers.plotting.media_output_helpers import get_array_as_image_stack
-            # #TODO 2024-08-13 05:05: - [ ] use get_array_as_image_stack to render the 3D array
-            message = f"Heatmap Err: n_dim: {n_dim} greater than 2 is unsupported!"
+            # For 3D+ arrays, we'll show a stack of slices
+            # Limit the total elements to avoid performance issues
+            total_elements = np.prod(arr.shape)
+            if total_elements > max_allowed_arr_elements:
+                # For large arrays, we might want to downsample, but for now just proceed
+                pass
+        elif n_dim == 2:
+            # 2D array - check size
+            if np.shape(arr)[0] > max_allowed_arr_elements: 
+                # truncate 
+                arr = arr[:max_allowed_arr_elements]
+        
+        # Extract stack-related parameters from kwargs
+        max_slices = kwargs.pop('max_slices', 16)  # Extract max_slices from kwargs if provided
+        stack_offset = kwargs.pop('stack_offset', 10)  # Extract stack_offset from kwargs if provided
+        stack_alpha = kwargs.pop('stack_alpha', 1.0)  # Extract stack_alpha from kwargs if provided (1.0 = no transparency for performance)
+        thumbnail_height = kwargs.pop('thumbnail_height', None)  # Extract thumbnail_height from kwargs if provided
+        
+        # Create heatmap (now handles 2D and 3D arrays with stack rendering for 3D)
+        heatmap_image = _subfn_display_heatmap(arr, max_slices=max_slices, stack_offset=stack_offset, stack_alpha=stack_alpha, thumbnail_height=thumbnail_height, **kwargs)
+        if (heatmap_image is not None):
+            orientation = "row" if horizontal_layout else "column"
+            ## Lays out side-by-side:
+            # Convert the IPython Image object to a base64-encoded string
+            heatmap_image_data = heatmap_image.data
+            b64_image = base64.b64encode(heatmap_image_data).decode('utf-8')
+            # Create an HTML widget for the heatmap
+            heatmap_size_format_str: str = ''
+            width = kwargs.get('width', None)
+            if (width is not None) and (width > 0):
+                heatmap_size_format_str = heatmap_size_format_str + f'width="{width}" '
+            height = kwargs.get('height', None)
+            if (height is not None) and (height > 0):
+                heatmap_size_format_str = heatmap_size_format_str + f'height="{height}" '
+            
+            heatmap_html = f'<img src="data:image/png;base64,{b64_image}" {heatmap_size_format_str}style="background:transparent;"/>' #  width="{ndarray_preview_config.heatmap_thumbnail_width}"
+
+        else:
+            # getting image failed:
+            # Create an HTML widget for the heatmap
+            message = "Heatmap Err"
             heatmap_html = f"""
             <div style="text-align: center; padding: 20px; border: 1px solid #ccc;">
                 <p style="font-size: 16px; color: red;">{message}</p>
             </div>
             """
-
-        else:
-            ## n_dim == 2
-            if np.shape(arr)[0] > max_allowed_arr_elements: 
-                # truncate 
-                arr = arr[max_allowed_arr_elements:]
-            
-            heatmap_image = _subfn_display_heatmap(arr, **kwargs)
-            if (heatmap_image is not None):
-                orientation = "row" if horizontal_layout else "column"
-                ## Lays out side-by-side:
-                # Convert the IPython Image object to a base64-encoded string
-                heatmap_image_data = heatmap_image.data
-                b64_image = base64.b64encode(heatmap_image_data).decode('utf-8')
-                # Create an HTML widget for the heatmap
-                heatmap_size_format_str: str = ''
-                width = kwargs.get('width', None)
-                if (width is not None) and (width > 0):
-                    heatmap_size_format_str = heatmap_size_format_str + f'width="{width}" '
-                height = kwargs.get('height', None)
-                if (height is not None) and (height > 0):
-                    heatmap_size_format_str = heatmap_size_format_str + f'height="{height}" '
-                
-                heatmap_html = f'<img src="data:image/png;base64,{b64_image}" {heatmap_size_format_str}style="background:transparent;"/>' #  width="{ndarray_preview_config.heatmap_thumbnail_width}"
-
-            else:
-                # getting image failed:
-                # Create an HTML widget for the heatmap
-                message = "Heatmap Err"
-                heatmap_html = f"""
-                <div style="text-align: center; padding: 20px; border: 1px solid #ccc;">
-                    <p style="font-size: 16px; color: red;">{message}</p>
-                </div>
-                """
 
         # height="{height}"
         dask_array_widget_html = ""

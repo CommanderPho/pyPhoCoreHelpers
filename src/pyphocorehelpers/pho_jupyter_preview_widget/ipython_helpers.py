@@ -129,18 +129,6 @@ class PreviewWidgetMagics(Magics):
         if _bak_formatter is not None:
             ip.display_formatter.formatters['text/html'].for_type(np.ndarray, _bak_formatter)
         
-    
-
-    @cell_magic
-    def scrollable_colored_table(self, line, cell):
-        # Execute the cell and capture the result
-        result = self.shell.run_cell(cell).result
-        if isinstance(result, pd.DataFrame):
-            # Apply custom formatter
-            display(render_scrollable_colored_table_from_dataframe(result))
-        else:
-            display(result)
-            
 
 
 

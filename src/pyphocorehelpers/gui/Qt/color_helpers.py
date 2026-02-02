@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 from nptyping import NDArray
+from collections import namedtuple
 from copy import deepcopy
 import numpy as np
 import pandas as pd
@@ -444,6 +445,31 @@ class ColorFormatConverter:
             else:
                 return cls._hexArgb_to_hexRGBA(hex_Argb_str)
 
+
+    @classmethod
+    def is_valid_hexstring(cls, a_label: str) -> bool:
+        if not isinstance(a_label, str):
+            return False
+
+        s = a_label
+        if s and s[0] == '#':
+            s = s[1:]
+
+        n = len(s)
+        if n not in (3, 4, 6, 8):
+            return False
+
+        for c in s:
+            if not (
+                '0' <= c <= '9' or
+                'a' <= c <= 'f' or
+                'A' <= c <= 'F'
+            ):
+                return False
+
+        return True
+
+
     # ==================================================================================================================== #
     # Color NDArray Conversions                                                                                             #
     # ==================================================================================================================== #
@@ -547,4 +573,442 @@ class ColorFormatConverter:
         """
         return dict(linewidth=pen.widthF(), edgecolor=cls._hexArgb_to_hexRGBA(pen.color().name(QtGui.QColor.HexArgb)), facecolor=cls._hexArgb_to_hexRGBA(brush.color().name(QtGui.QColor.HexArgb)))
 
+
+    # ==================================================================================================================================================================================================================================================================================== #
+    # Compatibility functions with pyqtgraph                                                                                                                                                                                                                                               #
+    # ==================================================================================================================================================================================================================================================================================== #
+    @classmethod
+    def colorTuple(cls, c):
+        """Return a tuple (R,G,B,A) from a QColor
+        Drop-in compatible replacewith with `pg.colorTuple(a_color)`
+        """
+        return c.getRgb()
+
+    @classmethod
+    def colorStr(cls, c):
+        """Generate a hex string code from a QColor
+        Drop-in compatible replacewith with `pg.colorStr(a_color)`
+        Usage:
+        
+            ColorFormatConverter.colorStr(a_color)
+        
+        """
+        return ('%02x'*4) % cls.colorTuple(c)
+
+
+# ==================================================================================================================== #
+# RectangleRenderTupleHelpers                                                                                          #
+# ==================================================================================================================== #
+QColorTuple = namedtuple('QColorTuple', ['hexColor', 'alpha'])
+QPenTuple = namedtuple('QPenTuple', ['color', 'width'])
+QBrushTuple = namedtuple('QBrushTuple', ['color'])
+
+
+QPenFlatTuple = namedtuple('QPenFlatTuple', ['hexColor', 'alpha', 'width'])
+QBrushFlatTuple = namedtuple('QBrushFlatTuple', ['hexColor', 'alpha'])
+
+
+@metadata_attributes(short_name=None, tags=['class', 'helper', 'pyqtgraph', 'QPen', 'Qt', 'QBrush', 'Helpful', 'RectangleRenderTupleHelpers'], uses=['ColorFormatConverter'], used_by=['QColorColumnsAccessor'], creation_date='2026-02-02 11:50', related_items=[])
+class ColorDataframeColumnHelpers:
+    """ class for use in copying, serializing, etc the list of tuples used by IntervalRectsItem
+
+    Refactored and generalized from `pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.helpers.RectangleRenderTupleHelpers` on 2026-02-02
+    Refactored out of `pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.GraphicsObjects.IntervalRectsItem.IntervalRectsItem` on 2022-12-05 
+
+    Usage:
+
+
+        from pyphocorehelpers.gui.Qt.color_helpers import ColorDataframeColumnHelpers, ColorFormatConverter, QColorColumnsAccessor
+        
+    Known Usages:
+        Used in `IntervalRectsItem` and `CustomIntervalRectsItem` to copy themselves
+
+        # Copy Constructors: _________________________________________________________________________________________________ #
+        def __copy__(self):
+            independent_data_copy = ColorDataframeColumnHelpers.copy_data(self.data)
+            return CustomIntervalRectsItem(independent_data_copy)
+        
+        def __deepcopy__(self, memo):
+            independent_data_copy = ColorDataframeColumnHelpers.copy_data(self.data)
+            return CustomIntervalRectsItem(independent_data_copy)
+            # return CustomIntervalRectsItem(copy.deepcopy(self.data, memo))
+
+
+    """
+    @classmethod
+    def QColor_to_simple_columns_dict(cls, value):
+        """Resolves into basic datatypes:
+        color: a HexRgb string (without opacity)
+        alpha: a float value indicating the opacity
+        """
+        return {'hexColor': value.name(QtGui.QColor.HexRgb),'alpha':value.alphaF()}
+    
+    @classmethod
+    def QColor_to_tuple(cls, value):
+        return QColorTuple(hexColor=value.name(QtGui.QColor.HexRgb), alpha=value.alphaF())
+
+
+    # _color_process_fn = lambda a_color: pg.colorStr(a_color) # a_pen.color()
+    # _color_process_fn = lambda a_color: ColorDataframeColumnHelpers.QColor_to_simple_columns_dict(a_color)
+    # _color_process_fn = lambda a_color: ColorFormatConverter.colorStr(a_color)
+    _color_process_fn = lambda a_color: ColorFormatConverter.qColor_to_hexstring(a_color, include_alpha=True, use_HexArgb_instead_of_HexRGBA=False)
+
+
+    @classmethod
+    def QPen_to_dict(cls, a_pen):
+        return {'color': cls._color_process_fn(a_pen.color()), 'width':a_pen.widthF()}
+        # return {**cls.QColor_to_simple_columns_dict(a_pen.color()),'width':a_pen.widthF()}
+
+    @classmethod
+    def QBrush_to_dict(cls, a_brush):
+        return {'color': cls._color_process_fn(a_brush.color())} # ,'gradient':a_brush.gradient()
+        # return {**cls.QColor_to_simple_columns_dict(a_brush.color())} # ,'gradient':a_brush.gradient()
+
+    @classmethod
+    def QPen_to_tuple(cls, a_pen):
+        return QPenTuple(color=cls._color_process_fn(a_pen.color()), width=a_pen.widthF())
+        # return QPenTuple(**cls.QColor_to_simple_columns_dict(a_pen.color()), width=a_pen.widthF())
+
+    @classmethod
+    def QBrush_to_tuple(cls, a_brush):
+        return QBrushTuple(color=cls._color_process_fn(a_brush.color()))
+        # return QBrushTuple(**cls.QColor_to_simple_columns_dict(a_brush.color()))
+
+    
+    @classmethod
+    def get_serialized_data(cls, tuples_data):
+        """ converts the list of (float, float, float, float, QPen, QBrush) tuples or IntervalRectsItemData objects into a serialized format for serialization. 
+        
+        Handles both:
+        - Tuples: (start_t, series_vertical_offset, duration_t, series_height, pen, brush) [+ optional label]
+        - IntervalRectsItemData objects: with optional label field
+        
+        Returns serialized format: (start_t, series_vertical_offset, duration_t, series_height, pen_dict, brush_dict, label, is_interval_data)
+        """            
+        # """ converts the list of (float, float, float, float, QPen, QBrush) tuples into a list of (float, float, float, float, pen_color_hex:str, brush_color_hex:str) for serialization. """            
+        # return [(start_t, series_vertical_offset, duration_t, series_height, cls.QPen_to_dict(pen), cls.QBrush_to_dict(brush)) for (start_t, series_vertical_offset, duration_t, series_height, pen, brush) in tuples_data]
+
+        if not tuples_data:
+            return []
+        
+        # Check if first item is IntervalRectsItemData (lazy check to avoid circular dependency)
+        first_item = tuples_data[0]
+        is_interval_data = hasattr(first_item, '__attrs_attrs__') and hasattr(first_item, 'start_t')
+        
+        result = []
+        for item in tuples_data:
+            if is_interval_data:
+                # Handle IntervalRectsItemData object
+                start_t = item.start_t
+                series_vertical_offset = item.series_vertical_offset
+                duration_t = item.duration_t
+                series_height = item.series_height
+                pen = item.pen
+                brush = item.brush
+                label = getattr(item, 'label', None)  # Optional label field
+            else:
+                # Handle tuple - unpack first 6 required fields
+                start_t, series_vertical_offset, duration_t, series_height, pen, brush = item[:6]
+                label = item[6] if len(item) > 6 else None  # Optional 7th field (label)
+            
+            # Serialize pen and brush to dicts
+            serialized_item = (start_t, series_vertical_offset, duration_t, series_height, cls.QPen_to_dict(pen), cls.QBrush_to_dict(brush), label, is_interval_data)
+            result.append(serialized_item)
+        return result
+    
+
+    @classmethod
+    def get_deserialized_data(cls, seralized_tuples_data):
+        """ converts the serialized data back to the original format (tuples or IntervalRectsItemData objects)
+        
+        Inverse operation of .get_serialized_data(...).
+        
+        Handles both old format (6-7 elements) and new format (8 elements with type info).
+        
+        Usage:
+            seralized_tuples_data = ColorDataframeColumnHelpers.get_serialized_data(tuples_data)
+            tuples_data = ColorDataframeColumnHelpers.get_deserialized_data(seralized_tuples_data)
+        """        
+        # """ converts the list of (float, float, float, float, pen_color_hex:str, brush_color_hex:str) tuples back to the original (float, float, float, float, QPen, QBrush) list
+        # Inverse operation of .get_serialized_data(...).        
+        # Usage:
+        #     seralized_tuples_data = ColorDataframeColumnHelpers.get_serialized_data(tuples_data)
+        #     tuples_data = ColorDataframeColumnHelpers.get_deserialized_data(seralized_tuples_data)
+        # """        
+        # return [(start_t, series_vertical_offset, duration_t, series_height, pg.mkPen(pen_color_hex), pg.mkBrush(**brush_color_hex)) for (start_t, series_vertical_offset, duration_t, series_height, pen_color_hex, brush_color_hex) in seralized_tuples_data]
+
+        if not seralized_tuples_data:
+            return []
+        
+        # Check format: new format has 8 elements (includes is_interval_data flag)
+        first_item = seralized_tuples_data[0]
+        if len(first_item) == 8:
+            # New format: includes is_interval_data flag
+            use_objects = first_item[7]
+        else:
+            # Old format: assume tuples for backward compatibility
+            use_objects = False
+        
+        # Lazy import to avoid circular dependency
+        if use_objects:
+            try:
+                from pyphoplacecellanalysis.GUI.PyQtPlot.Widgets.GraphicsObjects.IntervalRectsItem import IntervalRectsItemData
+            except ImportError:
+                use_objects = False
+        
+        result = []
+        for item in seralized_tuples_data:
+            if len(item) == 8:
+                # New format with type info
+                start_t, series_vertical_offset, duration_t, series_height, pen_dict, brush_dict, label, is_interval_data = item
+            elif len(item) == 7:
+                # Old format: 7 elements (with label)
+                start_t, series_vertical_offset, duration_t, series_height, pen_dict, brush_dict, label = item
+            else:
+                # Old format: 6 elements (no label)
+                start_t, series_vertical_offset, duration_t, series_height, pen_dict, brush_dict = item
+                label = None
+            
+            # Reconstruct pen and brush from dicts
+            # pen_dict: {'color': str, 'width': float}
+            # brush_dict: {'color': str}
+            pen = pg.mkPen(pen_dict['color'], width=pen_dict.get('width', 1))
+            brush = pg.mkBrush(brush_dict['color'])
+            
+            if use_objects:
+                # Return IntervalRectsItemData objects
+                if label is not None:
+                    result.append(IntervalRectsItemData(start_t, series_vertical_offset, duration_t, series_height, pen, brush, label))
+                else:
+                    result.append(IntervalRectsItemData(start_t, series_vertical_offset, duration_t, series_height, pen, brush))
+            else:
+                # Return tuples (backward compatibility)
+                if label is not None:
+                    result.append((start_t, series_vertical_offset, duration_t, series_height, pen, brush, label))
+                else:
+                    result.append((start_t, series_vertical_offset, duration_t, series_height, pen, brush))
+        return result
+
+
+
+    @classmethod
+    def copy_data(cls, tuples_data):
+        seralized_tuples_data = cls.get_serialized_data(tuples_data).copy()
+        return cls.get_deserialized_data(seralized_tuples_data)
+
+
+
+# ==================================================================================================================================================================================================================================================================================== #
+# QColor Pandas Dataframe Accessor for manipulating color columns                                                                                                                                                                                                                      #
+# ==================================================================================================================================================================================================================================================================================== #
+
+@pd.api.extensions.register_dataframe_accessor("qcolor")
+class QColorColumnsAccessor:
+    """ A Pandas pd.DataFrame representation of [start, stop, label] epoch intervals 
+    
+    Usage:
+    
+        from pyphocorehelpers.gui.Qt.color_helpers import ColorDataframeColumnHelpers, ColorFormatConverter, QColorColumnsAccessor
+        
+    """
+    def __init__(self, pandas_obj):   
+        pandas_obj = self._validate(pandas_obj)
+        self._df = pandas_obj
+        # initial_labels = deepcopy(list(self._df.columns))
+        # extant_hex_color_labels = [k for k in initial_labels if k.starts]        
+        # Optional: If the 'label' column of the dataframe is empty, should populate it with the index (after sorting) as a string.
+        # self._obj['label'] = self._obj.index
+        # self._df["label"] = self._df["label"].astype("str")
+
+
+    @classmethod
+    def _validate(cls, obj):
+        """ just require it to be a dataframe """       
+        assert isinstance(obj, pd.DataFrame)
+        return obj # important! Must return the modified obj to be assigned (since its columns were altered by renaming
+
+
+    @property
+    def df(self) -> pd.DataFrame:
+        """The df property."""
+        return self._df
+    @df.setter
+    def df(self, value: pd.DataFrame):
+        value = self._validate(value)
+        self._df = value
+        
+
+    def find_valid_hex_columns(self) -> List[str]:
+        """Return column names that are valid hex color labels (RGB/RGBA, with or without '#')."""
+        is_valid = ColorFormatConverter.is_valid_hexstring
+        valid_cols = []
+
+        for col in self.df.columns:
+            series = self.df[col]
+            if series.dtype == object and series.map(is_valid).all():
+                valid_cols.append(col)
+
+        return valid_cols
+    
+
+    def convert_QColor_columns_to_hexcolor_columns(self, specific_QColor_column_names: Optional[List[str]]=None) -> Dict[str, str]:
+        """Return column names that are valid hex color labels (RGB/RGBA, with or without '#')."""
+        is_valid_QColor_column = lambda x: ((x is not None) and isinstance(x, (QColor, QColorTuple)))
+                
+        if specific_QColor_column_names is None:
+            ## find columns with QColor values
+            specific_QColor_column_names = []
+            for col in self.df.columns:
+                series = self.df[col]
+                if series.dtype == object and series.map(is_valid_QColor_column).all():
+                    specific_QColor_column_names.append(col)
+
+        else:
+            for col in specific_QColor_column_names:
+                assert col in self.df.columns, f"col: '{col}' not found in self.df.columns: {list(self.df.columns)}"
+                series = self.df[col]
+                assert series.dtype == object, f"col: '{col}' series.dtype != object -- series.dtype: {series.dtype}"
+                assert series.map(is_valid_QColor_column).all(), f"col: '{col}' contained invalid values, series: {series}"
+            
+        # self.df = self.df
+        
+        added_col_names = []
+        added_col_names_map = {}
+        for col in specific_QColor_column_names:
+            new_col_name: str = f'{col}_hex'
+            self.df[new_col_name] = self.df[col].map(lambda x: ColorFormatConverter.qColor_to_hexstring(x, include_alpha=True, use_HexArgb_instead_of_HexRGBA=False))
+            # self.df[new_col_name] = self.df[col].map(lambda x: "#" + ColorDataframeColumnHelpers.QPen_to_dict(x)['color']).str.upper()
+            added_col_names.append(new_col_name)
+            added_col_names_map[col] = new_col_name
+            
+        return added_col_names_map
+    
+
+
+    def split_QPen_columns(self, specific_column_names: Optional[List[str]]=None) -> Dict[str, List[str]]:
+        """Splits columns containing QPen values into two separate [f'{a_col}_color_hex', f'{a_col}_width] columns.
+
+        Returns a dict mapping each original column name to the list of added column names [color_hex_col, width_col].
+        """
+        is_valid_QPen_column = lambda x: (x is not None) and isinstance(x, (QPen, QPenTuple))
+
+        if specific_column_names is None:
+            specific_column_names = []
+            for col in self.df.columns:
+                series = self.df[col]
+                if series.dtype == object and series.map(is_valid_QPen_column).all():
+                    specific_column_names.append(col)
+        else:
+            for col in specific_column_names:
+                assert col in self.df.columns, f"col: '{col}' not found in self.df.columns: {list(self.df.columns)}"
+                series = self.df[col]
+                assert series.dtype == object, f"col: '{col}' series.dtype != object -- series.dtype: {series.dtype}"
+                assert series.map(is_valid_QPen_column).all(), f"col: '{col}' contained invalid values, series: {series}"
+
+        added_col_names_map = {}
+        for col in specific_column_names:
+            def pen_to_dict(pen):
+                if isinstance(pen, QPenTuple):
+                    return {'color': pen.color, 'width': pen.width}
+                return ColorDataframeColumnHelpers.QPen_to_dict(pen)
+
+            color_col = f'{col}_color_hex'
+            width_col = f'{col}_width'
+            self.df[color_col] = self.df[col].map(lambda x: pen_to_dict(x)['color'])
+            self.df[width_col] = self.df[col].map(lambda x: pen_to_dict(x)['width'])
+            added_col_names_map[col] = [color_col, width_col]
+
+        return added_col_names_map
+
+
+
+    def split_QBrush_columns(self, specific_column_names: Optional[List[str]]=None) -> Dict[str, List[str]]:
+        """Splits columns containing QBrush values into a separate f'{a_col}_color_hex' column.
+
+        Returns a dict mapping each original column name to the list of added column names [color_hex_col].
+        """
+        is_valid_QBrush_column = lambda x: (x is not None) and isinstance(x, (QBrush, QBrushTuple))
+
+        if specific_column_names is None:
+            specific_column_names = []
+            for col in self.df.columns:
+                series = self.df[col]
+                if series.dtype == object and series.map(is_valid_QBrush_column).all():
+                    specific_column_names.append(col)
+        else:
+            for col in specific_column_names:
+                assert col in self.df.columns, f"col: '{col}' not found in self.df.columns: {list(self.df.columns)}"
+                series = self.df[col]
+                assert series.dtype == object, f"col: '{col}' series.dtype != object -- series.dtype: {series.dtype}"
+                assert series.map(is_valid_QBrush_column).all(), f"col: '{col}' contained invalid values, series: {series}"
+
+        added_col_names_map = {}
+        for col in specific_column_names:
+            def brush_to_dict(brush):
+                if isinstance(brush, QBrushTuple):
+                    return {'color': brush.color}
+                return ColorDataframeColumnHelpers.QBrush_to_dict(brush)
+
+            color_col = f'{col}_color_hex'
+            self.df[color_col] = self.df[col].map(lambda x: brush_to_dict(x)['color'])
+            added_col_names_map[col] = [color_col]
+
+        return added_col_names_map
+
+
+    def _detect_split_QPen_columns(self) -> Dict[str, List[str]]:
+        """Detect split QPen columns by naming: *_color_hex + *_width pairs. Returns base_col -> [color_col, width_col]."""
+        mapping: Dict[str, List[str]] = {}
+        for col in self.df.columns:
+            if col.endswith('_color_hex'):
+                base = col[:-10]  # remove '_color_hex'
+                width_col = f'{base}_width'
+                if width_col in self.df.columns:
+                    mapping[base] = [col, width_col]
+        return mapping
+
+
+    def _detect_split_QBrush_columns(self) -> Dict[str, List[str]]:
+        """Detect split QBrush columns by naming: *_color_hex with no matching *_width (brush has only color). Returns base_col -> [color_col]."""
+        mapping: Dict[str, List[str]] = {}
+        for col in self.df.columns:
+            if col.endswith('_color_hex'):
+                base = col[:-10]  # remove '_color_hex'
+                width_col = f'{base}_width'
+                if width_col not in self.df.columns:
+                    mapping[base] = [col]
+        return mapping
+
+
+    def merge_QPen_columns(self, split_mapping: Optional[Dict[str, List[str]]] = None, drop_split_columns: bool = False) -> Dict[str, str]:
+        """Rebuild QPen columns from split color_hex and width columns.
+
+        If split_mapping is None, detects pairs of columns named *_color_hex and *_width.
+        Returns dict mapping each base column name to itself (for API consistency).
+        """
+        if split_mapping is None:
+            split_mapping = self._detect_split_QPen_columns()
+        for base_col, (color_col, width_col) in split_mapping.items():
+            self.df[base_col] = [
+                pg.mkPen(color, width=width)
+                for color, width in zip(self.df[color_col], self.df[width_col])
+            ]
+            if drop_split_columns:
+                self.df.drop(columns=[color_col, width_col], inplace=True)
+        return {base: base for base in split_mapping}
+
+
+    def merge_QBrush_columns(self, split_mapping: Optional[Dict[str, List[str]]] = None, drop_split_columns: bool = False) -> Dict[str, str]:
+        """Rebuild QBrush columns from split color_hex column.
+
+        If split_mapping is None, detects columns named *_color_hex that have no matching *_width (brush-only).
+        Returns dict mapping each base column name to itself (for API consistency).
+        """
+        if split_mapping is None:
+            split_mapping = self._detect_split_QBrush_columns()
+        for base_col, (color_col,) in split_mapping.items():
+            self.df[base_col] = self.df[color_col].map(lambda c: pg.mkBrush(c))
+            if drop_split_columns:
+                self.df.drop(columns=[color_col], inplace=True)
+        return {base: base for base in split_mapping}
 

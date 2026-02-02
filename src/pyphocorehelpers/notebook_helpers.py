@@ -600,7 +600,7 @@ class NotebookProcessor:
 
 
     @classmethod
-    def launch_standalone_qtconsole_connected_to_existing_kernel(cls, connection_info: Optional[Path]=None, latest_connection_file: Optional[Path]=None, run_in_poetry_env:bool=True, debug_print=True, start_new_session:bool=False, **kwargs):
+    def launch_standalone_qtconsole_connected_to_existing_kernel(cls, connection_info: Optional[Path]=None, latest_connection_file: Optional[Path]=None, run_in_UV_env:bool=True, run_in_poetry_env:bool=False, debug_print=True, start_new_session:bool=False, **kwargs):
         """ gets the connection information for the current notebook
         
         Usage:
@@ -630,8 +630,10 @@ class NotebookProcessor:
 
 
         """
-        
-        if run_in_poetry_env:
+        assert (not (run_in_UV_env and run_in_poetry_env)), f'must run in either UV OR poetry, not both!'
+        if run_in_UV_env:
+            command_args = ["uv", "run"] ## run in poetry env
+        elif run_in_poetry_env:
             command_args = ["poetry", "run"] ## run in poetry env
         else:
             command_args = [] ## empty list to start

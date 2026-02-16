@@ -748,7 +748,7 @@ def safe_pandas_get_group(dataframe_group, key):
     
 
 ## Pandas DataFrame helpers:
-def partition(df: pd.DataFrame, partitionColumn: str) -> Tuple[NDArray, NDArray]:
+def partition(df: pd.DataFrame, partitionColumn: str, return_unique_values: bool=True) -> Union[Tuple[NDArray, NDArray], NDArray]:
     """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
 
     Usage:
@@ -760,9 +760,13 @@ def partition(df: pd.DataFrame, partitionColumn: str) -> Tuple[NDArray, NDArray]
     """
     unique_values = np.unique(df[partitionColumn]) # array([ 0,  1,  2,  3,  4,  7, 11, 12, 13, 14])
     grouped_df = df.groupby([partitionColumn]) #  Groups on the specified column.
-    return unique_values, np.array([grouped_df.get_group(aValue) for aValue in unique_values], dtype=object) # dataframes split for each unique value in the column
+    if return_unique_values:
+        return unique_values, np.array([grouped_df.get_group(aValue) for aValue in unique_values], dtype=object) # dataframes split for each unique value in the column
+    else:
+        return np.array([grouped_df.get_group(aValue) for aValue in unique_values], dtype=object) # dataframes split for each unique value in the column
+         
 
-def partition_df(df: pd.DataFrame, partitionColumn: str)-> Tuple[NDArray, List[pd.DataFrame]]:
+def partition_df(df: pd.DataFrame, partitionColumn: str, return_unique_values: bool=True)-> Union[Tuple[NDArray, List[pd.DataFrame]], List[pd.DataFrame]]:
     """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
 
     USEFUL NOTE: to get a dict, do `partitioned_dfs = dict(zip(*partition_df(spikes_df, partitionColumn='new_epoch_IDX')))`
@@ -779,7 +783,11 @@ def partition_df(df: pd.DataFrame, partitionColumn: str)-> Tuple[NDArray, List[p
     """
     unique_values = np.unique(df[partitionColumn]) # array([ 0,  1,  2,  3,  4,  7, 11, 12, 13, 14])
     grouped_df = df.groupby([partitionColumn]) #  Groups on the specified column.
-    return unique_values, [grouped_df.get_group(aValue) for aValue in unique_values] # dataframes split for each unique value in the column
+    if return_unique_values:
+        return unique_values, [grouped_df.get_group(aValue) for aValue in unique_values] # dataframes split for each unique value in the column
+    else:
+        return [grouped_df.get_group(aValue) for aValue in unique_values] # dataframes split for each unique value in the column
+    
 
 def partition_df_dict(df: pd.DataFrame, partitionColumn: str)-> Dict[Any, pd.DataFrame]:
     """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.

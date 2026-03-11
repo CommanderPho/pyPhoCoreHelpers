@@ -1843,229 +1843,237 @@ def blend_images(images: list, cmap=None) -> np.ndarray:
 
 
 
-from pypdf import PdfReader, PdfWriter, Transformation ## for PDFHelpers
 from pathlib import Path
 
 
-@metadata_attributes(short_name=None, tags=['PDF', 'export', 'filesystem', 'concatenate', 'combine'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-06-19 11:48', related_items=[])
-class PDFHelpers:
-    """ Helpers for Concatenating single-figure PDFs and other things
-    
-    from pyphocorehelpers.plotting.media_output_helpers import PDFHelpers
-    
-    """
+try:
+    from pypdf import PdfReader, PdfWriter, Transformation ## for PDFHelpers
+    _PDFHELPERS_AVAILABLE = True
 
-    @classmethod
-    def concatenate_pdfs_horizontally(cls, pdf_paths: List[Union[str, Path]], output_path: Union[str, Path], padding: float = 0):
-        """
-        Horizontally concatenate multiple single-page PDFs.
-
-        Parameters:
-        -----------
-        pdf_paths : List[Union[str, Path]]
-            List of paths to PDF files to concatenate horizontally
-        output_path : Union[str, Path]
-            Path for the output concatenated PDF
-        padding : float, optional
-            Spacing between PDFs in points, by default 0
-
-        Returns:
-        --------
-        Path
-            Path to the created concatenated PDF
-
-        Usage:
-        ------
+    @metadata_attributes(short_name=None, tags=['PDF', 'export', 'filesystem', 'concatenate', 'combine'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-06-19 11:48', related_items=[])
+    class PDFHelpers:
+        """ Helpers for Concatenating single-figure PDFs and other things
+        
         from pyphocorehelpers.plotting.media_output_helpers import PDFHelpers
-
-        # Concatenate multiple PDFs horizontally
-        pdf_files = [pdf1_path, pdf2_path, pdf3_path]
-        output_file = PDFHelpers.concatenate_pdfs_horizontally(
-            pdf_paths=pdf_files,
-            output_path="combined_output.pdf",
-            padding=10
-        )
-
-        # Concatenate just two PDFs (backwards compatible)
-        output_file = PDFHelpers.concatenate_pdfs_horizontally(
-            pdf_paths=[left_pdf_path, right_pdf_path],
-            output_path="combined_output.pdf"
-        )
-        """
-        if not pdf_paths:
-            raise ValueError("pdf_paths cannot be empty")
-
-        if len(pdf_paths) == 1:
-            # If only one PDF, just copy it
-            import shutil
-            shutil.copy2(pdf_paths[0], output_path)
-            return Path(output_path)
-
-        # Convert paths to Path objects
-        pdf_paths = [Path(p) for p in pdf_paths]
-        output_path = Path(output_path)
-
-        # Read all PDFs and get their pages
-        readers = [PdfReader(pdf_path) for pdf_path in pdf_paths]
-        pages = [reader.pages[0] for reader in readers]  # Assume single-page PDFs
-
-        # Get dimensions of all pages
-        widths = [float(page.mediabox.width) for page in pages]
-        heights = [float(page.mediabox.height) for page in pages]
-
-        # Calculate new page dimensions
-        total_padding = padding * (len(pages) - 1) if len(pages) > 1 else 0
-        new_width = sum(widths) + total_padding
-        new_height = max(heights)
-
-        # Create new PDF with combined page
-        writer = PdfWriter()
-        new_page = writer.add_blank_page(width=new_width, height=new_height)
-
-        # Add pages horizontally with padding
-        current_x_offset = 0
-        for i, (page, width) in enumerate(zip(pages, widths)):
-            if current_x_offset > 0:
-                # Create transformation to translate the page
-                transformation = Transformation().translate(tx=current_x_offset, ty=0)
-                new_page.merge_transformed_page(page, transformation)
-            else:
-                # First page at origin
-                new_page.merge_page(page)
-
-            # Update offset for next page
-            current_x_offset += width + padding
-
-        # Save the result
-        with open(output_path, 'wb') as output_file:
-            writer.write(output_file)
-
-        print(f'Successfully concatenated {len(pdf_paths)} PDFs to: "{output_path}"')
-        return output_path
-
-
-    @classmethod
-    def concatenate_pdfs_vertically(cls, pdf_paths: List[Union[str, Path]], output_path: Union[str, Path], padding: float = 0):
-        """
-        Vertically concatenate multiple single-page PDFs.
-
-        Parameters:
-        -----------
-        pdf_paths : List[Union[str, Path]]
-            List of paths to PDF files to concatenate vertically
-        output_path : Union[str, Path]
-            Path for the output concatenated PDF
-        padding : float, optional
-            Spacing between PDFs in points, by default 0
-
-        Returns:
-        --------
-        Path
-            Path to the created concatenated PDF
-        """
-        if not pdf_paths:
-            raise ValueError("pdf_paths cannot be empty")
-
-        if len(pdf_paths) == 1:
-            import shutil
-            shutil.copy2(pdf_paths[0], output_path)
-            return Path(output_path)
-
-        # Convert paths to Path objects
-        pdf_paths = [Path(p) for p in pdf_paths]
-        output_path = Path(output_path)
-
-        # Read all PDFs and get their pages
-        readers = [PdfReader(pdf_path) for pdf_path in pdf_paths]
-        pages = [reader.pages[0] for reader in readers]
-
-        # Get dimensions of all pages
-        widths = [float(page.mediabox.width) for page in pages]
-        heights = [float(page.mediabox.height) for page in pages]
-
-        # Calculate new page dimensions
-        total_padding = padding * (len(pages) - 1) if len(pages) > 1 else 0
-        new_width = max(widths)
-        new_height = sum(heights) + total_padding
-
-        # Create new PDF with combined page
-        writer = PdfWriter()
-        new_page = writer.add_blank_page(width=new_width, height=new_height)
-
-        # Add pages vertically with padding (from top to bottom)
-        current_y_offset = new_height  # Start from top
-        for i, (page, height) in enumerate(zip(pages, heights)):
-            current_y_offset -= height  # Move down by page height
-
-            if current_y_offset != (new_height - height):  # Not the first page
-                # Create transformation to translate the page
-                transformation = Transformation().translate(tx=0, ty=current_y_offset)
-                new_page.merge_transformed_page(page, transformation)
-            else:
-                # First page
-                transformation = Transformation().translate(tx=0, ty=current_y_offset)
-                new_page.merge_transformed_page(page, transformation)
-
-            # Update offset for next page (subtract padding)
-            current_y_offset -= padding
-
-        # Save the result
-        with open(output_path, 'wb') as output_file:
-            writer.write(output_file)
-
-        print(f'Successfully concatenated {len(pdf_paths)} PDFs vertically to: "{output_path}"')
-        return output_path
-
-    @function_attributes(short_name=None, tags=['pdf','scale', 'resize'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-07-03 16:58', related_items=[])
-    @classmethod
-    def scale_pdf(cls, input_path: str, output_path: str, scale_factor: float = 0.5):
-        """ Scale all aspects of a vector PDF uniformly by `scale_factor`.
         
-        Parameters:
-            input_path (str): Path to input PDF file.
-            output_path (str): Path to save scaled output PDF.
-            scale_factor (float): Scaling factor (e.g., 0.5 for 50% size).
-            
-            
-        Usage:
-        
+        """
+
+        @classmethod
+        def concatenate_pdfs_horizontally(cls, pdf_paths: List[Union[str, Path]], output_path: Union[str, Path], padding: float = 0):
+            """
+            Horizontally concatenate multiple single-page PDFs.
+
+            Parameters:
+            -----------
+            pdf_paths : List[Union[str, Path]]
+                List of paths to PDF files to concatenate horizontally
+            output_path : Union[str, Path]
+                Path for the output concatenated PDF
+            padding : float, optional
+                Spacing between PDFs in points, by default 0
+
+            Returns:
+            --------
+            Path
+                Path to the created concatenated PDF
+
+            Usage:
+            ------
             from pyphocorehelpers.plotting.media_output_helpers import PDFHelpers
 
-            # Scale input.pdf down to 50% size, scaling around the center
-            PDFHelpers.scale_pdf(input_path=_fig2_final_combined_output_path, output_path=_fig2_final_combined_output_path.with_stem(f"scaled_output"), scale_factor=0.5, center=False)
+            # Concatenate multiple PDFs horizontally
+            pdf_files = [pdf1_path, pdf2_path, pdf3_path]
+            output_file = PDFHelpers.concatenate_pdfs_horizontally(
+                pdf_paths=pdf_files,
+                output_path="combined_output.pdf",
+                padding=10
+            )
 
-        """
-        from pypdf import PdfReader, PdfWriter, Transformation ## for PDFHelpers
-        from pypdf.generic import RectangleObject
-        reader = PdfReader(input_path)
-        writer = PdfWriter()
+            # Concatenate just two PDFs (backwards compatible)
+            output_file = PDFHelpers.concatenate_pdfs_horizontally(
+                pdf_paths=[left_pdf_path, right_pdf_path],
+                output_path="combined_output.pdf"
+            )
+            """
+            if not pdf_paths:
+                raise ValueError("pdf_paths cannot be empty")
 
-        for page in reader.pages:
-            # Original size
-            w = float(page.mediabox.width)
-            h = float(page.mediabox.height)
-            transform = Transformation().scale(scale_factor)
+            if len(pdf_paths) == 1:
+                # If only one PDF, just copy it
+                import shutil
+                shutil.copy2(pdf_paths[0], output_path)
+                return Path(output_path)
 
-            # Apply transformation
-            page.add_transformation(transform)
+            # Convert paths to Path objects
+            pdf_paths = [Path(p) for p in pdf_paths]
+            output_path = Path(output_path)
 
-            # Compute new bounding box
-            new_w = w * scale_factor
-            new_h = h * scale_factor
+            # Read all PDFs and get their pages
+            readers = [PdfReader(pdf_path) for pdf_path in pdf_paths]
+            pages = [reader.pages[0] for reader in readers]  # Assume single-page PDFs
 
-            # Create new rectangle
-            new_box = RectangleObject([0, 0, new_w, new_h])
+            # Get dimensions of all pages
+            widths = [float(page.mediabox.width) for page in pages]
+            heights = [float(page.mediabox.height) for page in pages]
 
-            # Update MediaBox and CropBox
-            page.mediabox = new_box
-            page.cropbox = new_box
+            # Calculate new page dimensions
+            total_padding = padding * (len(pages) - 1) if len(pages) > 1 else 0
+            new_width = sum(widths) + total_padding
+            new_height = max(heights)
 
-            writer.add_page(page)
+            # Create new PDF with combined page
+            writer = PdfWriter()
+            new_page = writer.add_blank_page(width=new_width, height=new_height)
 
-        # Write output
-        with open(output_path, "wb") as f_out:
-            writer.write(f_out)
+            # Add pages horizontally with padding
+            current_x_offset = 0
+            for i, (page, width) in enumerate(zip(pages, widths)):
+                if current_x_offset > 0:
+                    # Create transformation to translate the page
+                    transformation = Transformation().translate(tx=current_x_offset, ty=0)
+                    new_page.merge_transformed_page(page, transformation)
+                else:
+                    # First page at origin
+                    new_page.merge_page(page)
+
+                # Update offset for next page
+                current_x_offset += width + padding
+
+            # Save the result
+            with open(output_path, 'wb') as output_file:
+                writer.write(output_file)
+
+            print(f'Successfully concatenated {len(pdf_paths)} PDFs to: "{output_path}"')
+            return output_path
+
+
+        @classmethod
+        def concatenate_pdfs_vertically(cls, pdf_paths: List[Union[str, Path]], output_path: Union[str, Path], padding: float = 0):
+            """
+            Vertically concatenate multiple single-page PDFs.
+
+            Parameters:
+            -----------
+            pdf_paths : List[Union[str, Path]]
+                List of paths to PDF files to concatenate vertically
+            output_path : Union[str, Path]
+                Path for the output concatenated PDF
+            padding : float, optional
+                Spacing between PDFs in points, by default 0
+
+            Returns:
+            --------
+            Path
+                Path to the created concatenated PDF
+            """
+            if not pdf_paths:
+                raise ValueError("pdf_paths cannot be empty")
+
+            if len(pdf_paths) == 1:
+                import shutil
+                shutil.copy2(pdf_paths[0], output_path)
+                return Path(output_path)
+
+            # Convert paths to Path objects
+            pdf_paths = [Path(p) for p in pdf_paths]
+            output_path = Path(output_path)
+
+            # Read all PDFs and get their pages
+            readers = [PdfReader(pdf_path) for pdf_path in pdf_paths]
+            pages = [reader.pages[0] for reader in readers]
+
+            # Get dimensions of all pages
+            widths = [float(page.mediabox.width) for page in pages]
+            heights = [float(page.mediabox.height) for page in pages]
+
+            # Calculate new page dimensions
+            total_padding = padding * (len(pages) - 1) if len(pages) > 1 else 0
+            new_width = max(widths)
+            new_height = sum(heights) + total_padding
+
+            # Create new PDF with combined page
+            writer = PdfWriter()
+            new_page = writer.add_blank_page(width=new_width, height=new_height)
+
+            # Add pages vertically with padding (from top to bottom)
+            current_y_offset = new_height  # Start from top
+            for i, (page, height) in enumerate(zip(pages, heights)):
+                current_y_offset -= height  # Move down by page height
+
+                if current_y_offset != (new_height - height):  # Not the first page
+                    # Create transformation to translate the page
+                    transformation = Transformation().translate(tx=0, ty=current_y_offset)
+                    new_page.merge_transformed_page(page, transformation)
+                else:
+                    # First page
+                    transformation = Transformation().translate(tx=0, ty=current_y_offset)
+                    new_page.merge_transformed_page(page, transformation)
+
+                # Update offset for next page (subtract padding)
+                current_y_offset -= padding
+
+            # Save the result
+            with open(output_path, 'wb') as output_file:
+                writer.write(output_file)
+
+            print(f'Successfully concatenated {len(pdf_paths)} PDFs vertically to: "{output_path}"')
+            return output_path
+
+        @function_attributes(short_name=None, tags=['pdf','scale', 'resize'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2025-07-03 16:58', related_items=[])
+        @classmethod
+        def scale_pdf(cls, input_path: str, output_path: str, scale_factor: float = 0.5):
+            """ Scale all aspects of a vector PDF uniformly by `scale_factor`.
             
+            Parameters:
+                input_path (str): Path to input PDF file.
+                output_path (str): Path to save scaled output PDF.
+                scale_factor (float): Scaling factor (e.g., 0.5 for 50% size).
+                
+                
+            Usage:
+            
+                from pyphocorehelpers.plotting.media_output_helpers import PDFHelpers
+
+                # Scale input.pdf down to 50% size, scaling around the center
+                PDFHelpers.scale_pdf(input_path=_fig2_final_combined_output_path, output_path=_fig2_final_combined_output_path.with_stem(f"scaled_output"), scale_factor=0.5, center=False)
+
+            """
+            from pypdf import PdfReader, PdfWriter, Transformation ## for PDFHelpers
+            from pypdf.generic import RectangleObject
+            reader = PdfReader(input_path)
+            writer = PdfWriter()
+
+            for page in reader.pages:
+                # Original size
+                w = float(page.mediabox.width)
+                h = float(page.mediabox.height)
+                transform = Transformation().scale(scale_factor)
+
+                # Apply transformation
+                page.add_transformation(transform)
+
+                # Compute new bounding box
+                new_w = w * scale_factor
+                new_h = h * scale_factor
+
+                # Create new rectangle
+                new_box = RectangleObject([0, 0, new_w, new_h])
+
+                # Update MediaBox and CropBox
+                page.mediabox = new_box
+                page.cropbox = new_box
+
+                writer.add_page(page)
+
+            # Write output
+            with open(output_path, "wb") as f_out:
+                writer.write(f_out)
+                
+
+except ImportError:
+    _PDFHELPERS_AVAILABLE = False
+
+
 
 
 # ==================================================================================================================================================================================================================================================================================== #

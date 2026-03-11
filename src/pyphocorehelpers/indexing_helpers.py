@@ -748,7 +748,7 @@ def safe_pandas_get_group(dataframe_group, key):
     
 
 ## Pandas DataFrame helpers:
-def partition(df: pd.DataFrame, partitionColumn: str) -> Tuple[NDArray, NDArray]:
+def partition(df: pd.DataFrame, partitionColumn: str, return_unique_values: bool=True) -> Union[Tuple[NDArray, NDArray], NDArray]:
     """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
 
     Usage:
@@ -760,9 +760,13 @@ def partition(df: pd.DataFrame, partitionColumn: str) -> Tuple[NDArray, NDArray]
     """
     unique_values = np.unique(df[partitionColumn]) # array([ 0,  1,  2,  3,  4,  7, 11, 12, 13, 14])
     grouped_df = df.groupby([partitionColumn]) #  Groups on the specified column.
-    return unique_values, np.array([grouped_df.get_group(aValue) for aValue in unique_values], dtype=object) # dataframes split for each unique value in the column
+    if return_unique_values:
+        return unique_values, np.array([grouped_df.get_group(aValue) for aValue in unique_values], dtype=object) # dataframes split for each unique value in the column
+    else:
+        return np.array([grouped_df.get_group(aValue) for aValue in unique_values], dtype=object) # dataframes split for each unique value in the column
+         
 
-def partition_df(df: pd.DataFrame, partitionColumn: str)-> Tuple[NDArray, List[pd.DataFrame]]:
+def partition_df(df: pd.DataFrame, partitionColumn: str, return_unique_values: bool=True)-> Union[Tuple[NDArray, List[pd.DataFrame]], List[pd.DataFrame]]:
     """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
 
     USEFUL NOTE: to get a dict, do `partitioned_dfs = dict(zip(*partition_df(spikes_df, partitionColumn='new_epoch_IDX')))`
@@ -779,7 +783,11 @@ def partition_df(df: pd.DataFrame, partitionColumn: str)-> Tuple[NDArray, List[p
     """
     unique_values = np.unique(df[partitionColumn]) # array([ 0,  1,  2,  3,  4,  7, 11, 12, 13, 14])
     grouped_df = df.groupby([partitionColumn]) #  Groups on the specified column.
-    return unique_values, [grouped_df.get_group(aValue) for aValue in unique_values] # dataframes split for each unique value in the column
+    if return_unique_values:
+        return unique_values, [grouped_df.get_group(aValue) for aValue in unique_values] # dataframes split for each unique value in the column
+    else:
+        return [grouped_df.get_group(aValue) for aValue in unique_values] # dataframes split for each unique value in the column
+    
 
 def partition_df_dict(df: pd.DataFrame, partitionColumn: str)-> Dict[Any, pd.DataFrame]:
     """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
@@ -1201,7 +1209,7 @@ class PhoDataframeAccessor:
             raise ValueError(f"object must be a pandas Dataframe but is of type: {type(obj)}!\nobj: {obj}")
 
 
-    def constrain_df_cols(self, should_drop_constrained_columns: bool=True, **constraining_kwargs) -> pd.DataFrame:
+    def constrain_df_cols(self, should_drop_constrained_columns: bool=True, debug_print: bool=False, **constraining_kwargs) -> pd.DataFrame:
         """ 
         from neuropy.utils.indexing_helpers import NeuroPyDataframeAccessor
         
@@ -1210,6 +1218,12 @@ class PhoDataframeAccessor:
 
         """
         _out_df: pd.DataFrame = deepcopy(self._df)
+        if debug_print:
+            filter_step_count = {'initial': len(_out_df)}
+            print(f'[[constrain_df_cols: {constraining_kwargs}:')
+            print(f'initial: {len(_out_df)}')
+
+
         for col_name, val in constraining_kwargs.items():
             if isinstance(val, (list, tuple, set)):
                 _out_df = _out_df[_out_df[col_name].isin(val)]
@@ -1218,8 +1232,18 @@ class PhoDataframeAccessor:
                 if should_drop_constrained_columns:
                     ## only drop columns when the value was constrained to a single value
                     _out_df.drop(columns=[col_name], inplace=True)
-                    
+
+            if debug_print:
+                step_key: str = f'{col_name}=={val}'
+                filter_step_count[step_key] = len(_out_df)
+                print(f'\t{step_key}: {len(_out_df)}')
+
         # END for col_...
+        if debug_print:
+            filter_step_count['final'] = len(_out_df)
+            print(f'final: {len(_out_df)}')
+            # print(f'filter_step_count: {filter_step_count}')
+            
         return _out_df
 
 

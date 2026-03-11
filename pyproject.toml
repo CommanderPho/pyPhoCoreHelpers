@@ -1,6 +1,6 @@
 [project]
 name = "pyphocorehelpers"
-version = "0.4.5"
+version = "0.4.7"
 description = "A collection of generally useful python code by Pho Hale"
 authors = [{ name = "Pho Hale", email = "CommanderPho@users.noreply.github.com" }]
 requires-python = ">=3.9,<3.12"
@@ -26,7 +26,12 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["importlib-metadata>=6.0.0,<7"]
+dev = [
+    "importlib-metadata>=6.0.0,<7",
+    "pylsp-rope>=0.1.17",
+    "python-lsp-server>=1.14.0",
+    "rope>=1.14.0",
+]
 viz = [
     "pyvista>=0.43.0,<0.44",  # Supports newer VTK versions
     "matplotlib>=3.6.3,<4",
@@ -44,7 +49,6 @@ viz = [
 default-groups = [
     "dev",
     "viz",
-    "remote",
 ]
 
 [tool.uv.sources]

@@ -343,6 +343,26 @@ class NotebookProcessor:
     History:
         `pyphocorehelpers.programming_helpers.NotebookProcessor` -> `pyphocorehelpers.notebook_helpers.NotebookProcessor`
         
+    Usage:
+    
+        from pyphocorehelpers.notebook_helpers import NotebookCellExecutionLogger, NotebookProcessor
+
+        _notebook_path:Path = Path(IPythonHelpers.try_find_notebook_filepath(IPython.extract_module_locals())).resolve() # Finds the path of THIS notebook
+        _notebook_execution_logger: NotebookCellExecutionLogger = NotebookCellExecutionLogger(notebook_path=_notebook_path, enable_logging_to_file=False) # Builds a logger that records info about this notebook
+        _notebook_processor: NotebookProcessor = NotebookProcessor(path=_notebook_path)
+
+        ## Capturing the history:
+        _notebook_processor.export_notebook_run_history()
+
+        
+        ## indexed by the cell_idx
+
+        in_cell_ids: List[int] = list(In.keys())
+        out_cell_ids: List[int] = list(Out.keys())
+        # an_out: Dict[int, Any] = Out
+        in_cell_ids
+        out_cell_ids
+
     """
     path: Path = field()
     cells: List = field(default=Factory(list))
@@ -580,7 +600,7 @@ class NotebookProcessor:
 
 
     @classmethod
-    def launch_standalone_qtconsole_connected_to_existing_kernel(cls, connection_info: Optional[Path]=None, latest_connection_file: Optional[Path]=None, run_in_poetry_env:bool=True, debug_print=True, start_new_session:bool=False, **kwargs):
+    def launch_standalone_qtconsole_connected_to_existing_kernel(cls, connection_info: Optional[Path]=None, latest_connection_file: Optional[Path]=None, run_in_UV_env:bool=True, run_in_poetry_env:bool=False, debug_print=True, start_new_session:bool=False, **kwargs):
         """ gets the connection information for the current notebook
         
         Usage:
@@ -610,8 +630,10 @@ class NotebookProcessor:
 
 
         """
-        
-        if run_in_poetry_env:
+        assert (not (run_in_UV_env and run_in_poetry_env)), f'must run in either UV OR poetry, not both!'
+        if run_in_UV_env:
+            command_args = ["uv", "run"] ## run in poetry env
+        elif run_in_poetry_env:
             command_args = ["poetry", "run"] ## run in poetry env
         else:
             command_args = [] ## empty list to start
@@ -663,6 +685,63 @@ class NotebookProcessor:
             raise NotImplementedError(f'latest_connection_file: "{latest_connection_file}", connection_info: {connection_info}')
             return False
     
+
+
+
+    @classmethod
+    def export_notebook_run_history(cls, In=None, Out=None, save_path: Path = None):
+        """ 
+        Exports the executed cells of the current notebook session to a python file.
+        
+        Args:
+            In (list, optional): The global 'In' list from the notebook. If None, attempts to auto-discover.
+            Out (dict, optional): The global 'Out' dict. Currently unused in this implementation.
+            save_path (Path, optional): Destination file. Defaults to 'session_history.py'.
+        """
+        
+        # 1. Auto-discover 'In' if not provided
+        if In is None:
+            ip = get_ipython()
+            if ip and 'In' in ip.user_ns:
+                In = ip.user_ns['In']
+            else:
+                print("Error: Could not find execution history. Are you running this from a Jupyter Notebook?")
+                return
+
+        # 2. Handle Filename Generation
+        if save_path is None:           
+            parent_path = Path('EXTERNAL/NOTEBOOK_RUN_LOGS').resolve()
+            if (not parent_path.exists()) or (not parent_path.is_dir()):
+                parent_path = None
+ 
+            # Create a timestamp string: YYYY-MM-DD_HH-MM-SS
+            # Example result: notebook_history_2026-01-12_13-30-05.py
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            filename = f"notebook_history_{timestamp}.py"
+            if parent_path is not None:
+                save_path = parent_path.joinpath(filename).resolve()
+            else:
+                save_path = Path(filename).resolve()
+        else:
+            save_path = Path(save_path).resolve()
+            
+
+        # 3. Write to file
+        try:
+            with open(save_path, "w", encoding="utf-8") as f:
+                f.write(f"# History exported on {save_path.stat().st_mtime if save_path.exists() else 'New File'}\n")
+                f.write(f"# Source: {cls.__name__}\n\n")
+                
+                for i, code in enumerate(In):
+                    # Skip empty cells or purely whitespace
+                    if code and code.strip(): 
+                        f.write(f"# Input [{i}]\n{code}\n\n")
+                        
+            print(f"Successfully saved execution history to: {save_path}")
+            
+        except Exception as e:
+            print(f"Failed to write history file: {e}")
+
 
 
     # from IPython.display import display, Javascript

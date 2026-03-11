@@ -85,6 +85,8 @@ class HairyLinePlot:
         
         # Create individual disconnected line segments normal to the reference line
         segments = []
+        a_normal_x = []
+        a_normal_y = []
 
         for i in range(num_points):
 
@@ -95,8 +97,7 @@ class HairyLinePlot:
                 assert len(normal_x) == num_points
                 # ---------- preferred path: use pre-computed normals -------------
                 if (normal_x is not None) and (normal_y is not None):
-                    assert (len(normal_x) == len(normal_y) == num_points), (
-                        "normal_x / normal_y must match x, y length")
+                    assert (len(normal_x) == len(normal_y) == num_points), ("normal_x / normal_y must match x, y length")
 
                     # Decide this segment’s actual length
                     if np.ndim(hair_length) == 0:        # scalar
@@ -132,26 +133,51 @@ class HairyLinePlot:
                 
                 # Calculate normal direction (perpendicular to tangent)
                 # Rotate tangent 90 degrees: (dx, dy) -> (dy, -dx)
-                norm = np.sqrt(dx*dx + dy*dy)
+                # norm = np.sqrt(dx*dx + dy*dy)
+                # if norm > 0:
+                #     ## here is where they're being set to floats
+                #     normal_x = dy / norm
+                #     normal_y = -dx / norm
+                # else:
+                #     normal_x, normal_y = 0, 1  # Default to vertical
+                
+                # # Create hair segment normal to the line
+                # hair_length = linewidth[i] if hasattr(linewidth, '__len__') else linewidth
+                # half_length = hair_length / 2
+                
+                # segments.append([
+                #     [x[i] - normal_x * half_length, y[i] - normal_y * half_length],
+                #     [x[i] + normal_x * half_length, y[i] + normal_y * half_length]
+                # ])
+                
+                # Compute local normal
+                norm = np.hypot(dx, dy)
                 if norm > 0:
-                    normal_x = dy / norm
-                    normal_y = -dx / norm
+                    nx = dy / norm
+                    ny = -dx / norm
                 else:
-                    normal_x, normal_y = 0, 1  # Default to vertical
-                
+                    nx, ny = 0, 1
+
                 # Create hair segment normal to the line
-                hair_length = linewidth[i] if hasattr(linewidth, '__len__') else linewidth
-                half_length = hair_length / 2
-                
+                # Use local nx, ny (don’t overwrite function args)
+                hair_length_i = linewidth[i] if hasattr(linewidth, '__len__') else linewidth
+                half_length = hair_length_i / 2
+
                 segments.append([
-                    [x[i] - normal_x * half_length, y[i] - normal_y * half_length],
-                    [x[i] + normal_x * half_length, y[i] + normal_y * half_length]
+                    [x[i] - nx * half_length, y[i] - ny * half_length],
+                    [x[i] + nx * half_length, y[i] + ny * half_length]
                 ])
-                
+                a_normal_x.append(nx)
+                a_normal_y.append(ny)
                 
         ## end for i in ...
         
         segments = np.array(segments)
+        a_normal_x = np.array(a_normal_x)
+        a_normal_y = np.array(a_normal_y)
+        normal_x = deepcopy(a_normal_x)
+        normal_y = deepcopy(a_normal_y)
+
 
         # Compute attributes for each segment (use start of segment)
         if isinstance(linewidth, (float, int)):

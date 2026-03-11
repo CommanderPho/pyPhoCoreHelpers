@@ -38,7 +38,9 @@ def pyqtExceptionPrintingSlot(*args):
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
-                func(*args)
+                # func(*args)
+                return func(*args, **kwargs) # TODO 2025-01-05 - Seems to work in simple use case and allows calling via obustly and carefully modify `pyqtExceptionPrintingSlot` to enable calling decorated functions with their kwargs in additions to their *args. Currently calling a function decorated by `@pyqtExceptionPrintingSlot` like @commits_table_widget.py (1160-1162)  via its kwargs results in a runtime error: e.g. @src/pho_github_activity_viewer/widgets/commits_table_widget.py:1027fails while `self.set_grouping_enabled(False)` succeeds. 
+
             except:
                 print("Uncaught Exception in slot")
                 traceback.print_exc()

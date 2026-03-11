@@ -52,7 +52,11 @@ class RenderPlots(iPythonKeyCompletingMixin, DynamicParameters):
     def is_pyqtgraph(cls):
         """Whether the display library is pyqtgraph."""
         return cls._display_library == 'pyqtgraph'
-
+    @classmethod
+    def is_silx(cls):
+        """Whether the display library is silx."""
+        return cls._display_library == 'silx'
+    
 
     # def __add__(self, other):
     #     # Combine figures and axes from self and other MatplotlibRenderPlots instances

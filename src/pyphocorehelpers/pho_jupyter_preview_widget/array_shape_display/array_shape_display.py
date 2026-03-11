@@ -73,8 +73,8 @@ def array_repr_html(shape, chunks, dtype, size=120):
 import pyphocorehelpers.pho_jupyter_preview_widget as pho_jupyter_preview_widget
 
 
-from pho_jupyter_preview_widget.array_shape_display import array_repr_html
-from pho_jupyter_preview_widget.array_shape_display.array_shape_display import array_repr_html
+from pyphocorehelpers.pho_jupyter_preview_widget.array_shape_display import array_repr_html
+from pyphocorehelpers.pho_jupyter_preview_widget.array_shape_display.array_shape_display import array_repr_html
 
 
 from pyphocorehelpers.pho_jupyter_preview_widget.array_shape_display.array_shape_display import array_repr_html

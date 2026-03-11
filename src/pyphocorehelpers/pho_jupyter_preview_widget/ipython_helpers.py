@@ -46,7 +46,7 @@ class PreviewWidgetMagics(Magics):
     """ 
     ## Usage:
 
-        from pho_jupyter_preview_widget.ipython_helpers import PreviewWidgetMagics
+        from pyphocorehelpers.pho_jupyter_preview_widget.ipython_helpers import PreviewWidgetMagics
         # Register the magic
         ip = get_ipython()
         ip.register_magics(PreviewWidgetMagics)
@@ -65,7 +65,7 @@ class PreviewWidgetMagics(Magics):
         
         
         """
-        from pho_jupyter_preview_widget.display_helpers import array_repr_with_graphical_preview
+        from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import array_repr_with_graphical_preview
         config = _parse_ndarray_preview_params(line=line)
 
         ip = get_ipython()
@@ -84,7 +84,7 @@ class PreviewWidgetMagics(Magics):
         compatable with `InteractiveShell.ast_node_interactivity = "all"` and handles multiple outputs gracefully.
         
         """
-        from pho_jupyter_preview_widget.display_helpers import array_repr_with_graphical_preview
+        from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import array_repr_with_graphical_preview
             
         debug_print = False
 
@@ -129,18 +129,6 @@ class PreviewWidgetMagics(Magics):
         if _bak_formatter is not None:
             ip.display_formatter.formatters['text/html'].for_type(np.ndarray, _bak_formatter)
         
-    
-
-    @cell_magic
-    def scrollable_colored_table(self, line, cell):
-        # Execute the cell and capture the result
-        result = self.shell.run_cell(cell).result
-        if isinstance(result, pd.DataFrame):
-            # Apply custom formatter
-            display(render_scrollable_colored_table_from_dataframe(result))
-        else:
-            display(result)
-            
 
 
 

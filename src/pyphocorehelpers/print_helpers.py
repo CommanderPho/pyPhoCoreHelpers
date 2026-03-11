@@ -33,7 +33,6 @@ import objsize # python -m pip install objsize==0.6.1
 
 # from pyphocorehelpers.function_helpers import function_attributes # # function_attributes causes circular import issue :[
 import numpy as np
-import dask.array as da
 from IPython.display import Image, display, HTML
 
 from io import BytesIO
@@ -1561,8 +1560,7 @@ def build_run_log_task_identifier(run_context: Union[str, List[str]], logging_ro
     return out_str
 
 
-def build_logger(full_logger_string: str, file_logging_dir=None,
-                logFormatter: Optional[logging.Formatter]=None, debug_print=True):
+def build_logger(full_logger_string: str, file_logging_dir=None, logFormatter: Optional[logging.Formatter]=None, debug_print=True):
     """ builds a logger
     
     from pyphocorehelpers.print_helpers import build_run_log_task_identifier, build_logger
@@ -1762,6 +1760,19 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
 
     # Define a function to apply a colormap and text color based on luminance
     def color_map(val):
+        """Cell-wise style function used by pandas Styler."""
+        # Special handling for boolean columns so True/False are clearly distinguishable
+        if isinstance(val, (bool, np.bool_)):
+            if bool(val):
+                # True
+                color = (0.2, 0.6, 0.2, 1.0) if is_dark_mode else (0.7, 0.9, 0.7, 1.0)
+            else:
+                # False
+                color = (0.6, 0.2, 0.2, 1.0) if is_dark_mode else (0.98, 0.8, 0.8, 1.0)
+            text_color = white_color if is_dark_mode else black_color
+
+            return f'background-color: rgba({color[0]*255}, {color[1]*255}, {color[2]*255}, {color[3]}); color: {text_color}'
+
         use_default_formatting = True
         cmap = None
         if cmap_name is not None:
@@ -1779,10 +1790,10 @@ def render_scrollable_colored_table_from_dataframe(df: pd.DataFrame, cmap_name: 
         
         if use_default_formatting:
             if is_dark_mode:
-                color = black_color
+                color = (0.0, 0.0, 0.0, 1.0)
                 text_color = white_color
             else:
-                color = white_color
+                color = (0.9, 0.9, 0.9, 1.0)
                 text_color = black_color
 
         return f'background-color: rgba({color[0]*255}, {color[1]*255}, {color[2]*255}, {color[3]}); color: {text_color}'
@@ -1888,259 +1899,14 @@ def render_scrollable_colored_table(array: NDArray, cmap_name: str = 'viridis', 
 
     
     
-
     
-    
-def array_preview_with_shape(arr):
-    """ Text-only Represntation that prints np.shape(arr) 
-    
-        from pyphocorehelpers.print_helpers import array_preview_with_shape
 
-        # Register the custom display function for numpy arrays
-        import IPython
-        ip = IPython.get_ipython()
-        ip.display_formatter.formatters['text/html'].for_type(np.ndarray, array_preview_with_shape) # only registers for NDArray
-
-        # Example usage
-        arr = np.random.rand(3, 4)
-        display(arr)
-
-    """
-    if isinstance(arr, np.ndarray):
-        display(HTML(f"<pre>array{arr.shape} of dtype {arr.dtype}</pre>"))
-    elif isinstance(arr, (list, tuple)):
-        display(HTML(f"<pre>native-python list {len(arr)}</pre>"))
-    elif isinstance(arr, pd.DataFrame):
-        display(HTML(f"<pre>DataFrame with {len(arr)} rows and {len(arr.columns)} columns</pre>"))
-    else:
-        raise ValueError("The input is not a NumPy array.")
-
-
-def array_preview_with_graphical_shape_repr_html(arr):
-    """Generate an HTML representation for a NumPy array, similar to Dask.
-        
-    from pyphocorehelpers.print_helpers import array_preview_with_graphical_shape_repr_html
-    
-    # Register the custom display function for NumPy arrays
-    import IPython
-    ip = IPython.get_ipython()
-    ip.display_formatter.formatters['text/html'].for_type(np.ndarray, lambda arr: array_preview_with_graphical_shape_repr_html(arr))
-
-    # Example usage
-    arr = np.random.rand(3, 4)
-    display(arr)
-
-
-    arr = np.random.rand(9, 64)
-    display(arr)
-
-    arr = np.random.rand(9, 64, 4)
-    display(arr)
-
-    """
-    if isinstance(arr, np.ndarray):
-        arr = da.array(arr)
-        return display(arr)
-        # shape_str = ' &times; '.join(map(str, arr.shape))
-        # dtype_str = arr.dtype
-        # return f"<pre>array[{shape_str}] dtype={dtype_str}</pre>"
-    else:
-        raise ValueError("The input is not a NumPy array.")
-
-
-
-# Generate heatmap
-
-    
-def _subfn_create_heatmap(data: NDArray, brokenaxes_kwargs=None) -> Optional[BytesIO]: # , omission_indices: list = None
-    """ 
-    
-    #TODO 2024-08-16 04:05: - [ ] Make non-interactive and open in the background
-
-    from neuropy.utils.matplotlib_helpers import matplotlib_configuration
-    with matplotlib_configuration(is_interactive=False, backend='AGG'):
-        # Perform non-interactive Matplotlib operations with 'AGG' backend
-        plt.plot([1, 2, 3, 4], [1, 4, 9, 16])
-        plt.xlabel('X-axis')
-        plt.ylabel('Y-axis')
-        plt.title('Non-interactive Mode with AGG Backend')
-        plt.savefig('plot.png')  # Save the plot to a file (non-interactive mode)
-
-            
-    import matplotlib
-    import matplotlib as mpl
-    import matplotlib.pyplot as plt
-    _bak_rcParams = mpl.rcParams.copy()
-
-    matplotlib.use('Qt5Agg')
-    # %matplotlib inline
-    # %matplotlib auto
-
-
-    # _restore_previous_matplotlib_settings_callback = matplotlib_configuration_update(is_interactive=True, backend='Qt5Agg')
-    _restore_previous_matplotlib_settings_callback = matplotlib_configuration_update(is_interactive=True, backend='Qt5Agg')
-
-        
-    """
-    if (data.ndim < 2):
-        data = np.atleast_2d(data)
-        # fix issues with 1D data like `TypeError: Invalid shape (58,) for image data`
-    
-    import matplotlib.pyplot as plt
-    
-    try:
-        imshow_shared_kwargs = {
-            'origin': 'lower',
-        }
-
-        active_cmap = 'viridis'
-        fig = plt.figure(figsize=(3, 3), num='_jup_backend')
-        ax = fig.add_subplot(111)
-        ax.imshow(data, cmap=active_cmap, **imshow_shared_kwargs)
-        ax.axis('off')
-            
-        buf = BytesIO()
-        
-        fig.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
-
-        buf.seek(0)
-        
-    except SystemError as err:
-        # SystemError: tile cannot extend outside image
-        print(f'ERROR: Encountered error while plotting heatmap:\n\terr: {err}')
-        print(f'\tnp.shape(data): {np.shape(data)}\n\tdata: {data}')
-        buf = None
-
-    finally:
-        plt.close()        
-    
-    return buf
-
-# Convert to ipywidgets Image
-def _subfn_display_heatmap(data: NDArray, brokenaxes_kwargs=None, **img_kwargs) -> Optional[Image]:
-    """ Renders a small thumbnail Image of a heatmap array
-    
-    """
-    img_kwargs = dict(width=None, height=img_kwargs.get('height', 100), format='png') | img_kwargs
-    buf = _subfn_create_heatmap(data, brokenaxes_kwargs=brokenaxes_kwargs)
-    if buf is not None:
-        # Create an IPython Image object
-        img = Image(data=buf.getvalue(), **img_kwargs)
-        return img
-    else:
-        return None
-
-def array_preview_with_heatmap_repr_html(arr, include_shape: bool=True, horizontal_layout=True, include_plaintext_repr:bool=False, **kwargs):
-    """ Generate an HTML representation for a NumPy array with a Dask shape preview and a thumbnail heatmap
-    
-        from pyphocorehelpers.print_helpers import array_preview_with_heatmap_repr_html
-
-        # Register the custom display function for numpy arrays
-        import IPython
-        ip = IPython.get_ipython()
-        ip.display_formatter.formatters['text/html'].for_type(np.ndarray, array_preview_with_heatmap) # only registers for NDArray
-
-        # Example usage
-        arr = np.random.rand(3, 4)
-        display(arr)
-
-    """
-    max_allowed_arr_elements: int = 10000
-
-    if isinstance(arr, np.ndarray):
-        
-        n_dim: int = np.ndim(arr)
-        if n_dim > 2:
-            print(f'WARN: n_dim: {n_dim} greater than 2 is unsupported!')
-            from pyphocorehelpers.plotting.media_output_helpers import get_array_as_image_stack
-            # #TODO 2024-08-13 05:05: - [ ] use get_array_as_image_stack to render the 3D array
-            message = f"Heatmap Err: n_dim: {n_dim} greater than 2 is unsupported!"
-            heatmap_html = f"""
-            <div style="text-align: center; padding: 20px; border: 1px solid #ccc;">
-                <p style="font-size: 16px; color: red;">{message}</p>
-            </div>
-            """
-
-        else:
-            ## n_dim == 2
-            if np.shape(arr)[0] > max_allowed_arr_elements: 
-                # truncate 
-                arr = arr[max_allowed_arr_elements:]
-            
-            heatmap_image = _subfn_display_heatmap(arr, **kwargs)
-            if (heatmap_image is not None):
-                orientation = "row" if horizontal_layout else "column"
-                ## Lays out side-by-side:
-                # Convert the IPython Image object to a base64-encoded string
-                heatmap_image_data = heatmap_image.data
-                b64_image = base64.b64encode(heatmap_image_data).decode('utf-8')
-                # Create an HTML widget for the heatmap
-                heatmap_size_format_str: str = ''
-                width = kwargs.get('width', None)
-                if (width is not None) and (width > 0):
-                    heatmap_size_format_str = heatmap_size_format_str + f'width="{width}" '
-                height = kwargs.get('height', None)
-                if (height is not None) and (height > 0):
-                    heatmap_size_format_str = heatmap_size_format_str + f'height="{height}" '
-                
-                heatmap_html = f'<img src="data:image/png;base64,{b64_image}" {heatmap_size_format_str}style="background:transparent;"/>' #  width="{ndarray_preview_config.heatmap_thumbnail_width}"
-
-            else:
-                # getting image failed:
-                # Create an HTML widget for the heatmap
-                message = "Heatmap Err"
-                heatmap_html = f"""
-                <div style="text-align: center; padding: 20px; border: 1px solid #ccc;">
-                    <p style="font-size: 16px; color: red;">{message}</p>
-                </div>
-                """
-
-        # height="{height}"
-        dask_array_widget_html = ""
-        plaintext_html = ""
-        
-        if include_shape:
-            dask_array_widget: widgets.HTML = widgets.HTML(value=da.array(arr)._repr_html_())
-            dask_array_widget_html: str = dask_array_widget.value
-            dask_array_widget_html = f"""
-                <div style="margin-left: 10px;">
-                    {dask_array_widget_html}
-                </div>
-            """
-
-        if include_plaintext_repr:                
-            # plaintext_repr = np.array2string(arr, edgeitems=3, threshold=5)  # Adjust these parameters as needed
-            plaintext_repr = np.array2string(arr)
-            plaintext_html = f"<pre>{plaintext_repr}</pre>"
-            plaintext_html = f"""
-                <div style="margin-left: 10px;">
-                    {plaintext_html}
-                </div>
-            """
-            
-        # Combine both HTML representations
-        if horizontal_layout:
-            combined_html = f"""
-            <div style="display: flex; flex-direction: row; align-items: flex-start;">
-                <div>{heatmap_html}</div>
-                {dask_array_widget_html}
-                {plaintext_html}
-            </div>
-            """
-        else:
-            combined_html = f"""
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <div>{heatmap_html}</div>
-                <div style="margin-top: 10px;">
-                    {dask_array_widget_html}
-                    {plaintext_html}
-                </div>
-            </div>
-            """
-        return combined_html
-
-    else:
-        raise ValueError("The input is not a NumPy array.")
+# Import array preview functions from pho_jupyter_preview_widget (more complete implementations)
+from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import (
+    array_preview_with_shape,
+    array_preview_with_graphical_shape_repr_html,
+    array_preview_with_heatmap_repr_html,
+)
 
 
 

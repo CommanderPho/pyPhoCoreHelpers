@@ -7,14 +7,14 @@ import neuropy.utils.type_aliases as types
 import numpy as np
 import pandas as pd
 from copy import deepcopy
+from neuropy.core.position import Position
 
 import colorsys
 
 class HeadingAngleHelpers:
-	""" Help render a line where its local vertex color is given by the heading angle between that vertex's two adjacent segments. 
+	""" Help render a line where its local vertex color is given by the heading angle between that vertex's two adjacent segments.
 
 	from pyphocorehelpers.plotting.heading_angle_helpers import HeadingAngleHelpers
-	
 	"""
 	# ==================================================================================================================================================================================================================================================================================== #
 	# Heading Angles                                                                                                                                                                                                                                                                       #
@@ -51,7 +51,9 @@ class HeadingAngleHelpers:
 		angle_deg = (np.degrees(angle_rad) + 360.0) % 360.0
 		headings = np.empty(pos.shape[0], dtype=np.float64)
 		headings[0] = angle_deg[0]
-		headings[1:-1] = (angle_deg[:-1] + angle_deg[1:]) * 0.5
+		# headings[1:-1] = (angle_deg[:-1] + angle_deg[1:]) * 0.5 ## artithmetric mean
+		pair_rad = np.stack([np.radians(angle_deg[:-1]), np.radians(angle_deg[1:])], axis=1)
+		headings[1:-1] = np.asarray(Position.circular_mean_deg(pair_rad), dtype=np.float64)
 		headings[-1] = angle_deg[-1]
 		return headings
 

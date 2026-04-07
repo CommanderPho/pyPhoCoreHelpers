@@ -10,7 +10,7 @@ import os
 import io
 from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 import nptyping as ND
-from nptyping import NDArray
+from numpy.typing import NDArray
 import numpy as np
 import pandas as pd
 from pathlib import Path

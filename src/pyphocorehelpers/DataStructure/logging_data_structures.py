@@ -1,6 +1,5 @@
 from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 from typing_extensions import TypeAlias
-from nptyping import NDArray
 from copy import deepcopy
 from attrs import define, field, Factory
 import neuropy.utils.type_aliases as types

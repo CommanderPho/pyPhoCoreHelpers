@@ -2,7 +2,7 @@ from copy import deepcopy
 from typing import Dict, List, Tuple, Optional, Callable, Union, Any, NewType, TypeVar
 import IPython
 import IPython.display
-from nptyping import NDArray
+from numpy.typing import NDArray
 
 import numpy as np
 import pandas as pd

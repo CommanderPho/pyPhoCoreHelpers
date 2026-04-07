@@ -1,7 +1,7 @@
 # from typing import Dict, List, Tuple, Optional, Callable, Union, Any
 from enum import Enum
 import nptyping as ND
-from nptyping import NDArray
+from numpy.typing import NDArray
 import numpy as np
 
 

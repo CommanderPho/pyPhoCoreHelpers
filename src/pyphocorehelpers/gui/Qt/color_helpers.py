@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 
 from typing import Dict, List, Tuple, Optional, Callable, Union, Any
-from nptyping import NDArray
+from numpy.typing import NDArray
 from collections import namedtuple
 from copy import deepcopy
 import numpy as np

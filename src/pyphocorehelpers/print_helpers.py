@@ -2,8 +2,7 @@ from copy import deepcopy
 from functools import partial
 import socket # for getting hostname
 from typing import Union, List, Dict, Tuple, Set, Any, Optional, OrderedDict, Callable  # for OrderedMeta
-import nptyping as ND
-from nptyping import NDArray
+from numpy.typing import NDArray
 
 from datetime import datetime, date, timedelta # for `get_now_day_str`
 import time # for `get_now_time_str`, `get_now_time_precise_str`
@@ -34,11 +33,6 @@ import objsize # python -m pip install objsize==0.6.1
 # from pyphocorehelpers.function_helpers import function_attributes # # function_attributes causes circular import issue :[
 import numpy as np
 from IPython.display import Image, display, HTML
-
-from io import BytesIO
-import base64
-import ipywidgets as widgets
-
 
 
 # @function_attributes(short_name=None, tags=['unused', 'repr', 'str', 'string_representation', 'preview'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2023-11-28 12:43', related_items=[])

@@ -4,20 +4,13 @@ import attr
 from attrs import define, field, Factory
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Callable, Union, Any
-from typing_extensions import TypeAlias
-import nptyping as ND
-from nptyping import NDArray
 from IPython.core.magics.execution import _format_time
 from datetime import datetime
 import json
 from pyphocorehelpers.Filesystem.path_helpers import sanitize_filename_for_Windows
 from pyphocorehelpers.programming_helpers import IPythonHelpers
 from ipywidgets import get_ipython # required for IPythonHelpers.cell_vars
-import nbformat
-from nbconvert.preprocessors import ExecutePreprocessor
 import requests # used by NotebookProcessor.get_running_notebook_path(...)
-from IPython.display import display, Javascript
-
 import nbformat as nbf # convert_script_to_notebook
 
 

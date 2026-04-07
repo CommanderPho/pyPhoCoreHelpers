@@ -2,8 +2,7 @@ from collections import namedtuple
 from copy import deepcopy
 from itertools import islice
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-import nptyping as ND
-from nptyping import NDArray
+from numpy.typing import NDArray
 import numpy as np
 import pandas as pd
 

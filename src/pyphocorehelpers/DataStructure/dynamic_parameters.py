@@ -49,7 +49,23 @@ class DynamicParameters(DiffableObject, MutableMapping):
     def __len__(self):
         return len(self._mapping)
     def __repr__(self):
-        return f"{type(self).__name__}({self._mapping})"
+        def _safe_repr(value):
+            try:
+                value_repr = repr(value)
+            except Exception:
+                value_repr = f"<repr failed: {type(value).__name__}>"
+            if not isinstance(value_repr, str):
+                try:
+                    value_repr = str(value_repr)
+                except Exception:
+                    value_repr = f"<non-string repr: {type(value).__name__}>"
+            return value_repr
+
+        try:
+            members = ", ".join(f"{_safe_repr(key)}: {_safe_repr(value)}" for key, value in self._mapping.items())
+            return f"{type(self).__name__}({{{members}}})"
+        except Exception as e:
+            return f"{type(self).__name__}(<repr error: {type(e).__name__}>)"
 
     # Extra/Extended
     def __dir__(self):

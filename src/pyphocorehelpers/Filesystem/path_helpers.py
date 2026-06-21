@@ -3,6 +3,8 @@ import sys
 import subprocess
 import shutil # for _backup_extant_file(...)
 import platform
+import hashlib
+import time
 from contextlib import contextmanager
 import pathlib
 from pathlib import Path
@@ -1109,11 +1111,171 @@ def copy_movedict(file_movedict: dict, print_progress:bool=True) -> dict:
         print(f'done copying {len(moved_files_dict)} of {num_files_to_copy} files.')
     return moved_files_dict
 
+
+def filter_copydict_to_outdated_destinations(file_copydict: Dict[Path, Path], skip_if_dest_newer_or_equal: bool = True) -> Dict[Path, Path]:
+    """Drop copydict entries where dest exists and is newer than or equal to src (copy only when dest is missing or older than src).
+
+    Usage:
+        from pyphocorehelpers.Filesystem.path_helpers import filter_copydict_to_outdated_destinations
+    """
+    if not skip_if_dest_newer_or_equal:
+        return dict(file_copydict)
+    filtered_copydict = {}
+    for src_file, dest_file in file_copydict.items():
+        src_path = Path(src_file).resolve()
+        dest_path = Path(dest_file).resolve()
+        if not src_path.is_file():
+            continue
+        if dest_path.is_file():
+            src_mtime = FilesystemMetadata.get_last_modified_time(src_path)
+            dest_mtime = FilesystemMetadata.get_last_modified_time(dest_path)
+            if dest_mtime >= src_mtime:
+                continue
+        filtered_copydict[src_path] = dest_path
+    return filtered_copydict
+
+
+def build_cross_root_copydict(source_files: List[Path], source_data_root: Path, dest_data_root: Path, skip_if_dest_newer_or_equal: bool = True) -> Dict[Path, Path]:
+    """Map source_files from source_data_root to dest_data_root preserving relative paths, then keep only files needing sync.
+
+    Usage:
+        from pyphocorehelpers.Filesystem.path_helpers import build_cross_root_copydict
+    """
+    source_data_root = Path(source_data_root).resolve()
+    dest_data_root = Path(dest_data_root).resolve()
+    extant_source_files = [Path(a_file).resolve() for a_file in source_files if Path(a_file).is_file()]
+    if len(extant_source_files) == 0:
+        return {}
+    dest_files = convert_filelist_to_new_parent(extant_source_files, original_parent_path=source_data_root, dest_parent_path=dest_data_root)
+    file_copydict = dict(zip(extant_source_files, [Path(a_dest).resolve() for a_dest in dest_files]))
+    return filter_copydict_to_outdated_destinations(file_copydict, skip_if_dest_newer_or_equal=skip_if_dest_newer_or_equal)
+
+
 def copy_files(filelist_source: list, filelist_dest: list) -> dict:
     """ copies each file from `filelist_source` to its corresponding destination in `filelist_dest`, creating any intermediate directories as needed.
     
     """
     return copy_movedict(dict(zip(filelist_source, filelist_dest)))
+
+
+def _compute_file_sha256(file_path: Path, chunk_size: int = 1024 * 1024) -> str:
+    sha256_hash = hashlib.sha256()
+    with open(file_path, 'rb') as a_file:
+        while True:
+            chunk = a_file.read(chunk_size)
+            if not chunk:
+                break
+            sha256_hash.update(chunk)
+    return sha256_hash.hexdigest()
+
+
+def verify_copied_file(src_path: Union[Path, str], dest_path: Union[Path, str], verify_checksum: bool = False) -> bool:
+    """Return True when dest exists and matches src size; optionally compare sha256 for .pkl/.h5 when verify_checksum=True."""
+    src_path = Path(src_path).resolve()
+    dest_path = Path(dest_path).resolve()
+    if not src_path.is_file() or not dest_path.is_file():
+        return False
+    if src_path.stat().st_size != dest_path.stat().st_size:
+        return False
+    if verify_checksum and src_path.suffix.lower() in {'.pkl', '.h5'}:
+        return _compute_file_sha256(src_path) == _compute_file_sha256(dest_path)
+    return True
+
+
+def _fsync_file(file_path: Path) -> None:
+    if sys.platform == 'win32':
+        return
+    with open(file_path, 'r+b') as a_file:
+        os.fsync(a_file.fileno())
+
+
+def copy_file_atomic_with_verification(src_path: Union[Path, str], dest_path: Union[Path, str], verify_checksum: bool = False, print_progress: bool = True) -> bool:
+    """Copy src to dest via a temp sibling file, fsync, verify size/checksum, then atomic replace."""
+    src_path = Path(src_path).resolve()
+    dest_path = Path(dest_path).resolve()
+    if not src_path.is_file():
+        if print_progress:
+            print(f'copy_file_atomic_with_verification: missing source file: {src_path}')
+        return False
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = dest_path.with_name(f'{dest_path.name}.shm_copyback_tmp')
+    if tmp_path.exists():
+        tmp_path.unlink()
+    shutil.copyfile(src_path, tmp_path)
+    _fsync_file(tmp_path)
+    if not verify_copied_file(src_path, tmp_path, verify_checksum=verify_checksum):
+        if tmp_path.exists():
+            tmp_path.unlink()
+        if print_progress:
+            print(f'copy_file_atomic_with_verification: temp verification failed: {src_path} -> {tmp_path}')
+        return False
+    os.replace(tmp_path, dest_path)
+    _fsync_file(dest_path)
+    if not verify_copied_file(src_path, dest_path, verify_checksum=verify_checksum):
+        if print_progress:
+            print(f'copy_file_atomic_with_verification: final verification failed: {src_path} -> {dest_path}')
+        return False
+    if print_progress:
+        print(f'copy_file_atomic_with_verification: verified copy {src_path} -> {dest_path}')
+    return True
+
+
+def _write_copyback_manifest(manifest_path: Path, manifest_lines: List[str], header_line: str) -> None:
+    manifest_path = Path(manifest_path).resolve()
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(manifest_path, 'w', encoding='utf-8') as manifest_file:
+        manifest_file.write(f'{header_line}\n')
+        for a_line in manifest_lines:
+            manifest_file.write(f'{a_line}\n')
+
+
+def sync_file_copydict_with_verification(file_copydict: Dict[Path, Path], manifest_path: Union[Path, str], max_attempts: int = 5, per_file_retries: int = 3, verify_checksum: bool = False, print_progress: bool = True) -> bool:
+    """Copy file_copydict entries with atomic writes, per-file retries, batch retries, manifest logging, and os.sync() on success."""
+    manifest_path = Path(manifest_path).resolve()
+    file_copydict = {Path(src).resolve(): Path(dest).resolve() for src, dest in file_copydict.items()}
+    if len(file_copydict) == 0:
+        if print_progress:
+            print('sync_file_copydict_with_verification: empty copydict')
+        return False
+    pre_manifest_lines = []
+    for src_path, dest_path in file_copydict.items():
+        src_stat = src_path.stat()
+        pre_manifest_lines.append(f'PRE\t{src_path}\t{dest_path}\tsize={src_stat.st_size}\tmtime={src_stat.st_mtime}')
+    _write_copyback_manifest(manifest_path, pre_manifest_lines, header_line=f'# copyback pre-manifest {datetime.now().isoformat()} files={len(file_copydict)}')
+    for batch_attempt in range(1, max_attempts + 1):
+        if print_progress:
+            print(f'sync_file_copydict_with_verification: batch attempt {batch_attempt}/{max_attempts} for {len(file_copydict)} file(s)')
+        failed_entries: Dict[Path, Path] = {}
+        for src_path, dest_path in file_copydict.items():
+            copied_ok = False
+            for file_attempt in range(1, per_file_retries + 1):
+                if copy_file_atomic_with_verification(src_path, dest_path, verify_checksum=verify_checksum, print_progress=print_progress):
+                    copied_ok = True
+                    break
+                if print_progress:
+                    print(f'sync_file_copydict_with_verification: retry file {src_path} attempt {file_attempt}/{per_file_retries}')
+                time.sleep(5 * file_attempt)
+                tmp_path = dest_path.with_name(f'{dest_path.name}.shm_copyback_tmp')
+                if tmp_path.exists():
+                    tmp_path.unlink()
+            if not copied_ok:
+                failed_entries[src_path] = dest_path
+        if len(failed_entries) == 0 and all(verify_copied_file(src_path, dest_path, verify_checksum=verify_checksum) for src_path, dest_path in file_copydict.items()):
+            post_manifest_lines = [f'POST\tOK\t{src_path}\t{dest_path}\tsize={src_path.stat().st_size}' for src_path, dest_path in file_copydict.items()]
+            _write_copyback_manifest(manifest_path, pre_manifest_lines + post_manifest_lines, header_line=f'# copyback post-manifest OK {datetime.now().isoformat()} files={len(file_copydict)}')
+            if hasattr(os, 'sync'):
+                os.sync()
+            elif sys.platform != 'win32':
+                subprocess.run(['sync'], check=False)
+            if print_progress:
+                print(f'sync_file_copydict_with_verification: verified {len(file_copydict)} file(s)')
+            return True
+        if print_progress:
+            print(f'sync_file_copydict_with_verification: batch attempt {batch_attempt} failed for {len(failed_entries)} file(s)')
+        time.sleep(15 * batch_attempt)
+    post_manifest_lines = [f'POST\tFAIL\t{src_path}\t{dest_path}' for src_path, dest_path in file_copydict.items()]
+    _write_copyback_manifest(manifest_path, pre_manifest_lines + post_manifest_lines, header_line=f'# copyback post-manifest FAIL {datetime.now().isoformat()} files={len(file_copydict)}')
+    return False
 
 
 

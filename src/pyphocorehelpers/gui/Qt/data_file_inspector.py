@@ -172,7 +172,14 @@ class FileLoadWorker(QtCore.QObject):
 
 
 class DataFileInspectorWindow(QtWidgets.QMainWindow):
-    """Main window with filesystem tree (left) and loaded-object structure preview (right)."""
+    """Main window with filesystem tree (left) and loaded-object structure preview (right).
+
+    Usage:
+
+        uv run python -m pyphocorehelpers.gui.Qt.data_file_inspector H:/Data/Bapun/RatN/Day4OpenField/spykcirc/RatN_Day4_2019-10-15_11-30-06.GUI
+
+
+    """
 
     def __init__(self, initial_root: Path):
         super().__init__()

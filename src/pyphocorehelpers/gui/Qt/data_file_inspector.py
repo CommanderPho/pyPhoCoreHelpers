@@ -30,21 +30,120 @@ from typing import Any, Callable, List, Optional, Tuple
 import dill
 import numpy as np
 import pandas as pd
-from qtpy import QtCore, QtWidgets
+from qtpy import QtCore, QtGui, QtWidgets
 
 from pyphocorehelpers.Filesystem.pickling_helpers import renamed_load
 
 MAX_DEPTH = 8
 MAX_CHILDREN = 200
 INFO_TRUNCATE_LEN = 120
+PREVIEW_MAX_CHARS = 4000
+PREVIEW_ARRAY_MAX_ELEMS = 64
+PREVIEW_DF_ROWS = 12
+PREVIEW_SERIES_ROWS = 24
 SUPPORTED_SUFFIXES = {'.npy', '.pkl'}
+ROLE_OBJECT = QtCore.Qt.UserRole
+ROLE_DEPTH = QtCore.Qt.UserRole + 1
+ROLE_POPULATED = QtCore.Qt.UserRole + 2
 
 
-def truncate_info(text: Any) -> str:
+def truncate_info(text: Any, max_len: int = INFO_TRUNCATE_LEN) -> str:
     text_str = str(text)
-    if len(text_str) <= INFO_TRUNCATE_LEN:
+    if len(text_str) <= max_len:
         return text_str
-    return text_str[:INFO_TRUNCATE_LEN - 3] + '...'
+    return text_str[:max_len - 3] + '...'
+
+
+def format_type_summary(obj: Any) -> str:
+    type_name = type(obj).__name__
+    if obj is None or isinstance(obj, (bool, int, float, str, bytes)):
+        return type_name
+    if isinstance(obj, np.ndarray):
+        return f'ndarray shape={obj.shape}, dtype={obj.dtype}'
+    if isinstance(obj, pd.DataFrame):
+        return f'DataFrame shape={obj.shape}'
+    if isinstance(obj, pd.Series):
+        return f'Series len={len(obj)}, dtype={obj.dtype}'
+    if isinstance(obj, dict):
+        return f'dict len={len(obj)}'
+    if isinstance(obj, list):
+        return f'list len={len(obj)}'
+    if isinstance(obj, tuple):
+        return f'tuple len={len(obj)}'
+    object_members = _get_object_members(obj)
+    if object_members is not None:
+        return f'{type_name} ({len(object_members)} attrs)'
+    return type_name
+
+
+def format_array_preview(arr: np.ndarray) -> str:
+    if arr.size == 0:
+        return '[]'
+    if arr.ndim == 0:
+        return repr(arr.item())
+    if arr.ndim == 1:
+        preview_values = arr.flat[:PREVIEW_ARRAY_MAX_ELEMS]
+        return np.array2string(preview_values, threshold=PREVIEW_ARRAY_MAX_ELEMS, max_line_width=120)
+    slice_tuple = tuple(slice(0, min(dim_size, 6)) for dim_size in arr.shape)
+    preview_slice = arr[slice_tuple]
+    suffix = f'\n... (showing corner slice of shape {preview_slice.shape}, full shape {arr.shape})' if preview_slice.shape != arr.shape else ''
+    return np.array2string(preview_slice, threshold=PREVIEW_ARRAY_MAX_ELEMS, max_line_width=120) + suffix
+
+
+def format_data_preview(obj: Any) -> str:
+    if obj is None or isinstance(obj, (bool, int, float)):
+        return repr(obj)
+    if isinstance(obj, str):
+        return obj
+    if isinstance(obj, bytes):
+        if len(obj) <= 64:
+            return repr(obj)
+        return repr(obj[:64]) + f' ... ({len(obj)} bytes total)'
+    if isinstance(obj, np.ndarray):
+        return format_array_preview(obj)
+    if isinstance(obj, pd.DataFrame):
+        return obj.head(PREVIEW_DF_ROWS).to_string()
+    if isinstance(obj, pd.Series):
+        return obj.head(PREVIEW_SERIES_ROWS).to_string()
+    if isinstance(obj, dict):
+        lines = []
+        for index, key in enumerate(sorted(obj.keys(), key=lambda item: str(item))[:PREVIEW_ARRAY_MAX_ELEMS]):
+            lines.append(f'{repr(key)}: {truncate_info(repr(obj[key]), 80)}')
+        if len(obj) > PREVIEW_ARRAY_MAX_ELEMS:
+            lines.append(f'... ({len(obj) - PREVIEW_ARRAY_MAX_ELEMS} more keys)')
+        return '\n'.join(lines)
+    if isinstance(obj, (list, tuple)):
+        lines = []
+        for index, value in enumerate(obj[:PREVIEW_ARRAY_MAX_ELEMS]):
+            lines.append(f'[{index}]: {truncate_info(repr(value), 80)}')
+        if len(obj) > PREVIEW_ARRAY_MAX_ELEMS:
+            lines.append(f'... ({len(obj) - PREVIEW_ARRAY_MAX_ELEMS} more items)')
+        return '\n'.join(lines)
+    object_members = _get_object_members(obj)
+    if object_members is not None:
+        lines = []
+        for key in sorted(object_members.keys(), key=str)[:PREVIEW_ARRAY_MAX_ELEMS]:
+            lines.append(f'{key}: {truncate_info(repr(object_members[key]), 80)}')
+        if len(object_members) > PREVIEW_ARRAY_MAX_ELEMS:
+            lines.append(f'... ({len(object_members) - PREVIEW_ARRAY_MAX_ELEMS} more attrs)')
+        return '\n'.join(lines)
+    return truncate_info(str(obj), PREVIEW_MAX_CHARS)
+
+
+def _is_expandable(obj: Any, depth: int) -> bool:
+    if depth >= MAX_DEPTH:
+        return False
+    if isinstance(obj, pd.DataFrame):
+        return len(obj.columns) > 0
+    if isinstance(obj, pd.Series):
+        return len(obj) <= MAX_CHILDREN
+    if isinstance(obj, dict):
+        return len(obj) > 0
+    if isinstance(obj, (list, tuple)):
+        return len(obj) > 0
+    if _get_object_members(obj) is not None:
+        return True
+    return False
 
 
 def load_data_file(file_path: Path) -> Tuple[Any, str]:
@@ -92,7 +191,7 @@ def _get_object_members(obj: Any) -> Optional[dict]:
 
 
 def add_preview_item(tree: QtWidgets.QTreeWidget, parent_item: Optional[QtWidgets.QTreeWidgetItem], name: str, info: str) -> QtWidgets.QTreeWidgetItem:
-    item = QtWidgets.QTreeWidgetItem([name, info])
+    item = QtWidgets.QTreeWidgetItem([name, truncate_info(info)])
     if parent_item is None:
         tree.addTopLevelItem(item)
     else:
@@ -100,50 +199,66 @@ def add_preview_item(tree: QtWidgets.QTreeWidget, parent_item: Optional[QtWidget
     return item
 
 
-def _add_container_children(tree: QtWidgets.QTreeWidget, parent_item: QtWidgets.QTreeWidgetItem, keys: List[Any], getter: Callable[[Any], Any], depth: int, key_fmt: Optional[str] = None) -> None:
+def create_lazy_preview_item(tree: QtWidgets.QTreeWidget, parent_item: Optional[QtWidgets.QTreeWidgetItem], name: str, obj: Any, depth: int, extra_info: str = '') -> QtWidgets.QTreeWidgetItem:
+    summary = format_type_summary(obj)
+    short_preview = truncate_info(format_data_preview(obj), INFO_TRUNCATE_LEN)
+    info_parts = [part for part in (summary, short_preview, extra_info) if part]
+    item = add_preview_item(tree, parent_item, name, ' | '.join(info_parts))
+    item.setData(0, ROLE_OBJECT, obj)
+    item.setData(0, ROLE_DEPTH, depth)
+    if _is_expandable(obj, depth):
+        item.addChild(QtWidgets.QTreeWidgetItem(['', 'expand to load...']))
+        item.setData(0, ROLE_POPULATED, False)
+    else:
+        item.setData(0, ROLE_POPULATED, True)
+    return item
+
+
+def populate_preview_children(parent_item: QtWidgets.QTreeWidgetItem, obj: Any, depth: int) -> None:
+    tree = parent_item.treeWidget()
+    if tree is None:
+        return
+    if isinstance(obj, pd.DataFrame):
+        _add_lazy_container_children(tree, parent_item, list(obj.columns), lambda col: obj[col], depth)
+        return
+    if isinstance(obj, pd.Series):
+        _add_lazy_container_children(tree, parent_item, list(obj.index[:MAX_CHILDREN]), lambda index: obj.loc[index], depth, key_fmt='[{k}]')
+        return
+    if isinstance(obj, dict):
+        sorted_keys = sorted(obj.keys(), key=lambda key: str(key))
+        _add_lazy_container_children(tree, parent_item, sorted_keys, lambda key: obj[key], depth)
+        return
+    if isinstance(obj, (list, tuple)):
+        _add_lazy_container_children(tree, parent_item, list(range(len(obj))), lambda index: obj[index], depth, key_fmt='[{k}]')
+        return
+    object_members = _get_object_members(obj)
+    if object_members is not None:
+        sorted_member_keys = sorted(object_members.keys(), key=str)
+        _add_lazy_container_children(tree, parent_item, sorted_member_keys, lambda key: object_members[key], depth)
+        return
+
+
+def _add_lazy_container_children(tree: QtWidgets.QTreeWidget, parent_item: QtWidgets.QTreeWidgetItem, keys: List[Any], getter: Callable[[Any], Any], depth: int, key_fmt: Optional[str] = None) -> None:
     total = len(keys)
     display_keys = keys[:MAX_CHILDREN]
     for key in display_keys:
         child_name = key_fmt.format(k=key) if key_fmt is not None else str(key)
-        populate_preview_tree(tree, parent_item, getter(key), child_name, depth + 1)
+        create_lazy_preview_item(tree, parent_item, child_name, getter(key), depth + 1)
     if total > MAX_CHILDREN:
         add_preview_item(tree, parent_item, f'... ({total - MAX_CHILDREN} more)', '')
 
 
-def populate_preview_tree(tree: QtWidgets.QTreeWidget, parent_item: Optional[QtWidgets.QTreeWidgetItem], obj: Any, name: str, depth: int) -> QtWidgets.QTreeWidgetItem:
-    type_name = type(obj).__name__
-    if depth >= MAX_DEPTH:
-        return add_preview_item(tree, parent_item, name, f'{type_name} (max depth reached)')
-    if obj is None or isinstance(obj, (bool, int, float, str, bytes)):
-        return add_preview_item(tree, parent_item, name, truncate_info(repr(obj)))
-    if isinstance(obj, np.ndarray):
-        return add_preview_item(tree, parent_item, name, f'shape={obj.shape}, dtype={obj.dtype}')
-    if isinstance(obj, pd.DataFrame):
-        item = add_preview_item(tree, parent_item, name, f'DataFrame shape={obj.shape}')
-        _add_container_children(tree, item, list(obj.columns), lambda col: obj[col], depth)
-        return item
-    if isinstance(obj, pd.Series):
-        index_preview = ', '.join(str(index_label) for index_label in obj.index[:5])
-        if len(obj) > 5:
-            index_preview += ', ...'
-        return add_preview_item(tree, parent_item, name, f'Series len={len(obj)}, dtype={obj.dtype}, index=[{index_preview}]')
-    if isinstance(obj, dict):
-        item = add_preview_item(tree, parent_item, name, f'dict len={len(obj)}')
-        sorted_keys = sorted(obj.keys(), key=lambda key: str(key))
-        _add_container_children(tree, item, sorted_keys, lambda key: obj[key], depth)
-        return item
-    if isinstance(obj, (list, tuple)):
-        type_label = 'list' if isinstance(obj, list) else 'tuple'
-        item = add_preview_item(tree, parent_item, name, f'{type_label} len={len(obj)}')
-        _add_container_children(tree, item, list(range(len(obj))), lambda index: obj[index], depth, key_fmt='[{k}]')
-        return item
-    object_members = _get_object_members(obj)
-    if object_members is not None:
-        item = add_preview_item(tree, parent_item, name, f'{type_name} ({len(object_members)} attrs)')
-        sorted_member_keys = sorted(object_members.keys(), key=str)
-        _add_container_children(tree, item, sorted_member_keys, lambda key: object_members[key], depth)
-        return item
-    return add_preview_item(tree, parent_item, name, truncate_info(f'{type_name}: {obj}'))
+def populate_lazy_preview_item_children(item: QtWidgets.QTreeWidgetItem) -> None:
+    if item.data(0, ROLE_POPULATED):
+        return
+    obj = item.data(0, ROLE_OBJECT)
+    depth = item.data(0, ROLE_DEPTH)
+    if obj is None:
+        item.setData(0, ROLE_POPULATED, True)
+        return
+    item.takeChildren()
+    populate_preview_children(item, obj, depth)
+    item.setData(0, ROLE_POPULATED, True)
 
 
 class FileLoadWorker(QtCore.QObject):
@@ -218,11 +333,22 @@ class DataFileInspectorWindow(QtWidgets.QMainWindow):
         for column_index in (1, 2, 3):
             self._fs_tree.hideColumn(column_index)
         self._fs_tree.clicked.connect(self._on_filesystem_clicked)
+        preview_splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         self._preview_tree = QtWidgets.QTreeWidget()
-        self._preview_tree.setHeaderLabels(['Name', 'Info'])
-        self._preview_tree.setColumnWidth(0, 320)
+        self._preview_tree.setHeaderLabels(['Name', 'Summary'])
+        self._preview_tree.setColumnWidth(0, 280)
+        self._preview_tree.itemExpanded.connect(self._on_preview_item_expanded)
+        self._preview_tree.itemSelectionChanged.connect(self._on_preview_selection_changed)
+        self._preview_detail = QtWidgets.QTextEdit()
+        self._preview_detail.setReadOnly(True)
+        self._preview_detail.setPlaceholderText('Select a tree item to preview its data here.')
+        self._preview_detail.setFont(QtGui.QFont('Consolas', 9))
+        preview_splitter.addWidget(self._preview_tree)
+        preview_splitter.addWidget(self._preview_detail)
+        preview_splitter.setStretchFactor(0, 3)
+        preview_splitter.setStretchFactor(1, 2)
         splitter.addWidget(self._fs_tree)
-        splitter.addWidget(self._preview_tree)
+        splitter.addWidget(preview_splitter)
         splitter.setStretchFactor(0, 35)
         splitter.setStretchFactor(1, 65)
         main_layout.addWidget(splitter, stretch=1)
@@ -299,15 +425,35 @@ class DataFileInspectorWindow(QtWidgets.QMainWindow):
         self._load_thread.start()
 
 
+    def _on_preview_item_expanded(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        populate_lazy_preview_item_children(item)
+
+
+    def _on_preview_selection_changed(self) -> None:
+        selected_items = self._preview_tree.selectedItems()
+        if not selected_items:
+            self._preview_detail.clear()
+            return
+        obj = selected_items[0].data(0, ROLE_OBJECT)
+        if obj is None:
+            self._preview_detail.setPlainText(selected_items[0].text(1))
+            return
+        preview_text = truncate_info(format_data_preview(obj), PREVIEW_MAX_CHARS)
+        summary_text = format_type_summary(obj)
+        self._preview_detail.setPlainText(f'{summary_text}\n{"=" * min(80, len(summary_text))}\n{preview_text}')
+
+
     def _on_load_finished(self, loaded_obj: Any, loader_name: str, file_path_str: str) -> None:
         if self._pending_file_path is None or str(self._pending_file_path) != file_path_str:
             return
         self._preview_tree.clear()
+        self._preview_detail.clear()
         root_name = Path(file_path_str).name
-        root_type_name = type(loaded_obj).__name__
-        root_item = add_preview_item(self._preview_tree, None, root_name, f'{root_type_name} via {loader_name}')
-        populate_preview_tree(self._preview_tree, root_item, loaded_obj, 'value', depth=0)
+        root_item = create_lazy_preview_item(self._preview_tree, None, root_name, loaded_obj, 0, extra_info=f'via {loader_name}')
         root_item.setExpanded(True)
+        populate_lazy_preview_item_children(root_item)
+        self._preview_tree.setCurrentItem(root_item)
+        self._on_preview_selection_changed()
         self.statusBar().showMessage(f'Loaded {root_name} via {loader_name}')
 
 

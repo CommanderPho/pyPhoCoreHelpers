@@ -959,7 +959,8 @@ import pprint as sys_pprint
 ## IPython pprint
 from IPython.lib.pretty import pretty as ipython_pretty
 
-# from pyphocorehelpers.pprint import wide_pprint, wide_pprint_ipython, wide_pprint_jupyter
+# from pyphocorehelpers.pretty import wide_pprint, wide_pprint_ipython, wide_pprint_jupyter
+# (compat alias still works: from pyphocorehelpers.pprint import ...)
 
 def wide_pprint(*args, **kwargs):
     """ it's mainly the `compact=True` that matters.

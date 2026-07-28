@@ -47,6 +47,31 @@ class Assert:
             cls._warn_only = prev
 
     @classmethod
+    def _are_equal(cls, a, b) -> bool:
+        """Return a Python bool for equality, including numpy arrays / array-likes.
+
+        Plain `a == b` / `a != b` returns an array for ndarrays, which cannot be used in `if`.
+        """
+        if isinstance(a, np.ndarray) or isinstance(b, np.ndarray):
+            try:
+                return bool(np.array_equal(a, b))
+            except Exception:
+                return False
+        try:
+            result = (a == b)
+        except ValueError:
+            return bool(np.array_equal(np.asarray(a), np.asarray(b)))
+        if isinstance(result, np.ndarray):
+            return bool(np.all(result))
+        if hasattr(result, 'all') and callable(result.all) and not isinstance(result, (bool, np.bool_)):
+            try:
+                return bool(result.all())
+            except Exception:
+                pass
+        return bool(result)
+
+
+    @classmethod
     def _handle_assertion(cls, condition: bool, message) -> None:
         """Internal handler that either raises an AssertionError or emits a warning.
 
@@ -63,6 +88,8 @@ class Assert:
             warnings.warn(computed_message, category=cls.AssertionWarning, stacklevel=3)
         else:
             raise AssertionError(computed_message)
+
+
     @classmethod
     def path_exists(cls, path):
         """
@@ -221,8 +248,8 @@ class Assert:
             reference_val: Any = reference_var
             values_dict = {k:v for k, v in var_name_dict.items()}
             for var_name, a_val in values_dict.items():
-                if a_val != reference_val:
-                    cls._handle_assertion((a_val == reference_val), f"{var_name} must be == {reference_val} but instead {var_name}: {a_val}.\nvalues_dict: {values_dict}\n{var_name}: {a_val}\n") # Perform the assertion with detailed error message
+                if not cls._are_equal(a_val, reference_val):
+                    cls._handle_assertion(False, f"{var_name} must be == {reference_val} but instead {var_name}: {a_val}.\nvalues_dict: {values_dict}\n{var_name}: {a_val}\n") # Perform the assertion with detailed error message
             # Check equivalence for each array in the list
             # return np.all([pairwise_numpy_fn(reference_array, an_arr, **kwargs) for an_arr in list_of_arrays[1:]]) # can be used without the list comprehension just as a generator if you use all(...) instead.
             # return all(np.all(np.array_equiv(reference_array, an_arr) for an_arr in list_of_arrays[1:])) # the outer 'all(...)' is required, otherwise it returns a generator object like: `<generator object NumpyHelpers.all_array_equiv.<locals>.<genexpr> at 0x00000128E0482AC0>`

@@ -166,6 +166,34 @@ class TestAssertionHelpers(unittest.TestCase):
         self.assertIn("(2, 3)", error_message)  # Should contain the reference shape
         self.assertIn("(3, 2)", error_message)  # Should contain the mismatched shape
 
+    def test_all_equal_numpy_arrays_matching(self):
+        """Assert.all_equal should accept equal numpy arrays without ValueError."""
+        array1 = np.array([2, 5, 9, 11])
+        array2 = np.array([2, 5, 9, 11])
+        try:
+            Assert.all_equal(array1, array2)
+        except AssertionError:
+            self.fail("Assert.all_equal raised AssertionError unexpectedly for matching arrays!")
+        except ValueError as e:
+            self.fail(f"Assert.all_equal raised ValueError for matching numpy arrays: {e}")
+
+    def test_all_equal_numpy_arrays_mismatch(self):
+        """Assert.all_equal should raise AssertionError (not ValueError) for unequal numpy arrays."""
+        array1 = np.array([2, 5, 9, 11])
+        array2 = np.array([2, 5, 9, 12])
+        with self.assertRaises(AssertionError) as context:
+            Assert.all_equal(array1, array2)
+        self.assertIn("must be ==", str(context.exception))
+
+    def test_all_equal_scalars(self):
+        """Assert.all_equal should still work for scalar values."""
+        try:
+            Assert.all_equal(0.025, 0.025, 0.025)
+        except AssertionError:
+            self.fail("Assert.all_equal raised AssertionError unexpectedly for matching scalars!")
+        with self.assertRaises(AssertionError):
+            Assert.all_equal(0.025, 0.05)
+
 
 if __name__ == '__main__':
     unittest.main()

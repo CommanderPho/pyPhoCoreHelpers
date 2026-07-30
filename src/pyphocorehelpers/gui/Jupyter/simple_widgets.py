@@ -173,7 +173,7 @@ def simple_path_display_widget(a_path: Union[Path, str]):
 
 
 
-def build_global_data_root_parent_path_selection_widget(all_paths: List[Path], on_user_update_path_selection: Callable):
+def build_global_data_root_parent_path_selection_widget(all_paths: List[Path], on_user_update_path_selection: Callable, required_relative_path: Optional[Union[Path, str]] = None):
     """ 
     from pyphocorehelpers.gui.Jupyter.simple_widgets import build_global_data_root_parent_path_selection_widget
     
@@ -186,12 +186,23 @@ def build_global_data_root_parent_path_selection_widget(all_paths: List[Path], o
         print(f'global_data_root_parent_path changed to {global_data_root_parent_path}')
         assert global_data_root_parent_path.exists(), f"global_data_root_parent_path: {global_data_root_parent_path} does not exist! Is the right computer's config commented out above?"
                 
+    # Prefer roots that contain a specific session folder (first match wins):
+    # session_relative_path = Path('KDIBA') / curr_context.animal / curr_context.exper_name / curr_context.session_name
+    # global_data_root_parent_path_widget = build_global_data_root_parent_path_selection_widget(all_paths, on_user_update_path_selection, required_relative_path=session_relative_path)
     global_data_root_parent_path_widget = build_global_data_root_parent_path_selection_widget(all_paths, on_user_update_path_selection)
     global_data_root_parent_path_widget
     
+    required_relative_path: if provided, only roots where `root / required_relative_path` exists are offered
+        (e.g. a session folder relative to the data root). Otherwise any existing root path is offered.
+    
     """
-    extant_paths = [a_path for a_path in all_paths if a_path.exists()]
-    assert len(extant_paths) > 0, f"NO EXTANT PATHS FOUND AT ALL!"
+    if required_relative_path is not None:
+        required_relative_path = Path(required_relative_path)
+        extant_paths = [a_path for a_path in all_paths if a_path.joinpath(required_relative_path).exists()]
+        assert len(extant_paths) > 0, f"NO EXTANT PATHS FOUND containing required relative path: {required_relative_path}! Checked roots: {all_paths}"
+    else:
+        extant_paths = [a_path for a_path in all_paths if a_path.exists()]
+        assert len(extant_paths) > 0, f"NO EXTANT PATHS FOUND AT ALL!"
     global_data_root_parent_path = extant_paths[0]        
 
 
@@ -213,6 +224,8 @@ def build_global_data_root_parent_path_selection_widget(all_paths: List[Path], o
         global_data_root_parent_path = new_global_data_root_parent_path
         print(f'global_data_root_parent_path changed to {global_data_root_parent_path}')
         assert global_data_root_parent_path.exists(), f"global_data_root_parent_path: {global_data_root_parent_path} does not exist! Is the right computer's config commented out above?"
+        if required_relative_path is not None:
+            assert global_data_root_parent_path.joinpath(required_relative_path).exists(), f"global_data_root_parent_path: {global_data_root_parent_path} does not contain required relative path: {required_relative_path}"
         on_user_update_path_selection(new_global_data_root_parent_path)
         
 

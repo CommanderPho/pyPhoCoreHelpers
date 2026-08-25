@@ -4,8 +4,9 @@ from IPython import get_ipython
 from IPython.display import display
 import numpy as np
 import pandas as pd
+import argparse
 
-from pyphocorehelpers.print_helpers import render_scrollable_colored_table_from_dataframe
+from pyphocorehelpers.print_helpers import render_scrollable_colored_table_from_dataframe, print_keys_if_possible
 
 # ==================================================================================================================== #
 # 2024-08-20 Refactored to new `"pho-jupyter-preview-widget"` library                                                  #
@@ -71,3 +72,38 @@ class CustomFormatterMagics(Magics):
         if _bak_formatter is not None:
             ip.display_formatter.formatters['text/html'].for_type(pd.DataFrame, _bak_formatter)
         
+
+    @line_magic
+    def keys(self, line):
+        """ prints the passed object's keys hieararchically using `print_keys_if_possible`. Takes an optional -d for --depth passed as `max_depth=depth`
+
+        Usage:
+
+        Example 1:
+            %keys trial_by_trial_window.plots_data
+
+        Example 2 (custom `max_depth` from `--depth`):
+            %keys trial_by_trial_window.plots_data --depth 2
+
+        Example 3 (custom `max_depth` from `-d`):
+            %keys trial_by_trial_window.plots_data -d 2
+
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument("name")
+        parser.add_argument("--depth", "-d", type=int, default=2)
+
+        args = parser.parse_args(line.split())
+
+        # obj = eval(args.name) ## this does not work because it's being evaluated in the wrong namespace.
+        obj = eval(args.name, self.shell.user_ns, self.shell.user_ns) ## evaluate in the calling namespace
+
+        print_keys_if_possible(args.name, obj, max_depth=args.depth)
+
+
+    # @line_magic
+    # def keys(line):
+    #     """ prints the keys """
+    #     name = line.strip()
+    #     obj = eval(name)
+    #     print_keys_if_possible(name, obj, max_depth=2)

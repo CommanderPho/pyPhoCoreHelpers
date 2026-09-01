@@ -766,7 +766,7 @@ def partition(df: pd.DataFrame, partitionColumn: str, return_unique_values: bool
         return np.array([grouped_df.get_group(aValue) for aValue in unique_values], dtype=object) # dataframes split for each unique value in the column
          
 
-def partition_df(df: pd.DataFrame, partitionColumn: str, return_unique_values: bool=True)-> Union[Tuple[NDArray, List[pd.DataFrame]], List[pd.DataFrame]]:
+def partition_df(df: pd.DataFrame, partitionColumn: str, return_unique_values: bool=True, dropna: bool=False)-> Union[Tuple[NDArray, List[pd.DataFrame]], List[pd.DataFrame]]:
     """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
 
     USEFUL NOTE: to get a dict, do `partitioned_dfs = dict(zip(*partition_df(spikes_df, partitionColumn='new_epoch_IDX')))`
@@ -781,12 +781,30 @@ def partition_df(df: pd.DataFrame, partitionColumn: str, return_unique_values: b
 
     History: refactored from `pyphoplacecellanalysis.PhoPositionalData.analysis.helpers`
     """
-    unique_values = np.unique(df[partitionColumn]) # array([ 0,  1,  2,  3,  4,  7, 11, 12, 13, 14])
-    grouped_df = df.groupby([partitionColumn]) #  Groups on the specified column.
-    if return_unique_values:
-        return unique_values, [grouped_df.get_group(aValue) for aValue in unique_values] # dataframes split for each unique value in the column
+    ## workaround fix for `TypeError: '<' not supported between instances of 'str' and 'float'` when an object-valued column (such a a 'str' column) contains np.nan
+    ### logic from `neuropy.get_column_unique_values_dict(columns_include_subset=[partitionColumn])`
+    col = df[partitionColumn]
+    if (col.dtype == 'object'):
+        unique_values = col.unique()
     else:
-        return [grouped_df.get_group(aValue) for aValue in unique_values] # dataframes split for each unique value in the column
+        unique_values = np.unique(col)
+
+    grouped_df = df.groupby([partitionColumn], dropna=dropna) #  Groups on the specified column.
+    if dropna:
+        unique_values = unique_values[pd.notna(unique_values)]
+
+    partitioned_dfs_list = []
+    for aValue in unique_values:
+        if pd.isna(aValue):
+            partitioned_dfs_list.append(df[col.isna()])
+        else:
+            partitioned_dfs_list.append(grouped_df.get_group(aValue))
+    ## END for aValue in unique_values...
+
+    if return_unique_values:
+        return unique_values, partitioned_dfs_list # dataframes split for each unique value in the column
+    else:
+        return partitioned_dfs_list # dataframes split for each unique value in the column
     
 
 def partition_df_dict(df: pd.DataFrame, partitionColumn: str)-> Dict[Any, pd.DataFrame]:

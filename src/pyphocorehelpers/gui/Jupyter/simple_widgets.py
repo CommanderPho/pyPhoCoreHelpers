@@ -599,7 +599,8 @@ from IPython.display import display
 # from Spike3D..venv.Lib.site-packages.ipywidgets.widgets.widget_selection import _MultipleSelection
 
 class CheckBoxListWidget(widgets.VBox):
-    """ 
+    """ A combined widget that displays a list of checkboxes
+
     from pyphocorehelpers.gui.Jupyter.simple_widgets import CheckBoxListWidget
     
     options_list = ['high_wcorr', 'user_selected', 'high_pearsonr_corr', 'high_shuffle_percentile_score', 'high_shuffle_wcorr_z_score', 'good_jump', 'long_duration']
@@ -662,6 +663,7 @@ class CheckBoxListWidget(widgets.VBox):
         for child_widget in self.children:
             child_widget.observe(self._on_widget_change, names='value')
     
+
     def _on_widget_change(self, change):
         # Update the value trait
         # self.value = tuple([v.value for k, v in self._widgets.items()])

@@ -363,15 +363,25 @@ class ImageOperationsAndEffects:
             except IOError:
                 font_obj = ImageFont.load_default()
 
-        # Measure text
+        # Measure text (multiline-aware)
         tmp_img = Image.new('RGBA', (1, 1))
         tmp_draw = ImageDraw.Draw(tmp_img)
-        text_w, text_h = tmp_draw.textsize(label_text, font=font_obj, **text_kwargs)
+        is_multiline = ('\n' in label_text)
+        if is_multiline and hasattr(tmp_draw, 'multiline_textbbox'):
+            bbox = tmp_draw.multiline_textbbox((0, 0), label_text, font=font_obj, **text_kwargs)
+            text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        elif is_multiline and hasattr(tmp_draw, 'multiline_textsize'):
+            text_w, text_h = tmp_draw.multiline_textsize(label_text, font=font_obj, **text_kwargs)
+        elif hasattr(tmp_draw, 'textbbox'):
+            bbox = tmp_draw.textbbox((0, 0), label_text, font=font_obj, **text_kwargs)
+            text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        else:
+            text_w, text_h = tmp_draw.textsize(label_text, font=font_obj, **text_kwargs)
 
         # Determine label box size
         fw, fh = fixed_label_region_size if fixed_label_region_size else (None, None)
         if image_edge in ('top', 'bottom'):
-            label_box_w = fw if fw is not None else original_width
+            label_box_w = fw if fw is not None else max(original_width, text_w + 2 * padding)
             label_box_h = fh if fh is not None else text_h + 2 * padding
         else:
             label_box_w = fw if fw is not None else text_h + 2 * padding
@@ -379,27 +389,35 @@ class ImageOperationsAndEffects:
 
         label_img = Image.new('RGBA', (label_box_w, label_box_h), background_color)
         draw_label = ImageDraw.Draw(label_img)
+        _draw_text_fn = draw_label.multiline_text if is_multiline else draw_label.text
 
         # Draw text (orientation aware)
         if image_edge in ('top', 'bottom'):
-            tx, ty = (label_box_w - text_w) // 2, (label_box_h - text_h) // 2
+            # Multiline control/table bands read better left-aligned; single-line stays centered
+            tx = padding if is_multiline else (label_box_w - text_w) // 2
+            ty = (label_box_h - text_h) // 2
             if text_outline_shadow_color:
                 border_thickness = max(1, int(font_size * 0.05))
                 for dx in range(-border_thickness, border_thickness + 1):
                     for dy in range(-border_thickness, border_thickness + 1):
                         if dx or dy:
-                            draw_label.text((tx + dx, ty + dy), label_text, fill=text_outline_shadow_color, font=font_obj, **text_kwargs)
-            draw_label.text((tx, ty), label_text, fill=text_color, font=font_obj, **text_kwargs)
+                            _draw_text_fn((tx + dx, ty + dy), label_text, fill=text_outline_shadow_color, font=font_obj, **text_kwargs)
+                    ## END for dy in range(-border_thickness, border_thickness + 1)....
+                ## END for dx in range(-border_thickness, border_thickness + 1)....
+            _draw_text_fn((tx, ty), label_text, fill=text_color, font=font_obj, **text_kwargs)
         else:
             vert_img = Image.new('RGBA', (text_w + 2 * padding, text_h + 2 * padding), (0, 0, 0, 0))
             vert_draw = ImageDraw.Draw(vert_img)
+            _vert_draw_text_fn = vert_draw.multiline_text if is_multiline else vert_draw.text
             if text_outline_shadow_color:
                 border_thickness = max(1, int(font_size * 0.05))
                 for dx in range(-border_thickness, border_thickness + 1):
                     for dy in range(-border_thickness, border_thickness + 1):
                         if dx or dy:
-                            vert_draw.text((padding + dx, padding + dy), label_text, fill=text_outline_shadow_color, font=font_obj, **text_kwargs)
-            vert_draw.text((padding, padding), label_text, fill=text_color, font=font_obj, **text_kwargs)
+                            _vert_draw_text_fn((padding + dx, padding + dy), label_text, fill=text_outline_shadow_color, font=font_obj, **text_kwargs)
+                    ## END for dy in range(-border_thickness, border_thickness + 1)....
+                ## END for dx in range(-border_thickness, border_thickness + 1)....
+            _vert_draw_text_fn((padding, padding), label_text, fill=text_color, font=font_obj, **text_kwargs)
             if image_edge == 'left':
                 vert_img = vert_img.rotate(90, expand=True)
             else:
@@ -1763,6 +1781,8 @@ def figure_to_pil_image(a_fig: Union[PlotlyFigure, FigureBase], format="png", **
     
         fig_img = figure_to_pil_image(a_fig=fig)
     """
+    from plotly.graph_objects import Figure as PlotlyFigure # required for `fig_to_clipboard`
+
     _fig_save_fn = None
     img = None
     if isinstance(a_fig, FigureBase):
@@ -1771,8 +1791,8 @@ def figure_to_pil_image(a_fig: Union[PlotlyFigure, FigureBase], format="png", **
         if format == 'png':
             kwargs.setdefault('bbox_inches', 'tight') # crops off the empty white margins
 
-    elif isinstance(a_fig, PlotlyFigure):
-        # Plotly Figure:
+    elif isinstance(a_fig, PlotlyFigure) or hasattr(a_fig, 'write_image'):
+        # Plotly Figure / FigureWidget:
         _fig_save_fn = a_fig.write_image
     else:
         raise NotImplementedError(f"type(a_fig): {type(a_fig)}, a_fig: {a_fig}")

@@ -354,10 +354,14 @@ class ImageOperationsAndEffects:
         if padding is None:
             padding = max(int(ref_dim * relative_padding), 0)
 
-        # Load font
+        # Load font (absolute path, ImageHelpers bundle name, then fallbacks)
         try:
-            font_obj = ImageHelpers.get_font(font, size=font_size, allow_caching=True)
-        except IOError:
+            from pathlib import Path as _Path
+            if _Path(font).is_file():
+                font_obj = ImageFont.truetype(font, font_size)
+            else:
+                font_obj = ImageHelpers.get_font(font, size=font_size, allow_caching=True)
+        except (IOError, OSError, FileNotFoundError):
             try:
                 font_obj = ImageFont.truetype("DejaVuSans.ttf", font_size)
             except IOError:

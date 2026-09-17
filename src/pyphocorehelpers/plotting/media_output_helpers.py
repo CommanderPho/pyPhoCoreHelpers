@@ -1509,6 +1509,160 @@ def image_grid(imgs: List[List[Image.Image]], v_padding=None, h_padding=None, pa
 
 
 
+@function_attributes(short_name=None, tags=['image', 'contact_sheet', 'concatenation', 'XnView'], input_requires=[], output_provides=[], uses=['ImageHelpers'], used_by=[], creation_date='2026-09-16 00:00', related_items=['image_grid', 'horizontal_image_stack'])
+def contact_sheet_concatenation(imgs: List[Image.Image], columns: int, rows: Optional[int] = None,
+                                margin: Tuple[int, int] = (0, 22), spacing: Tuple[int, int] = (4, 22),
+                                background_color=(255, 255, 204, 255), thumbnail_background_color=(200, 255, 200, 255), fill_mode: bool = False, separator_color=None,
+                                show_information: bool = False, information_template: str = "{Filename}", filenames: Optional[List[str]] = None,
+                                text_color=(0, 0, 0, 255), font: str = "DejaVuSansMono.ttf", font_size: Optional[int] = None,
+                                cell_size: Optional[Tuple[int, int]] = None, output_path: Optional[Path] = None, dpi: int = 600) -> Image.Image:
+    """Builds a content-sized XnView-style contact sheet (no fixed canvas / multipage paging).
+
+    Sheet size is derived from cell size × grid + spacing + margins (+ optional caption band).
+    Grid fills row-major (left→right, top→bottom). If `rows` is None, uses ceil(n/columns).
+    If both are set and n_images exceeds columns*rows, grows rows (still one output image).
+
+    Usage:
+        from pyphocorehelpers.plotting.media_output_helpers import contact_sheet_concatenation
+
+        tiles = [Image.new('RGBA', (40, 80), (30 * i, 80, 160, 255)) for i in range(6)]
+        sheet = contact_sheet_concatenation(tiles, columns=3, rows=2, margin=(0, 22), spacing=(4, 22), fill_mode=False)
+        # sheet.size == content-derived; letterboxed cells use thumbnail_background_color when fill_mode=False
+    """
+    assert columns >= 1, f"columns must be >= 1, got {columns}"
+    assert len(imgs) >= 1, "imgs must be non-empty"
+
+    def _subfn_fit_image_to_cell(img: Image.Image, cell_w: int, cell_h: int) -> Image.Image:
+        cell = Image.new('RGBA', (cell_w, cell_h), thumbnail_background_color)
+        src = img.convert('RGBA') if img.mode != 'RGBA' else img
+        src_w, src_h = src.size
+        if (src_w <= 0) or (src_h <= 0):
+            return cell
+        if fill_mode:
+            scale = max(cell_w / float(src_w), cell_h / float(src_h))
+            new_w = max(1, int(round(src_w * scale)))
+            new_h = max(1, int(round(src_h * scale)))
+            resized = src.resize((new_w, new_h), Image.LANCZOS)
+            left = max(0, (new_w - cell_w) // 2)
+            top = max(0, (new_h - cell_h) // 2)
+            cropped = resized.crop((left, top, left + cell_w, top + cell_h))
+            cell.paste(cropped, (0, 0), cropped)
+        else:
+            scale = min(cell_w / float(src_w), cell_h / float(src_h))
+            new_w = max(1, int(round(src_w * scale)))
+            new_h = max(1, int(round(src_h * scale)))
+            resized = src.resize((new_w, new_h), Image.LANCZOS)
+            paste_x = (cell_w - new_w) // 2
+            paste_y = (cell_h - new_h) // 2
+            cell.paste(resized, (paste_x, paste_y), resized)
+        return cell
+
+
+    def _subfn_format_caption(index: int) -> str:
+        filename = ''
+        if (filenames is not None) and (index < len(filenames)) and (filenames[index] is not None):
+            filename = str(filenames[index])
+        filename_number = Path(filename).stem if (filename != '') else str(index + 1)
+        return (information_template
+                .replace('{Filename Number}', filename_number)
+                .replace('{Filename}', filename if (filename != '') else filename_number)
+                .replace('{Index}', str(index)))
+
+
+    imgs_rgba = [img.convert('RGBA') if img.mode != 'RGBA' else img for img in imgs]
+    n_images = len(imgs_rgba)
+    if rows is None:
+        n_rows = int(np.ceil(n_images / float(columns)))
+    else:
+        assert rows >= 1, f"rows must be >= 1, got {rows}"
+        n_rows = int(rows)
+        if n_images > (columns * n_rows):
+            n_rows = int(np.ceil(n_images / float(columns)))
+
+    margin_h, margin_v = int(margin[0]), int(margin[1])
+    spacing_h, spacing_v = int(spacing[0]), int(spacing[1])
+
+    if cell_size is None:
+        cell_w = int(np.max([img.size[0] for img in imgs_rgba]))
+        cell_h = int(np.max([img.size[1] for img in imgs_rgba]))
+    else:
+        cell_w, cell_h = int(cell_size[0]), int(cell_size[1])
+
+    caption_band_h = 0
+    font_obj = None
+    if show_information:
+        if font_size is None:
+            font_size = max(8, int(round(cell_h * 0.08)))
+        try:
+            font_obj = ImageHelpers.get_font(font, size=font_size, allow_caching=True)
+        except Exception:
+            try:
+                font_obj = ImageFont.truetype(font, font_size)
+            except (IOError, OSError):
+                try:
+                    font_obj = ImageFont.truetype("DejaVuSansMono.ttf", font_size)
+                except (IOError, OSError):
+                    font_obj = ImageFont.load_default()
+        sample_caption = _subfn_format_caption(0)
+        _tmp_measure = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
+        _tmp_draw = ImageDraw.Draw(_tmp_measure)
+        try:
+            bbox = _tmp_draw.textbbox((0, 0), sample_caption, font=font_obj)
+            caption_band_h = max(font_size + 4, (bbox[3] - bbox[1]) + 4)
+        except AttributeError:
+            caption_band_h = font_size + 4
+
+    grid_w = (columns * cell_w) + ((columns - 1) * spacing_h)
+    grid_h = (n_rows * (cell_h + caption_band_h)) + ((n_rows - 1) * spacing_v)
+    sheet_w = grid_w + (2 * margin_h)
+    sheet_h = grid_h + (2 * margin_v)
+    output_img = Image.new('RGBA', (sheet_w, sheet_h), background_color)
+
+    if separator_color is not None:
+        if spacing_h > 0:
+            for col_i in range(columns - 1):
+                x0 = margin_h + ((col_i + 1) * cell_w) + (col_i * spacing_h)
+                gutter = Image.new('RGBA', (spacing_h, grid_h), separator_color)
+                output_img.paste(gutter, (x0, margin_v), gutter)
+            ## END for col_i in range(columns - 1)...
+
+        if spacing_v > 0:
+            for row_i in range(n_rows - 1):
+                y0 = margin_v + ((row_i + 1) * (cell_h + caption_band_h)) + (row_i * spacing_v)
+                gutter = Image.new('RGBA', (grid_w, spacing_v), separator_color)
+                output_img.paste(gutter, (margin_h, y0), gutter)
+            ## END for row_i in range(n_rows - 1)...
+
+
+    draw = ImageDraw.Draw(output_img) if show_information else None
+    for index, img in enumerate(imgs_rgba):
+        row_i = index // columns
+        col_i = index % columns
+        x = margin_h + (col_i * (cell_w + spacing_h))
+        y = margin_v + (row_i * (cell_h + caption_band_h + spacing_v))
+        cell_img = _subfn_fit_image_to_cell(img, cell_w, cell_h)
+        output_img.paste(cell_img, (x, y), cell_img)
+        if show_information and (draw is not None):
+            caption = _subfn_format_caption(index)
+            try:
+                bbox = draw.textbbox((0, 0), caption, font=font_obj)
+                text_w = bbox[2] - bbox[0]
+            except AttributeError:
+                text_w, _text_h = draw.textsize(caption, font=font_obj)
+            text_x = x + max(0, (cell_w - text_w) // 2)
+            text_y = y + cell_h + 2
+            draw.text((text_x, text_y), caption, font=font_obj, fill=text_color)
+    ## END for index, img in enumerate(imgs_rgba)...
+
+    if output_path is not None:
+        out_path = Path(output_path)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        output_img.save(out_path, dpi=(dpi, dpi))
+
+    return output_img
+
+
+
 # @function_attributes(short_name=None, tags=['image', 'stack', 'batch', 'file', 'stack'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-01-12 00:00', related_items=[])
 def save_array_as_image_stack(images: List[Path], offset=10, single_image_alpha_level:float=0.5):
     """ 

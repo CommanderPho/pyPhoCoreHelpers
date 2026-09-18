@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     ## typehinting only imports here
     from pyphoplacecellanalysis.Pho2D.data_exporting import HeatmapExportKind
     from plotly.graph_objects import Figure as PlotlyFigure # required for `fig_to_clipboard`
+    from neuropy.utils.result_context import IdentifyingContext
 
 import os
 import io
@@ -1509,7 +1510,7 @@ def image_grid(imgs: List[List[Image.Image]], v_padding=None, h_padding=None, pa
 
 
 
-@function_attributes(short_name=None, tags=['image', 'contact_sheet', 'concatenation', 'XnView'], input_requires=[], output_provides=[], uses=['ImageHelpers'], used_by=[], creation_date='2026-09-16 00:00', related_items=['image_grid', 'horizontal_image_stack'])
+@function_attributes(short_name=None, tags=['image', 'contact_sheet', 'concatenation', 'XnView'], input_requires=[], output_provides=[], uses=['ImageHelpers'], used_by=['build_contact_sheets_for_session_contexts'], creation_date='2026-09-16 00:00', related_items=['image_grid', 'horizontal_image_stack'])
 def contact_sheet_concatenation(imgs: List[Image.Image], columns: int, rows: Optional[int] = None,
                                 margin: Tuple[int, int] = (0, 22), spacing: Tuple[int, int] = (4, 22),
                                 background_color=(255, 255, 204, 255), thumbnail_background_color=(200, 255, 200, 255), fill_mode: bool = False, separator_color=None,
@@ -1661,6 +1662,80 @@ def contact_sheet_concatenation(imgs: List[Image.Image], columns: int, rows: Opt
 
     return output_img
 
+
+@function_attributes(short_name=None, tags=['contact_sheet', 'image', 'concat'], input_requires=[], output_provides=[], uses=['contact_sheet_concatenation'], used_by=[], creation_date='2026-09-18 13:05', related_items=[])
+def build_contact_sheets_for_session_contexts(included_session_contexts: List[IdentifyingContext], posteriors_root: Union[str, Path] = Path(r'K:\scratch\collected_outputs\figures\_temp_individual_posteriors\2026-09-16'),
+    output_dir: Union[str, Path] = Path(r'E:\Dropbox (Personal)\Active\Kamran Diba Lab\Pho-Kamran-Meetings\2026-08-27 - KDiba Linear Sessions Again\2026-09-15_LinearTrackResults'), epoch_name: str = 'ripple', combined_subdir: str = 'combined/multi', image_glob: str = '*.png',
+    strip_date_prefix: str = '2026-09-17', strip_suffix: str = 'PBEs',
+    columns: Optional[int] = None, rows: Optional[int] = None, skip_missing: bool = True, debug_print: bool = True, **contact_sheet_kwargs) -> Tuple[Dict[IdentifyingContext, Path], Dict[IdentifyingContext, Image.Image]]:
+    """For each session context, load `.../{animal}_{exper}_{session}/{epoch}/combined/multi/*.png` and write a Strip-from-multi contact sheet.
+
+    Defaults match XnView-style `contact_sheet_concatenation` kwargs. Pass `columns=` to override the single-wide-strip layout.
+
+    Usage:
+
+        from pathlib import Path
+        from typing import Dict, List, Optional, Tuple, Union
+        from PIL import Image
+        from neuropy.utils.result_context import IdentifyingContext
+        from pyphocorehelpers.image_helpers import ImageHelpers
+        from pyphocorehelpers.plotting.media_output_helpers import contact_sheet_concatenation, build_contact_sheets_for_session_contexts
+
+
+        # Usage with your list:
+        # src_dir = Path(r'K:/scratch/collected_outputs/figures/_temp_individual_posteriors/2026-09-17') # 'gor01_one_2006-6-08_14-26-15/ripple/combined/multi'
+        src_dir = Path(r'K:/scratch/collected_outputs/figures/_temp_individual_posteriors/2026-09-18') # 'gor01_one_2006-6-09_1-22-43/ripple/combined/multi' 
+        # out_path = Path(r'E:/Dropbox (Personal)/Active/Kamran Diba Lab/Pho-Kamran-Meetings/2026-08-27 - KDiba Linear Sessions Again/2026-09-15_LinearTrackResults/contact_sheets/raw_rgba') # '_Strip-from-multi_gor01_one_2006-6-08_14-26-15_PBEs.png'
+        out_path = Path(r'E:/Dropbox (Personal)/Active/Kamran Diba Lab/Pho-Kamran-Meetings/2026-08-27 - KDiba Linear Sessions Again/2026-09-15_LinearTrackResults/contact_sheets/2026-09-18_20ms') # '_Strip-from-multi_gor01_one_2006-6-08_14-26-15_PBEs.png'
+
+        included_session_contexts = [
+            IdentifyingContext(format_name='kdiba',animal='gor01',exper_name='one',session_name='2006-6-09_1-22-43'),
+        ]
+
+        out_paths, out_images = build_contact_sheets_for_session_contexts(included_session_contexts,
+                                        posteriors_root=src_dir,
+                                        output_dir=out_path,
+                                        combined_subdir='combined/multi',
+                                        # combined_subdir='psuedo2D_ignore/raw_rgba',
+                                    )
+
+    """
+    from neuropy.utils.result_context import IdentifyingContext
+
+    posteriors_root = Path(posteriors_root)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    out_paths: Dict[IdentifyingContext, Path] = {}
+    out_images: Dict[IdentifyingContext, Image.Image] = {}
+
+    for a_ctxt in included_session_contexts:
+        session_folder_name: str = a_ctxt.get_description(subset_includelist=['animal', 'exper_name', 'session_name'], separator='_')
+        src_dir = posteriors_root.joinpath(session_folder_name, epoch_name, *Path(combined_subdir).parts)
+        out_path = output_dir.joinpath(f'{strip_date_prefix}_Strip-from-multi_{session_folder_name}_{strip_suffix}.png')
+
+        if (not src_dir.exists()) or (len(list(src_dir.glob(image_glob))) == 0):
+            msg = f'skip missing/empty multi folder: "{src_dir}"'
+            if skip_missing:
+                if debug_print:
+                    print(msg)
+                continue
+            raise FileNotFoundError(msg)
+
+        images_dict = ImageHelpers.load_png_images_pathlib(src_dir, image_glob=image_glob)
+        imgs = list(images_dict.values())
+        filenames = [f'{k}.png' for k in images_dict.keys()]
+        n_cols = columns if (columns is not None) else len(imgs)
+
+        if debug_print:
+            print(f'{session_folder_name}: {len(imgs)} images -> "{out_path}" (columns={n_cols})')
+
+        sheet = contact_sheet_concatenation(imgs, columns=n_cols, rows=rows, filenames=filenames, output_path=out_path, **contact_sheet_kwargs)
+        out_paths[a_ctxt] = out_path
+        out_images[a_ctxt] = sheet
+    ## END for a_ctxt in included_session_contexts...
+
+    return out_paths, out_images
 
 
 # @function_attributes(short_name=None, tags=['image', 'stack', 'batch', 'file', 'stack'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-01-12 00:00', related_items=[])

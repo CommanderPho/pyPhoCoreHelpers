@@ -1738,6 +1738,20 @@ def build_contact_sheets_for_session_contexts(included_session_contexts: List[Id
     return out_paths, out_images
 
 
+def crop_xywh(img: Image.Image, crop_box_xywh: Tuple[int, int, int, int]) -> Image.Image:
+    """ Crops the image to the specified crop_box_xywh specified as (x, y, width, height).
+
+        from pyphocorehelpers.plotting.media_output_helpers import crop_xywh
+
+        crop_box_xywh = (109, 39, 1691, 386)  # (x, y, width, height)
+    
+    """
+    x, y, w, h = crop_box_xywh
+    return img.crop((x, y, x + w, y + h))  # PIL: (left, upper, right, lower)
+
+
+
+
 # @function_attributes(short_name=None, tags=['image', 'stack', 'batch', 'file', 'stack'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-01-12 00:00', related_items=[])
 def save_array_as_image_stack(images: List[Path], offset=10, single_image_alpha_level:float=0.5):
     """ 

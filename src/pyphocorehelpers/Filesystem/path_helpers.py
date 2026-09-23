@@ -1374,7 +1374,8 @@ def open_vscode_link(a_vscode_link_str: str, debug_print:bool=False, open_in_bac
 def sanitize_filename_for_Windows(original_proposed_filename: str) -> str:
     """ 2024-04-28 - sanitizes a proposed filename such that it is valid for saving (in Windows). 
 
-    Currently it only replaces the colon (":") with a "-". Can add more forbidden characters and their replacements to `file_sep_replace_dict` as I discover/need them
+    Replaces Windows-forbidden characters (`<>:\"/\\|?*`) and comparison operators. Can add more
+    forbidden characters and their replacements to `file_sep_replace_dict` as I discover/need them
 
     Usage:
         from pyphocorehelpers.Filesystem.path_helpers import sanitize_filename_for_Windows
@@ -1387,12 +1388,19 @@ def sanitize_filename_for_Windows(original_proposed_filename: str) -> str:
     # Remove HTML tags
     refined_filename: str = re.sub(r"<[^>]+>", "", original_proposed_filename)
     
-    # Forbidden characters replacement
-    file_sep_replace_dict = {":":"-", "?":"X", 
+    # Forbidden characters replacement (multi-char keys first so ">=" / "<=" win over ">" / "<")
+    file_sep_replace_dict = {
         ">=": "gte",
         "<=": "lte",
         ">": "gt",
         "<": "lt",
+        ":": "-",
+        "?": "X",
+        "|": "-",
+        '"': "'",
+        "*": "X",
+        "/": "-",
+        "\\": "-",
     }
     for k, v in file_sep_replace_dict.items():
         refined_filename = refined_filename.replace(k, v)

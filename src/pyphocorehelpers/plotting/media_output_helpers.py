@@ -1668,10 +1668,12 @@ def contact_sheet_concatenation(imgs: List[Image.Image], columns: int, rows: Opt
 def build_contact_sheets_for_session_contexts(included_session_contexts: List[IdentifyingContext], posteriors_root: Union[str, Path] = Path(r'K:\scratch\collected_outputs\figures\_temp_individual_posteriors\2026-09-16'),
     output_dir: Union[str, Path] = Path(r'E:\Dropbox (Personal)\Active\Kamran Diba Lab\Pho-Kamran-Meetings\2026-08-27 - KDiba Linear Sessions Again\2026-09-15_LinearTrackResults'), epoch_name: str = 'ripple', combined_subdir: str = 'combined/multi', image_glob: str = '*.png',
     strip_date_prefix: str = '2026-09-17', strip_suffix: str = 'PBEs',
+    example_PBE_ids_dict: Optional[Dict[IdentifyingContext, List[int]]] = None,
     columns: Optional[int] = None, rows: Optional[int] = None, skip_missing: bool = True, debug_print: bool = True, **contact_sheet_kwargs) -> Tuple[Dict[IdentifyingContext, Path], Dict[IdentifyingContext, Image.Image]]:
     """For each session context, load `.../{animal}_{exper}_{session}/{epoch}/combined/multi/*.png` and write a Strip-from-multi contact sheet.
 
     Defaults match XnView-style `contact_sheet_concatenation` kwargs. Pass `columns=` to override the single-wide-strip layout.
+    Pass `example_PBE_ids_dict={ctxt: [8, 12, ...]}` to export only specific PBE indices (matched via `[N]` in filenames like `p_x_given_n[8].png`), preserving caller order.
 
     Usage:
 
@@ -1692,16 +1694,27 @@ def build_contact_sheets_for_session_contexts(included_session_contexts: List[Id
         included_session_contexts = [
             IdentifyingContext(format_name='kdiba',animal='gor01',exper_name='one',session_name='2006-6-09_1-22-43'),
         ]
+        active_example_PBE_ids_dict = {
+            IdentifyingContext(format_name='kdiba',animal='gor01',exper_name='one',session_name='2006-6-09_1-22-43'): [8, 12, 28, 32, 48, 62, 63, 70, 71, 128, 131, 180, 199, 200, 206, 246, 268, 276, 322, 323, 329, 332, 355, 392, 409, 410, 416, 422],
+        }
 
         out_paths, out_images = build_contact_sheets_for_session_contexts(included_session_contexts,
                                         posteriors_root=src_dir,
                                         output_dir=out_path,
                                         combined_subdir='combined/multi',
                                         # combined_subdir='psuedo2D_ignore/raw_rgba',
+                                        example_PBE_ids_dict=active_example_PBE_ids_dict,
                                     )
 
     """
+    import re
     from neuropy.utils.result_context import IdentifyingContext
+
+    def _subfn_extract_index(key: str) -> Optional[int]:
+        match = re.search(r'\[(\d+)\]', key)
+        if match:
+            return int(match.group(1))
+        return None
 
     posteriors_root = Path(posteriors_root)
     output_dir = Path(output_dir)
@@ -1724,8 +1737,50 @@ def build_contact_sheets_for_session_contexts(included_session_contexts: List[Id
             raise FileNotFoundError(msg)
 
         images_dict = ImageHelpers.load_png_images_pathlib(src_dir, image_glob=image_glob)
-        imgs = list(images_dict.values())
-        filenames = [f'{k}.png' for k in images_dict.keys()]
+
+        if (example_PBE_ids_dict is not None) and (a_ctxt in example_PBE_ids_dict):
+            wanted_ids: List[int] = list(example_PBE_ids_dict[a_ctxt])
+            idx_to_item: Dict[int, Tuple[str, Image.Image]] = {}
+            for stem, img in images_dict.items():
+                pbe_idx = _subfn_extract_index(stem)
+                if pbe_idx is not None:
+                    idx_to_item[pbe_idx] = (stem, img)
+            ## END for stem, img in images_dict.items()...
+
+            imgs = []
+            filenames = []
+            missing_ids: List[int] = []
+            for pbe_id in wanted_ids:
+                item = idx_to_item.get(pbe_id)
+                if item is None:
+                    missing_ids.append(pbe_id)
+                    continue
+                stem, img = item
+                imgs.append(img)
+                filenames.append(f'{stem}.png')
+            ## END for pbe_id in wanted_ids...
+
+            if len(missing_ids) > 0:
+                msg = f'{session_folder_name}: missing PBE ids {missing_ids} (found {len(imgs)}/{len(wanted_ids)} requested)'
+                if skip_missing:
+                    if debug_print:
+                        print(msg)
+                else:
+                    raise FileNotFoundError(msg)
+            elif debug_print:
+                print(f'{session_folder_name}: {len(imgs)}/{len(wanted_ids)} requested example PBEs')
+
+            if len(imgs) == 0:
+                msg = f'skip empty after example_PBE_ids filter: "{src_dir}" (requested {wanted_ids})'
+                if skip_missing:
+                    if debug_print:
+                        print(msg)
+                    continue
+                raise FileNotFoundError(msg)
+        else:
+            imgs = list(images_dict.values())
+            filenames = [f'{k}.png' for k in images_dict.keys()]
+
         n_cols = columns if (columns is not None) else len(imgs)
 
         if debug_print:

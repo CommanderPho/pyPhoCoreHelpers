@@ -1012,6 +1012,8 @@ class ImagePostRenderFunctionSets:
 
             # Prepare a multi-line, sideways label _______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________ #
             complete_epoch_identifier_str = ''
+            is_post_delta: bool = (is_epoch_pre_post_delta[i] > 0)
+            track_prefix: str = 'S' if is_post_delta else 'L'
 
             ## mode to use
             curr_epoch_info_dict = active_captured_single_epoch_result.epoch_info_tuple._asdict()
@@ -1019,7 +1021,7 @@ class ImagePostRenderFunctionSets:
             if active_epoch_id is not None:
                 active_epoch_id = int(active_epoch_id)
                 # complete_epoch_identifier_str = f"{complete_epoch_identifier_str}lbl[{active_epoch_id:03d}]" # 2025-06-03 - 'p_x_given_n[067]'
-                complete_epoch_identifier_str = f"{complete_epoch_identifier_str}L{active_epoch_id:03d}"
+                complete_epoch_identifier_str = f"{complete_epoch_identifier_str}{track_prefix}{active_epoch_id:03d}"
             else:
                 print(f'falling back to plain epoch IDXs because label was not found!')
                 active_epoch_data_IDX: int = active_captured_single_epoch_result.epoch_data_index
@@ -1027,7 +1029,6 @@ class ImagePostRenderFunctionSets:
                     complete_epoch_identifier_str = f'{complete_epoch_identifier_str}IDX{active_epoch_data_IDX:03d}'
 
             ## OUTPUTS: complete_epoch_identifier_str
-            is_post_delta: bool = (is_epoch_pre_post_delta[i] > 0)
 
             ## get pre/post delta label:
             earliest_t = active_captured_single_epoch_result.time_bin_edges[0]
@@ -2015,7 +2016,7 @@ def fig_to_clipboard(a_fig: Union[PlotlyFigure, FigureBase], format="png", **kwa
             
 
 def figure_to_pil_image(a_fig: Union[PlotlyFigure, FigureBase], format="png", **kwargs) -> Optional[Image.Image]:
-    """ Convert a Matplotlib Figure to a PIL Image.
+    """ Convert a Matplotlib or Plotly Figure to a PIL Image.
 
     Parameters:
         fig (matplotlib.figure.Figure): The Matplotlib figure to convert.

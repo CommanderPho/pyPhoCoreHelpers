@@ -18,7 +18,7 @@ class DynamicParameters(DiffableObject, MutableMapping):
     2. pickling sometimes fails, KeyError: 'mro' - SOLUTION: Interestingly this only seems to happen if the top-level item to pickle is a DynamicParameters. Calling .to_dict() and then pickling works even if it has many nested children that are DynamicParameters
         FAILS with KeyError 'mro': `saveData(global_computation_results_pickle_path, (curr_active_pipeline.global_computation_results))`
         WORKS: `saveData(global_computation_results_pickle_path, (curr_active_pipeline.global_computation_results.to_dict()))`
-    3. hasattr(plots, 'key') does not work correctly: WORKAROUND: instead of `hasattr(plots, 'root_plot')`, use `plots.has_attr('root_plot')` to avoid unhandled `KeyError: 'root_plot'`
+    3. Missing attribute access raises AttributeError, so hasattr(plots, 'root_plot') and getattr(plots, 'root_plot', default) work. Subscript access still raises KeyError. plots.has_attr('root_plot') remains for mapping-key checks.
     
     """
     debug_enabled = False
@@ -105,9 +105,11 @@ class DynamicParameters(DiffableObject, MutableMapping):
         return DynamicParameters.init_from_dict(dict_or)
         
     def __getattr__(self, item):
-        """
-            NOTE: instead of `hasattr(plots, 'root_plot')`, use `plots.has_attr('root_plot')` to avoid unhandled `KeyError: 'root_plot'`
-            
+        """Missing names raise AttributeError so hasattr() and getattr(obj, name, default) work.
+
+        Subscript access (`self[item]`) still raises KeyError. `has_attr` remains for mapping-key checks.
+        AttributeError (not KeyError) is what copy/pickle expect when probing optional methods such as `__deepcopy__`:
+        https://stackoverflow.com/questions/33387801/why-does-deepcopy-fail-with-keyerror-deepcopy-when-copying-custom-objec
         """
         # Gets called when the item is not found via __getattribute__
         if DynamicParameters.debug_enabled:
@@ -124,7 +126,8 @@ class DynamicParameters(DiffableObject, MutableMapping):
                 # As described here: https://stackoverflow.com/questions/33387801/why-does-deepcopy-fail-with-keyerror-deepcopy-when-copying-custom-objec to enable deepcopy(...) on the object
                 raise AttributeError(item)      #@IgnoreException               
             else:
-                raise
+                raise AttributeError(item) from None      #@IgnoreException
+
         # except AttributeError as err:
         #     print(f"AttributeError: {err}")
         #     return super(DynamicParameters, self).__setattr__(item, 'orphan')

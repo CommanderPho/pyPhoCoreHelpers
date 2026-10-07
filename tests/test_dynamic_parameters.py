@@ -76,6 +76,46 @@ class TestDynamicParametersMethods(unittest.TestCase):
         self.assertEqual(list(cloned.original_attributes), list(original.original_attributes))
 
 
+    def test_hasattr_and_getattr_for_present_missing_and_none(self):
+        self.assertFalse(hasattr(self.test1, 'root_plot'))
+        self.assertIsNone(getattr(self.test1, 'root_plot', None))
+        with self.assertRaises(AttributeError):
+            getattr(self.test1, 'root_plot')
+        self.assertEqual(self.test1.get('root_plot', 'fallback'), 'fallback')
+        self.assertNotIn('root_plot', self.test1)
+
+        present_none = DynamicParameters(root_plot=None)
+        self.assertTrue(hasattr(present_none, 'root_plot'))
+        self.assertIsNone(getattr(present_none, 'root_plot'))
+        self.assertIsNone(present_none.root_plot)
+        self.assertTrue(present_none.has_attr('root_plot'))
+        self.assertIn('root_plot', present_none)
+        self.assertIsNone(present_none.get('root_plot', 'fallback'))
+
+
+    def test_dot_assignment_and_deletion_follow_attribute_lookup(self):
+        self.test1.added = 3
+        self.assertTrue(hasattr(self.test1, 'added'))
+        self.assertEqual(getattr(self.test1, 'added'), 3)
+        self.assertTrue(self.test1.has_attr('added'))
+        self.assertIn('added', self.test1)
+
+        del self.test2['prop1']
+        self.assertFalse(hasattr(self.test2, 'prop1'))
+        self.assertFalse(self.test2.has_attr('prop1'))
+        self.assertEqual(getattr(self.test2, 'prop1', 'gone'), 'gone')
+        with self.assertRaises(KeyError):
+            self.test2['prop1']
+
+
+    def test_methods_are_attributes_but_not_mapping_keys(self):
+        self.assertTrue(hasattr(self.test2, 'to_dict'))
+        self.assertTrue(callable(getattr(self.test2, 'to_dict')))
+        self.assertFalse(self.test2.has_attr('to_dict'))
+        self.assertFalse(hasattr(self.test2, '__deepcopy__'))
+        self.assertIsNone(getattr(self.test2, '__deepcopy__', None))
+
+
     # def test_computation_config_hashing(self):
     #     ## Hash testing:
     #     obj1 = PlacefieldComputationParameters(speed_thresh=15.0, grid_bin=None, smooth=(1.0, 1.0), frate_thresh=0.2, time_bin_size=0.5)

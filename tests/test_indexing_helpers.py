@@ -9,16 +9,24 @@ from pathlib import Path
 tests_folder = Path(os.path.dirname(__file__))
 
 try:
+    import neuropy
     import pyphocorehelpers
 except ModuleNotFoundError as e:    
     root_project_folder = tests_folder.parent
     print('root_project_folder: {}'.format(root_project_folder))
     src_folder = root_project_folder.joinpath('src')
+
+    neuropy_folder = root_project_folder.joinpath('neuropy')
+    print('neuropy_folder: {}'.format(neuropy_folder))
+    sys.path.insert(0, str(root_project_folder))
+
     pyphocorehelpers_folder = src_folder.joinpath('pyphocorehelpers')
     print('pyphocorehelpers_folder: {}'.format(pyphocorehelpers_folder))
     sys.path.insert(0, str(src_folder))
+
 finally:
-    from pyphocorehelpers.indexing_helpers import get_bin_centers, get_bin_edges, BinningInfo, compute_spanning_bins, build_spanning_grid_matrix, interleave_elements, np_ffill_1D, np_bfill_1D # , np_ffill
+    # from neuropy.utils.mixins.binning_helpers import compute_spanning_bins, build_spanning_grid_matrix # for epochs_spkcount getting the correct time bins
+    from pyphocorehelpers.indexing_helpers import get_bin_centers, get_bin_edges, interleave_elements, np_ffill_1D, np_bfill_1D # , np_ffill ## removed: , BinningInfo, compute_spanning_bins, build_spanning_grid_matrix
 
         
 def random_array():
@@ -117,6 +125,7 @@ class TestIndexingMethods(unittest.TestCase):
         
         
     def test_build_spanning_grid_matrix(self):
+        from neuropy.utils.mixins.binning_helpers import build_spanning_grid_matrix # for epochs_spkcount getting the correct time bins
 
         all_positions_matrix, flat_all_positions_matrix, original_data_shape = build_spanning_grid_matrix(self.test_x_values, self.test_y_values)
         # all_positions_matrix[0,0,:] # array([ 25.81175029, 124.38134129])
@@ -133,6 +142,8 @@ class TestIndexingMethods(unittest.TestCase):
         # F = np.hstack(F_i) # Concatenate each individual F_i to produce F
 
     def test_compute_spanning_bins_num_bins_mode(self):
+        from neuropy.utils.mixins.binning_helpers import compute_spanning_bins # for epochs_spkcount getting the correct time bins
+
         fixed_num_bins = 32
         active_position_extents = np.array([23.92332935, 261.86436665])
         out_digitized_variable_bins, out_binning_info = compute_spanning_bins(active_position_extents, num_bins=fixed_num_bins)
@@ -161,6 +172,8 @@ class TestIndexingMethods(unittest.TestCase):
 
         
     def test_compute_spanning_bins_bin_size_mode(self):
+        from neuropy.utils.mixins.binning_helpers import compute_spanning_bins # for epochs_spkcount getting the correct time bins
+
         active_position_extents = np.array([23.92332935, 261.86436665])
         fixed_bin_size = 5.0
         out_digitized_variable_bins, out_binning_info = compute_spanning_bins(active_position_extents, bin_size=fixed_bin_size)

@@ -200,57 +200,116 @@ def custom_dumps(obj, protocol=None, byref=None, fmode=None, recurse=None, **kwd
 #         pickler.dump(obj)
         
 
-# @function_attributes(short_name=None, tags=['pickle', 'dill', 'debug', 'tool'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-01-01 00:00', related_items=[])
-def diagnose_pickling_issues(object_to_pickle, stop_after_first_problemmatic_attribute: bool=False):
-   """Intellegently diagnoses which property on an object is causing pickling via Dill to fail.
-   
-   Usage:
-        import dill as pickle
-        from pyphocorehelpers.Filesystem.pickling_helpers import diagnose_pickling_issues
+class PicklingHelpers:
+    """
+    # # stop further autoreload damage for this save attempt
+    # try:
+    #     %autoreload 0
+    # except Exception:
+    #     pass
 
-        diagnose_pickling_issues(curr_active_pipeline.global_computation_results.computed_data['RankOrder'])
-        diagnose_pickling_issues(v_dict)
-   """
+    from pyphocorehelpers.Filesystem.pickling_helpers import PicklingHelpers
 
-   try:
-       # Attempt to pickle the object directly
-       pickle.dumps(object_to_pickle)
-   except pickle.PicklingError as e:
-       # If pickling fails, initiate a diagnostic process
-       print(f"Pickling error encountered: {e}")
+    n = PicklingHelpers.rebind_attrs_classes(curr_active_pipeline)
+    print(f'rebound {n} objects')
 
-       # Gather information about the object's attributes
-       object_attributes = [attr for attr in dir(object_to_pickle) if not attr.startswith("__")]
+    """
+    @classmethod
+    def rebind_attrs_classes(cls, obj, seen=None, depth=0, max_depth=12):
+        """
 
-       # Isolate problematic attributes through iterative testing
-       #    problematic_attribute = None
-       problematic_attributes = {}
-    
-       for attribute in object_attributes:
-           try:
-               pickle.dumps(getattr(object_to_pickle, attribute))
-           except pickle.PicklingError:
-            #    problematic_attribute = attribute
-               problematic_attributes[attribute] = True
-               if stop_after_first_problemmatic_attribute:
-                   break
+        """
+        import importlib
 
-       # Provide informative output
-       if problematic_attributes:
-           print(f"Identified problematic attribute: {problematic_attributes}")
-           print("Potential causes:")
-           print("- Attribute contains unpicklable data types (e.g., lambda functions, file objects).")
-           print("- Attribute refers to external resources (e.g., database connections).")
-           print("- Attribute has circular references within the object's structure.")
-       else:
-           print("Unable to isolate the specific attribute causing the pickling error.")
-           print("Consider:")
-           print("- Examining the object's structure and dependencies for potential conflicts.")
-           print("- Providing a minimal reproducible example for further analysis.")
+        if seen is None:
+            seen = set()
+        oid = id(obj)
+        if oid in seen or depth > max_depth:
+            return 0
+        seen.add(oid)
+        n = 0
+        # rebind this object if it has a real module+qualname
+        # rebind this object if it has a real module+qualname
+        original_cls = getattr(obj, '__class__', None)
+        if original_cls is not None and hasattr(original_cls, '__module__') and hasattr(original_cls, '__name__'):
+            modname, cname = original_cls.__module__, original_cls.__name__
+            if modname and not modname.startswith(('builtins', 'numpy', 'pandas')):
+                try:
+                    mod = importlib.import_module(modname)
+                    new_cls = getattr(mod, cname, None)
+                    if new_cls is not None and new_cls is not original_cls and isinstance(obj, object):
+                        # only rebind if names match and new class looks like same attrs type
+                        if getattr(new_cls, '__name__', None) == cname:
+                            obj.__class__ = new_cls
+                            n += 1
+                except Exception:
+                    pass
 
-   else:
-       # If pickling succeeds, indicate no issues found
-       print("No pickling issues detected.")
+        # walk children
+        if isinstance(obj, dict):
+            for v in obj.values():
+                n += cls.rebind_attrs_classes(v, seen, depth+1, max_depth)
+        elif isinstance(obj, (list, tuple, set)):
+            for v in obj:
+                n += cls.rebind_attrs_classes(v, seen, depth+1, max_depth)
+        elif hasattr(obj, '__dict__'):
+            for v in vars(obj).values():
+                n += cls.rebind_attrs_classes(v, seen, depth+1, max_depth)
+        return n
+
+
+    # @function_attributes(short_name=None, tags=['pickle', 'dill', 'debug', 'tool'], input_requires=[], output_provides=[], uses=[], used_by=[], creation_date='2024-01-01 00:00', related_items=[])
+    @classmethod
+    def diagnose_pickling_issues(cls, object_to_pickle, stop_after_first_problemmatic_attribute: bool=False):
+        """Intellegently diagnoses which property on an object is causing pickling via Dill to fail.
+
+        Usage:
+            import dill as pickle
+            from pyphocorehelpers.Filesystem.pickling_helpers import PicklingHelpers
+
+            PicklingHelpers.diagnose_pickling_issues(curr_active_pipeline.global_computation_results.computed_data['RankOrder'])
+            PicklingHelpers.diagnose_pickling_issues(v_dict)
+        """
+        try:
+            # Attempt to pickle the object directly
+            pickle.dumps(object_to_pickle)
+        except pickle.PicklingError as e:
+            # If pickling fails, initiate a diagnostic process
+            print(f"Pickling error encountered: {e}")
+
+            # Gather information about the object's attributes
+            object_attributes = [attr for attr in dir(object_to_pickle) if not attr.startswith("__")]
+
+            # Isolate problematic attributes through iterative testing
+            #    problematic_attribute = None
+            problematic_attributes = {}
+
+            for attribute in object_attributes:
+                try:
+                    pickle.dumps(getattr(object_to_pickle, attribute))
+                except pickle.PicklingError:
+                    #    problematic_attribute = attribute
+                    problematic_attributes[attribute] = True
+                    if stop_after_first_problemmatic_attribute:
+                        break
+            ## END for attribute in object_attributes...
+
+            # Provide informative output
+            if problematic_attributes:
+                print(f"Identified problematic attribute: {problematic_attributes}")
+                print("Potential causes:")
+                print("- Attribute contains unpicklable data types (e.g., lambda functions, file objects).")
+                print("- Attribute refers to external resources (e.g., database connections).")
+                print("- Attribute has circular references within the object's structure.")
+            else:
+                print("Unable to isolate the specific attribute causing the pickling error.")
+                print("Consider:")
+                print("- Examining the object's structure and dependencies for potential conflicts.")
+                print("- Providing a minimal reproducible example for further analysis.")
+
+        else:
+            # If pickling succeeds, indicate no issues found
+            print("No pickling issues detected.")
 
 
 

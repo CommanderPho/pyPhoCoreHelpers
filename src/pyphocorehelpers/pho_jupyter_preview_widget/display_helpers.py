@@ -1,5 +1,8 @@
 from copy import deepcopy
 from typing import Dict, List, Tuple, Optional, Callable, Union, Any, NewType, TypeVar
+import html
+import json
+from pathlib import Path, PosixPath, WindowsPath
 import IPython
 import IPython.display
 from nptyping import NDArray
@@ -805,6 +808,69 @@ def dataframe_show_more_button(ip: "ipykernel.zmqshell.ZMQInteractiveShell") -> 
     return ip
 
 
+def path_preview_repr_html(path: Union[Path, str], include_copy_button: bool = True) -> str:
+    """Self-contained HTML: clickable file:// link + optional Copy button for a pathlib.Path.
+
+    Before registration, IPython shows::
+        WindowsPath('E:/Dropbox (Personal)/.../figureS7_OUT.pdf')
+
+    After ``path_repr_with_filesystem_link(ip)``, the same value renders as a clickable
+    filesystem link with a Copy button that copies the OS path string.
+
+    Usage:
+        from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import path_preview_repr_html
+        path_preview_repr_html(Path(r'E:/Dropbox (Personal)/Active/example.pdf'))
+    """
+    if not isinstance(path, Path):
+        path = Path(path)
+
+    path_str: str = str(path)
+    path_uri: str = path.as_uri()
+    escaped_path_str: str = html.escape(path_str, quote=True)
+    escaped_path_uri: str = html.escape(path_uri, quote=True)
+
+    link_html: str = f'<a href="{escaped_path_uri}" target="_blank" title="{escaped_path_uri}" style="font-family: monospace; word-break: break-all;">{escaped_path_str}</a>'
+    if not include_copy_button:
+        return f'<span style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">{link_html}</span>'
+
+    # Put the path in data-path (HTML-escaped); onclick reads it so nested quotes cannot break the attribute.
+    onclick_js: str = (
+        "navigator.clipboard.writeText(this.getAttribute('data-path'))"
+        ".then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 1200); })"
+        ".catch(() => { this.textContent = 'Failed'; })"
+    )
+    escaped_onclick: str = html.escape(onclick_js, quote=True)
+    copy_button_html: str = (
+        f'<button type="button" title="Copy path to clipboard" data-path="{escaped_path_str}" '
+        f'style="cursor: pointer; font-size: 0.85em; padding: 1px 8px; flex: 0 0 auto;" '
+        f'onclick="{escaped_onclick}">Copy</button>'
+    )
+    return (
+        f'<span style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">'
+        f'{link_html}{copy_button_html}</span>'
+    )
 
 
-    
+def path_repr_with_filesystem_link(ip: "ipykernel.zmqshell.ZMQInteractiveShell", include_copy_button: bool = True) -> "ipykernel.zmqshell.ZMQInteractiveShell":
+    """Register text/html formatters so pathlib.Path values render as clickable file links + Copy.
+
+    IPython ``for_type`` matches exact types, so Path / WindowsPath / PosixPath are all registered.
+    Plain-text repr is left unchanged so Paths inside lists/dicts still print normally.
+
+    Usage:
+        from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import path_repr_with_filesystem_link
+        ip = get_ipython()
+        ip = path_repr_with_filesystem_link(ip=ip)
+
+        # Before: WindowsPath('E:/Dropbox (Personal)/.../figureS7_OUT.pdf')
+        # After:  clickable file:// link + Copy button
+        Path(r'E:/Dropbox (Personal)/Active/Kamran Diba Lab/example.pdf')
+    """
+    html_formatter = ip.display_formatter.formatters['text/html']
+    for path_type in (Path, WindowsPath, PosixPath):
+        html_formatter.for_type(path_type, lambda p, _include=include_copy_button: path_preview_repr_html(p, include_copy_button=_include))
+    ## END for path_type in (Path, WindowsPath, PosixPath)....
+
+    return ip
+
+

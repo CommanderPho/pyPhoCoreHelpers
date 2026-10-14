@@ -808,14 +808,8 @@ def dataframe_show_more_button(ip: "ipykernel.zmqshell.ZMQInteractiveShell") -> 
     return ip
 
 
-def path_preview_repr_html(path: Union[Path, str], include_copy_button: bool = True) -> str:
-    """Self-contained HTML: clickable file:// link + optional Copy button for a pathlib.Path.
-
-    Before registration, IPython shows::
-        WindowsPath('E:/Dropbox (Personal)/.../figureS7_OUT.pdf')
-
-    After ``path_repr_with_filesystem_link(ip)``, the same value renders as a clickable
-    filesystem link with a Copy button that copies the OS path string.
+def path_preview_repr_html(path: Union[Path, str]) -> str:
+    """Link-only HTML for a pathlib.Path: posix display text + file:// href.
 
     Usage:
         from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import path_preview_repr_html
@@ -824,35 +818,60 @@ def path_preview_repr_html(path: Union[Path, str], include_copy_button: bool = T
     if not isinstance(path, Path):
         path = Path(path)
 
-    path_str: str = str(path)
+    path_posix: str = path.as_posix()
     path_uri: str = path.as_uri()
-    escaped_path_str: str = html.escape(path_str, quote=True)
+    escaped_path_posix: str = html.escape(path_posix, quote=True)
     escaped_path_uri: str = html.escape(path_uri, quote=True)
+    return f'<a href="{escaped_path_uri}" target="_blank" title="{escaped_path_uri}" style="font-family: monospace; word-break: break-all;">{escaped_path_posix}</a>'
 
-    link_html: str = f'<a href="{escaped_path_uri}" target="_blank" title="{escaped_path_uri}" style="font-family: monospace; word-break: break-all;">{escaped_path_str}</a>'
-    if not include_copy_button:
-        return f'<span style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">{link_html}</span>'
 
-    # Put the path in data-path (HTML-escaped); onclick reads it so nested quotes cannot break the attribute.
-    onclick_js: str = (
-        "navigator.clipboard.writeText(this.getAttribute('data-path'))"
-        ".then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 1200); })"
-        ".catch(() => { this.textContent = 'Failed'; })"
+def path_preview_widget(path: Union[Path, str], include_action_buttons: bool = True) -> widgets.Box:
+    """Compact Path preview: clickable file:// link + Copy (posix) / Path(...) / Explorer buttons.
+
+    - Copy: clipboard gets ``path.as_posix()``
+    - Path(...): clipboard gets ``Path('...posix...')`` (never WindowsPath)
+    - Explorer: reveals the path in the system file manager
+
+    Usage:
+        from pyphocorehelpers.pho_jupyter_preview_widget.display_helpers import path_preview_widget
+        path_preview_widget(Path(r'E:/Dropbox (Personal)/Active/example.pdf'))
+    """
+    from pyphocorehelpers.Filesystem.open_in_system_file_manager import reveal_in_system_file_manager
+    from pyphocorehelpers.programming_helpers import copy_to_clipboard
+
+    if not isinstance(path, Path):
+        path = Path(path)
+
+    path_posix: str = path.as_posix()
+    path_exists: bool = path.exists()
+    path_snippet: str = f"Path({path_posix!r})"
+
+    # flex-grow 0 so the path only occupies its content width; buttons sit immediately to its right.
+    link_widget = widgets.HTML(
+        value=path_preview_repr_html(path),
+        layout=widgets.Layout(width='auto', flex='0 1 auto', margin='2px'),
     )
-    escaped_onclick: str = html.escape(onclick_js, quote=True)
-    copy_button_html: str = (
-        f'<button type="button" title="Copy path to clipboard" data-path="{escaped_path_str}" '
-        f'style="cursor: pointer; font-size: 0.85em; padding: 1px 8px; flex: 0 0 auto;" '
-        f'onclick="{escaped_onclick}">Copy</button>'
-    )
-    return (
-        f'<span style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">'
-        f'{link_html}{copy_button_html}</span>'
-    )
+    children = [link_widget]
+    if include_action_buttons:
+        button_layout = widgets.Layout(flex='0 0 auto', width='auto', min_width='80px', margin='1px')
+
+        copy_button = widgets.Button(description='Copy', layout=button_layout, button_style='info', tooltip='Copy posix path to clipboard', icon='clipboard')
+        copy_button.on_click(lambda _: copy_to_clipboard(path_posix))
+
+        path_def_button = widgets.Button(description='Path(...)', layout=button_layout, button_style='info', tooltip='Copy Path(...) definition for pasting into a notebook', icon='code')
+        path_def_button.on_click(lambda _: copy_to_clipboard(path_snippet))
+
+        explorer_button = widgets.Button(description='Explorer', layout=button_layout, disabled=(not path_exists), button_style='info', tooltip='Reveal in system file manager', icon='folder')
+        explorer_button.on_click(lambda _: reveal_in_system_file_manager(path))
+
+        children.extend([copy_button, path_def_button, explorer_button])
+
+    box_layout = widgets.Layout(display='flex', flex_flow='row wrap', align_items='center', justify_content='flex-start', width='auto', max_width='100%')
+    return widgets.Box(children=children, layout=box_layout)
 
 
-def path_repr_with_filesystem_link(ip: "ipykernel.zmqshell.ZMQInteractiveShell", include_copy_button: bool = True) -> "ipykernel.zmqshell.ZMQInteractiveShell":
-    """Register text/html formatters so pathlib.Path values render as clickable file links + Copy.
+def path_repr_with_filesystem_link(ip: "ipykernel.zmqshell.ZMQInteractiveShell", include_action_buttons: bool = True) -> "ipykernel.zmqshell.ZMQInteractiveShell":
+    """Register text/html formatters so pathlib.Path values render as a link + Copy / Path(...) / Explorer.
 
     IPython ``for_type`` matches exact types, so Path / WindowsPath / PosixPath are all registered.
     Plain-text repr is left unchanged so Paths inside lists/dicts still print normally.
@@ -863,12 +882,12 @@ def path_repr_with_filesystem_link(ip: "ipykernel.zmqshell.ZMQInteractiveShell",
         ip = path_repr_with_filesystem_link(ip=ip)
 
         # Before: WindowsPath('E:/Dropbox (Personal)/.../figureS7_OUT.pdf')
-        # After:  clickable file:// link + Copy button
+        # After:  clickable file:// link + Copy (posix) + Path(...) + Explorer
         Path(r'E:/Dropbox (Personal)/Active/Kamran Diba Lab/example.pdf')
     """
     html_formatter = ip.display_formatter.formatters['text/html']
     for path_type in (Path, WindowsPath, PosixPath):
-        html_formatter.for_type(path_type, lambda p, _include=include_copy_button: path_preview_repr_html(p, include_copy_button=_include))
+        html_formatter.for_type(path_type, lambda p, _include=include_action_buttons: display(path_preview_widget(p, include_action_buttons=_include)))
     ## END for path_type in (Path, WindowsPath, PosixPath)....
 
     return ip

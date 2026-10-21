@@ -94,7 +94,7 @@ class DayDateTimeParser(BaseMatchParser):
         # pattern = r"(?P<export_datetime_str>\d{4}-\d{2}-\d{2}(?:_\d{2}\d{2}[APMF]{2})?)[_](?P<variant_suffix>[^-_]*)-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))" # chatGPT explicit
         # pattern = r"(?P<date_day_str>\d{4}-\d{2}-\d{2})(?:_(?P<date_time_str>\d{4}[APMF]{2}))?[_](?P<variant_suffix>[^-_]*)-(?P<session_str>.*)-(?P<export_file_type>\(?.+\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))" ## separate date and time components
         # pattern = r"(?P<date_day_str>\d{4}-\d{2}-\d{2})(?:_(?P<date_time_str>\d{4}[APMF]{2}))?(?:_(?P<variant_suffix>[^-_]+))?-(?P<session_str>.*)-(?P<export_file_type>\(.+\))(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))?" ## separate date and time components
-        pattern = r"(?P<date_day_str>\d{4}-\d{2}-\d{2})(?:_(?P<date_time_str>\d{4}[APMF]{2}))?(?:_(?P<variant_suffix>[^-_]+?))?-(?P<session_str>.*?)-(?P<export_file_type>\(.+?\))(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))?" ## lazy, works
+        pattern = r"(?P<date_day_str>\d{4}-\d{2}-\d{2})(?:_(?P<date_time_str>\d{4}[APMF]{2}))?(?:_(?P<variant_suffix>[^-_]+?))?-(?P<session_str>.*?)-(?P<export_file_type>\(.+?\))(?:[_-]tbin[_-](?P<decoding_time_bin_size_str>[^)]+))?" ## lazy; accepts _tbin-0.025, _tbin_25ms, -tbin_25ms
         # pattern = r"(?P<date_day_str>\d{4}-\d{2}-\d{2})(?:_(?P<date_time_str>\d{4}[APMF]{2}))?(?:_(?P<variant_suffix>[^-_]+?))?-(?P<session_str>.*?)-(?P<export_file_type>\(?.+?\)?)(?:_tbin-(?P<decoding_time_bin_size_str>[^)]+))?" ## does not require parenthasis, lazy, does not work?
         
         match = re.match(pattern, filename)

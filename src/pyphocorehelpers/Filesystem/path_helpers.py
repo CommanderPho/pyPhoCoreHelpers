@@ -242,9 +242,10 @@ class AutoVersionedUniqueFilenameParser(BaseMatchParser):
         """ builds the filenames from the path of the form: '20221109173951-loadedSessPickle.pkl'"""
         if not isinstance(file_to_save_path, Path):
             file_to_save_path = Path(file_to_save_path)
-        extensions = file_to_save_path.suffixes # e.g. ['.tar', '.gz']
+        ## Only the final suffix is the extension. `Path.suffixes` would split on every '.' in the name, so 'x-frateThresh_2.0-tbin_75ms.pkl' gave ['.0-tbin_75ms', '.pkl'] and produced '...-tbin_75ms.0-tbin_75ms.pkltmp'.
+        extensions = [file_to_save_path.suffix] if file_to_save_path.suffix else [] # e.g. ['.pkl']
         if additional_postfix_extension is not None:
-            extensions.append(additional_postfix_extension)
+            extensions.append(additional_postfix_extension) # e.g. 'tmp' (no leading dot) -> '.pkltmp', as callers expect
         unique_file_name: str = f'{datetime.now().strftime("%Y%m%d%H%M%S")}-{file_to_save_path.stem}{"".join(extensions)}'
         return unique_file_name
 

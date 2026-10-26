@@ -2468,6 +2468,53 @@ class SVGHelpers:
             print(f"Error parsing SVG dimensions from {svg_path}: {e}")
             return 100.0, 100.0  # fallback dimensions
 
+
+    @classmethod
+    def _combined_svg_root_namespace_attrs(cls, svg_contents: List[str]) -> str:
+        """Keep xmlns:* from source roots. Plotly/Kaleido SVGs use `xmlns:xlink` + `xlink:href`."""
+        namespaces = {
+            None: 'http://www.w3.org/2000/svg',
+            'xlink': 'http://www.w3.org/1999/xlink',
+        }
+        xmlns_pattern = re.compile(r'\sxmlns(?::([A-Za-z_][\w.-]*))?=(["\'])(.*?)\2')
+        for svg_content in svg_contents:
+            svg_start_match = re.search(r'<svg\b[^>]*>', svg_content, flags=re.DOTALL | re.IGNORECASE)
+            if svg_start_match is None:
+                continue
+            for ns_match in xmlns_pattern.finditer(svg_start_match.group(0)):
+                prefix = ns_match.group(1)
+                uri = ns_match.group(3)
+                if prefix not in namespaces:
+                    namespaces[prefix] = uri
+            ## END for ns_match in xmlns_pattern.finditer(svg_start_match.group(0))...
+        ## END for svg_content in svg_contents...
+
+        attr_parts = [f'xmlns="{namespaces[None]}"']
+        for prefix, uri in namespaces.items():
+            if prefix is None:
+                continue
+            attr_parts.append(f'xmlns:{prefix}="{uri}"')
+        ## END for prefix, uri in namespaces.items()...
+        return ' '.join(attr_parts)
+
+
+    @classmethod
+    def _prefix_svg_fragment_ids(cls, inner_content: str, id_prefix: str) -> str:
+        """Make clipPath/gradient ids unique when stacking multiple Plotly SVGs."""
+        if (not id_prefix) or (not inner_content):
+            return inner_content
+        found_ids = re.findall(r'\bid=(["\'])([^"\']+)\1', inner_content)
+        unique_ids = sorted({an_id for _quote, an_id in found_ids}, key=len, reverse=True)
+        for old_id in unique_ids:
+            new_id = f'{id_prefix}{old_id}'
+            escaped = re.escape(old_id)
+            inner_content = re.sub(rf'\bid=(["\']){escaped}\1', f'id="{new_id}"', inner_content)
+            inner_content = re.sub(rf'url\(\s*#\s*{escaped}\s*\)', f'url(#{new_id})', inner_content)
+            inner_content = re.sub(rf'(xlink:href|href)=(["\'])#{escaped}\2', rf'\1="#{new_id}"', inner_content)
+        ## END for old_id in unique_ids...
+        return inner_content
+
+
     @classmethod
     def concatenate_svgs_horizontally(cls, svg_paths: List[Union[str, Path]], output_path: Union[str, Path], 
                                     padding: float = 0, background_color: str = None) -> Path:
@@ -2532,7 +2579,8 @@ class SVGHelpers:
         # Create the combined SVG as string
         svg_parts = []
         svg_parts.append('<?xml version="1.0" encoding="UTF-8"?>')
-        svg_parts.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{combined_width}" height="{combined_height}" viewBox="0 0 {combined_width} {combined_height}">')
+        ns_attrs = cls._combined_svg_root_namespace_attrs(svg_contents)
+        svg_parts.append(f'<svg {ns_attrs} width="{combined_width}" height="{combined_height}" viewBox="0 0 {combined_width} {combined_height}">')
 
         # Add background rectangle if specified
         if background_color:
@@ -2543,7 +2591,7 @@ class SVGHelpers:
 
         for i, (content, (width, height)) in enumerate(zip(svg_contents, svg_dimensions)):
             # Extract content between <svg> tags, excluding the SVG element itself
-            inner_content = cls._extract_svg_inner_content(content)
+            inner_content = cls._prefix_svg_fragment_ids(cls._extract_svg_inner_content(content), id_prefix=f'svg{i}_')
 
             if inner_content.strip():
                 # Wrap in a group with translation
@@ -2620,7 +2668,8 @@ class SVGHelpers:
         # Create the combined SVG as string
         svg_parts = []
         svg_parts.append('<?xml version="1.0" encoding="UTF-8"?>')
-        svg_parts.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{combined_width}" height="{combined_height}" viewBox="0 0 {combined_width} {combined_height}">')
+        ns_attrs = cls._combined_svg_root_namespace_attrs(svg_contents)
+        svg_parts.append(f'<svg {ns_attrs} width="{combined_width}" height="{combined_height}" viewBox="0 0 {combined_width} {combined_height}">')
 
         # Add background if specified
         if background_color:
@@ -2631,7 +2680,7 @@ class SVGHelpers:
 
         for i, (content, (width, height)) in enumerate(zip(svg_contents, svg_dimensions)):
             # Extract content between <svg> tags
-            inner_content = cls._extract_svg_inner_content(content)
+            inner_content = cls._prefix_svg_fragment_ids(cls._extract_svg_inner_content(content), id_prefix=f'svg{i}_')
 
             if inner_content.strip():
                 # Wrap in a group with translation

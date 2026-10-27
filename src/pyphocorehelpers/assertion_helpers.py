@@ -259,6 +259,8 @@ class Assert:
     def len_equals(cls, arr_or_list, required_length: int):
         """ Ensures the length is equal to the required_length (a specific length), if it fails, it prints the actual length
         """
+        if len(arr_or_list) == required_length:
+            return
         import inspect
         # Get the caller's frame
         frame = inspect.currentframe().f_back
@@ -267,12 +269,19 @@ class Assert:
         # Use the first matched variable name or 'unknown' if not found
         var_name = var_name[0] if var_name else 'unknown'
 
-        cls._handle_assertion((len(arr_or_list) == required_length), f"{var_name} must be of length {required_length} but instead len({var_name}): {len(arr_or_list)}.\n{var_name}: {arr_or_list}\n") # Perform the assertion with detailed error message
+        cls._handle_assertion(False, f"{var_name} must be of length {required_length} but instead len({var_name}): {len(arr_or_list)}.\n{var_name}: {arr_or_list}\n") # Perform the assertion with detailed error message
 
     @classmethod
     def same_length(cls, *args):
         """ Ensures all passed *args are the same length (according to len(...), if it fails, it prints the actual length of each arg.
         """
+        n_args: int = len(args)
+        if n_args <= 1:
+            return
+        reference_len: int = len(args[0])
+        if all((len(arr_or_list) == reference_len) for arr_or_list in args[1:]):
+            return
+
         import inspect
         # Get the caller's frame
         frame = inspect.currentframe().f_back
@@ -286,28 +295,14 @@ class Assert:
             cls._handle_assertion(var_name not in var_name_dict, f"var_name: {var_name} already exists in var_name_dict: {var_name_dict}")
             ## could append suffix like "f{var_name}[1]"
             var_name_dict[var_name] = arr_or_list ## turn into dictionary
-            
-        if len(var_name_dict) == 0:
-            # return True # empty arrays are all equal
-            pass
-        elif len(var_name_dict) == 1:
-            # if only a single array, make sure it's not accidentally passed in incorrect
-            reference_array = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
-            # assert isinstance(reference_array, (np.ndarray))
-            cls._handle_assertion(hasattr(reference_array, 'len'), f"reference_array must have attribute 'len', got type: {type(reference_array)}")
-            # return True # as long as imput is intended, always True
-            pass        
-        else:
-            ## It has more than two elements:
-            reference_array = list(var_name_dict.values())[0] # Use the first array as a reference for comparison
-            reference_len: int = len(reference_array)
-            lengths_dict = {k:len(v) for k, v in var_name_dict.items()}
-            for var_name, a_len in lengths_dict.items():
-                if a_len != reference_len:
-                    cls._handle_assertion((a_len == reference_len), f"{var_name} must be of length {reference_len} but instead len({var_name}): {a_len}.\nreference_lengths: {lengths_dict}\n{var_name}: {arr_or_list}\n") # Perform the assertion with detailed error message
-            # Check equivalence for each array in the list
-            # return np.all([pairwise_numpy_fn(reference_array, an_arr, **kwargs) for an_arr in list_of_arrays[1:]]) # can be used without the list comprehension just as a generator if you use all(...) instead.
-            # return all(np.all(np.array_equiv(reference_array, an_arr) for an_arr in list_of_arrays[1:])) # the outer 'all(...)' is required, otherwise it returns a generator object like: `<generator object NumpyHelpers.all_array_equiv.<locals>.<genexpr> at 0x00000128E0482AC0>`
+        ## END for arr_or_list in args....
+
+        ## It has more than two elements:
+        lengths_dict = {k:len(v) for k, v in var_name_dict.items()}
+        for var_name, a_len in lengths_dict.items():
+            if a_len != reference_len:
+                cls._handle_assertion((a_len == reference_len), f"{var_name} must be of length {reference_len} but instead len({var_name}): {a_len}.\nreference_lengths: {lengths_dict}\n{var_name}: {arr_or_list}\n") # Perform the assertion with detailed error message
+        ## END for var_name, a_len in lengths_dict.items()....
 
     @classmethod
     def shape_equals(cls, arr_or_list, required_shape: Union[Tuple[int], int]):

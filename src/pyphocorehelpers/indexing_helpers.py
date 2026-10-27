@@ -1139,11 +1139,13 @@ def _do_partition_df_dict(df: pd.DataFrame, partitionColumn: Union[str, Tuple[st
             
             # Otherwise, recursively partition each dataframe in the current dictionary
             out_final_dict = {}
-            updated_keys = [*prev_keys, curr_partition_column_name, *remaining_columns]  # full column-name path; same for every sibling subset
+            current_path = [*prev_keys, curr_partition_column_name]
+            updated_keys = current_path  # fallback if there are no subsets to recurse into
             for key, sub_df in curr_df_dict.items():
                 # Recursively partition the sub-dataframe with remaining columns
-                nested_dict, _nested_keys = _do_partition_df_dict(df=sub_df, partitionColumn=remaining_columns, prev_keys=[*prev_keys, curr_partition_column_name])
+                nested_dict, nested_keys = _do_partition_df_dict(df=sub_df, partitionColumn=remaining_columns, prev_keys=current_path)
                 out_final_dict[key] = nested_dict
+                updated_keys = nested_keys  # sibling subsets share the same remaining column path
             ## END for key, sub_df in curr_df_dict.items()....
 
             return (out_final_dict, updated_keys)

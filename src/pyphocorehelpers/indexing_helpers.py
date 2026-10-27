@@ -1125,8 +1125,8 @@ def _do_partition_df_dict(df: pd.DataFrame, partitionColumn: Union[str, Tuple[st
             ## finished recursively expanding
             return (df, [*prev_keys])
         else:
-            # Make a copy to avoid modifying the original list
-            remaining_columns = partitionColumn.copy()
+            # Copy into a list so tuples work and the original sequence is not mutated
+            remaining_columns = list(partitionColumn)
             # Get the current column to partition on
             curr_partition_column_name = remaining_columns.pop(0)
             
@@ -1139,15 +1139,13 @@ def _do_partition_df_dict(df: pd.DataFrame, partitionColumn: Union[str, Tuple[st
             
             # Otherwise, recursively partition each dataframe in the current dictionary
             out_final_dict = {}
+            updated_keys = [*prev_keys, curr_partition_column_name, *remaining_columns]  # full column-name path; same for every sibling subset
             for key, sub_df in curr_df_dict.items():
                 # Recursively partition the sub-dataframe with remaining columns
-                nested_dict, updated_keys = _do_partition_df_dict(
-                    df=sub_df, 
-                    partitionColumn=remaining_columns, 
-                    prev_keys=[*prev_keys, curr_partition_column_name]
-                )
+                nested_dict, _nested_keys = _do_partition_df_dict(df=sub_df, partitionColumn=remaining_columns, prev_keys=[*prev_keys, curr_partition_column_name])
                 out_final_dict[key] = nested_dict
-                
+            ## END for key, sub_df in curr_df_dict.items()....
+
             return (out_final_dict, updated_keys)
 
 # ## TESTING 2025-03-17 16:15 
@@ -1285,16 +1283,17 @@ class PhoDataframeAccessor:
     #     return partition_df_dict(df=self._df, partitionColumn=partitionColumn) 
     
 
-    def partition_df_dict(self, partitionColumn: Union[str, Tuple[str]]) -> Dict[Any, pd.DataFrame]:
+    def partition_df_dict(self, partitionColumn: Union[str, Tuple[str], List[str]]) -> Dict[Any, pd.DataFrame]:
         """ splits a DataFrame df on the unique values of a specified column (partitionColumn) to return a unique DataFrame for each unique value in the column.
+
+        If `partitionColumn` is a sequence of column names, recursively partitions each subset to build a nested dictionary.
         """
         if isinstance(partitionColumn, str):
-            return partition_df_dict(df=self._df, partitionColumn=partitionColumn) 
+            return partition_df_dict(df=self._df, partitionColumn=partitionColumn)
         else:
             ## a list of columns to partition on, building a nested dictionary
-            for a_partition_column in partitionColumn:
-                a_df_dict: Dict[str, pd.DataFrame] = self._df.pho.partition_df_dict(partitionColumn='known_named_decoding_epochs_type')
-
+            result_dict, _keys_path = _do_partition_df_dict(df=self._df, partitionColumn=list(partitionColumn))
+            return result_dict
 
 
 

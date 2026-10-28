@@ -117,11 +117,6 @@ def format_dict_view_as_list(obj, p, cycle):
     p.pretty(dict_view_as_list(obj))
 
 
-def _pprint_dict_view(self, object, stream, indent, allowance, context, level):
-    """stdlib pprint dispatcher: render dict views like a regular list."""
-    return self._pprint_list(dict_view_as_list(object), stream, indent, allowance, context, level)
-
-
 def register_dict_view_list_repr(ip=None, include_keys: bool = True, include_values: bool = True, include_items: bool = True):
     """Register IPython printers so dict.keys()/values()/items() views render like regular lists.
 
@@ -139,7 +134,6 @@ def register_dict_view_list_repr(ip=None, include_keys: bool = True, include_val
         figures_out_dict.keys()  # ['Figure 4', 'Figure S9']
 
     """
-    import pprint as sys_pprint
     from IPython.lib import pretty as ipython_pretty
     from pyphocorehelpers.pretty import for_type as pho_pretty_for_type
 
@@ -153,7 +147,6 @@ def register_dict_view_list_repr(ip=None, include_keys: bool = True, include_val
         text_formatter.for_type(view_type, format_dict_view_as_list)
         ipython_pretty.for_type(view_type, format_dict_view_as_list)
         pho_pretty_for_type(view_type, format_dict_view_as_list)
-        sys_pprint.PrettyPrinter._dispatch[view_type.__repr__] = _pprint_dict_view
     ## END for view_type in get_dict_view_types(include_keys=include_keys, include_values=include_values, include_items=include_items)...
 
     return ip

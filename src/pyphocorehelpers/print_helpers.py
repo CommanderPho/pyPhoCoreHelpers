@@ -82,6 +82,56 @@ def truncating_list_repr(items, max_full_display_n_items: int = 1000, truncated_
         return f"[{array_as_string}]"
 
 
+def get_dict_view_types(*, include_keys: bool = True, include_values: bool = True, include_items: bool = True) -> tuple:
+    """Return the builtin + ABC types for dict.keys()/values()/items() views.
+
+    Usage:
+        from pyphocorehelpers.print_helpers import get_dict_view_types
+        get_dict_view_types()  # (dict_keys, KeysView, dict_values, ValuesView, dict_items, ItemsView)
+
+    """
+    from collections.abc import KeysView, ValuesView, ItemsView
+    view_types = []
+    if include_keys:
+        view_types.extend((type({}.keys()), KeysView))
+    if include_values:
+        view_types.extend((type({}.values()), ValuesView))
+    if include_items:
+        view_types.extend((type({}.items()), ItemsView))
+    seen = set()
+    unique_view_types = []
+    for view_type in view_types:
+        if view_type not in seen:
+            seen.add(view_type)
+            unique_view_types.append(view_type)
+    ## END for view_type in view_types...
+    return tuple(unique_view_types)
+
+
+def dict_view_as_list(obj) -> list:
+    """Coerce dict_keys / dict_values / dict_items / MappingView to a regular list.
+
+    Usage:
+        from pyphocorehelpers.print_helpers import dict_view_as_list
+
+        figures_out_dict.keys()  # dict_keys(['Figure 4', 'Figure S9'])
+        dict_view_as_list(figures_out_dict.keys())  # ['Figure 4', 'Figure S9']
+
+    """
+    return list(obj)
+
+
+def dict_view_list_repr(obj) -> str:
+    """List-style repr for dict views: ``dict_keys(['a'])`` -> ``"['a']"``.
+
+    Usage:
+        from pyphocorehelpers.print_helpers import dict_view_list_repr
+        dict_view_list_repr(figures_out_dict.keys())  # "['Figure 4', 'Figure S9']"
+
+    """
+    return repr(dict_view_as_list(obj))
+
+
 class SimplePrintable:
     """Adds the default print method for classes that displays the class name and its dictionary.
     

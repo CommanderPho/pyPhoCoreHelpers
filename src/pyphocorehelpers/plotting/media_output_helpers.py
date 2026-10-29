@@ -2421,35 +2421,18 @@ class SVGHelpers:
     @classmethod 
     def _parse_svg_dimensions(cls, svg_path: Union[str, Path]) -> Tuple[float, float]:
         """
-        Extract width and height from an SVG file.
+        Extract width and height from an SVG file in user units (viewBox / drawing coordinates).
+
+        Prefer viewBox so concatenation still works after `set_physical_size_inches` stamps `width`/`height` in inches.
 
         Returns:
         --------
         Tuple[float, float]
-            (width, height) in pixels
+            (width, height) in SVG user units
         """
         try:
             tree = ET.parse(svg_path)
             root = tree.getroot()
-
-            width = root.get('width', '100')
-            height = root.get('height', '100')
-
-            # Parse viewBox if width/height are not specified or are percentages
-            viewbox = root.get('viewBox')
-            if viewbox:
-                try:
-                    vb_values = [float(x) for x in viewbox.split()]
-                    if len(vb_values) >= 4:
-                        vb_width, vb_height = vb_values[2], vb_values[3]
-
-                        # If width/height are percentages or missing, use viewBox
-                        if '%' in str(width) or 'em' in str(width) or width == '100':
-                            width = vb_width
-                        if '%' in str(height) or 'em' in str(height) or height == '100':
-                            height = vb_height
-                except ValueError:
-                    pass  # fallback to default parsing
 
             # Convert to float, removing units
             def parse_dimension(dim):
@@ -2463,10 +2446,72 @@ class SVGHelpers:
                 except ValueError:
                     return 100.0  # fallback
 
+            # User-unit space is viewBox; physical width="5.3956in" must not be used as concat offsets
+            viewbox = root.get('viewBox')
+            if viewbox:
+                try:
+                    vb_values = [float(x) for x in viewbox.replace(',', ' ').split()]
+                    if len(vb_values) >= 4:
+                        return float(vb_values[2]), float(vb_values[3])
+                except ValueError:
+                    pass  # fallback to width/height parsing
+
+            width = root.get('width', '100')
+            height = root.get('height', '100')
             return parse_dimension(width), parse_dimension(height)
         except Exception as e:
             print(f"Error parsing SVG dimensions from {svg_path}: {e}")
             return 100.0, 100.0  # fallback dimensions
+
+
+    @classmethod
+    def set_physical_size_inches(cls, svg_path: Union[str, Path], width_in: float, height_in: float) -> Path:
+        """Set the SVG print/CSS size to `width_in` x `height_in` inches without changing drawing coordinates.
+
+        Kaleido writes unitless width/height (px vs pt depends on the app: cairosvg PDF was 0.75x). Keep/create a viewBox in user units, then stamp `in` so Illustrator/Inkscape/cairosvg honor the intended page size.
+
+        Usage:
+            SVGHelpers.set_physical_size_inches(svg_path, width_in=5.3956, height_in=2.18)
+        """
+        svg_path = Path(svg_path)
+        text = svg_path.read_text(encoding='utf-8')
+        svg_start = re.search(r'<svg\b[^>]*>', text, flags=re.DOTALL | re.IGNORECASE)
+        if svg_start is None:
+            raise ValueError(f'No <svg> root in {svg_path}')
+        tag = svg_start.group(0)
+
+        def _subfn_attr(tag_text: str, name: str) -> Optional[str]:
+            match = re.search(rf'\b{name}=(["\'])(.*?)\1', tag_text, flags=re.IGNORECASE)
+            return None if match is None else match.group(2)
+
+        def _subfn_set_attr(tag_text: str, name: str, value: str) -> str:
+            if re.search(rf'\b{name}=', tag_text, flags=re.IGNORECASE):
+                return re.sub(rf'\b{name}=(["\'])(.*?)\1', f'{name}="{value}"', tag_text, count=1, flags=re.IGNORECASE)
+            return tag_text[:-1].rstrip() + f' {name}="{value}">'
+
+        def _subfn_parse_user_len(raw: Optional[str]) -> Optional[float]:
+            if raw is None:
+                return None
+            num = re.sub(r'[a-z%]+$', '', str(raw).strip().lower())
+            try:
+                return float(num)
+            except ValueError:
+                return None
+
+        viewbox = _subfn_attr(tag, 'viewBox')
+        if viewbox:
+            vb_parts = viewbox.replace(',', ' ').split()
+            if len(vb_parts) < 4:
+                viewbox = None
+        if not viewbox:
+            user_w = _subfn_parse_user_len(_subfn_attr(tag, 'width')) or 100.0
+            user_h = _subfn_parse_user_len(_subfn_attr(tag, 'height')) or 100.0
+            tag = _subfn_set_attr(tag, 'viewBox', f'0 0 {user_w} {user_h}')
+        tag = _subfn_set_attr(tag, 'width', f'{width_in}in')
+        tag = _subfn_set_attr(tag, 'height', f'{height_in}in')
+        text = text[:svg_start.start()] + tag + text[svg_start.end():]
+        svg_path.write_text(text, encoding='utf-8')
+        return svg_path
 
 
     @classmethod

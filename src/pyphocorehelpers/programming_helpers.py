@@ -326,9 +326,11 @@ def build_metadata_tags_database(discovered_with_metadata: Dict[PythonPathStr, D
 # ==================================================================================================================== #
 # Clipboard Helpers                                                                                                    #
 # ==================================================================================================================== #
-def copy_to_clipboard(code_str: str, message_print=True):
-    """ tries a clean method that uses the jaraco.clipboard library, but falls back to Pandas for compatibility if it isn't available
+def copy_to_clipboard(code_str: str, message_print=True) -> bool:
+    """ tries a clean method that uses the jaraco.clipboard library, but falls back to Pandas for compatibility if it isn't available.
 
+    Returns True on success. On headless hosts (e.g. Great Lakes login nodes) clipboard backends raise
+    ``NotImplementedError`` / OS errors — those are caught and reported instead of aborting the caller.
 
         from pyphocorehelpers.programming_helpers import copy_to_clipboard
 
@@ -340,11 +342,20 @@ def copy_to_clipboard(code_str: str, message_print=True):
 
     except ImportError:
         # If jaraco.clipboard is not available, fall back to pandas method that leaves extra double quotes wrapping the clipboard string
-        df = pd.DataFrame([code_str])
-        df.to_clipboard(index=False,header=False)
+        try:
+            df = pd.DataFrame([code_str])
+            df.to_clipboard(index=False, header=False)
+        except Exception as e:
+            print(f'WARN: copy_to_clipboard failed (no clipboard backend): {e}')
+            return False
+    except (NotImplementedError, OSError, RuntimeError) as e:
+        # jaraco.clipboard raises NotImplementedError("format not supported") on Linux without X/Wayland
+        print(f'WARN: copy_to_clipboard unavailable on this host: {e}')
+        return False
 
     if message_print:
         print(f'Copied "{code_str}" to clipboard!')
+    return True
 
 
 def copy_image_to_clipboard(image, message_print=True):
